@@ -4,13 +4,13 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 
-export default function DashboardMedecinPage() {
+export default function Dashboard() {
     const router = useRouter();
     const { isAuthenticated, user, logout } = useAuth();
 
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push("/login-medecin");
+            router.push("/login");
         }
     }, [isAuthenticated, router]);
 
@@ -22,7 +22,7 @@ export default function DashboardMedecinPage() {
                 <h1 className="text-2xl font-semibold text-blue-700 mb-4">
                     Tableau de Bord - Médecin
                 </h1>
-                <p className="text-gray-700 mb-6">Bienvenue, <span className="font-medium">{user}</span> 👨‍⚕️</p>
+                <p className="text-gray-700 mb-6">Bienvenue, <span className="font-medium">{user}</span></p>
 
                 <div className="grid grid-cols-2 gap-6">
                     <div className="p-4 border rounded-lg shadow-sm">

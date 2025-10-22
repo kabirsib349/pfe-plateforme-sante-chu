@@ -1,44 +1,60 @@
-"use client";
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getUserInfo } from "../lib/api";
 
+interface User{
+    email: string;
+    role: string;
+}
 interface AuthContextType {
-    user: string | null;
+    user: User | null;
     token: string | null;
-    login: (token: string, email: string) => void;
+    isAuthenticated: boolean;
+    login: (token: string) => void;
     logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Récupération depuis le localStorage au rechargement
         const savedToken = localStorage.getItem("token");
-        const savedUser = localStorage.getItem("user");
-        if (savedToken) setToken(savedToken);
-        if (savedUser) setUser(savedUser);
+        if (savedToken){
+            setToken(savedToken);
+            fetchUserInfo(savedToken);
+        }
     }, []);
 
-    const login = (token: string, email: string) => {
+    const fetchUserInfo = async (token: string) => {
+        if (!token) return;
+        try{
+            const userInfo = await getUserInfo(token);
+            setUser(userInfo);
+            setIsAuthenticated(true);
+        }catch (error){
+            console.error(error);
+            logout();
+        }
+    }
+
+    const login = (token: string) => {
         setToken(token);
-        setUser(email);
         localStorage.setItem("token", token);
-        localStorage.setItem("user", email);
+        fetchUserInfo(token);
     };
 
     const logout = () => {
         setToken(null);
         setUser(null);
         localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        setIsAuthenticated(false);
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout }}>
+        <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -1,6 +1,5 @@
-
-export async function registerMedecin(data: { email: string; password: string }) {
-    const res = await fetch("http://localhost:8080/api/medecins/register", {
+export async function register(data: { nom: string; email: string; password: string }) {
+    const res = await fetch("http://localhost:8080/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -11,11 +10,11 @@ export async function registerMedecin(data: { email: string; password: string })
         throw new Error(error || "Échec de l'inscription");
     }
 
-    return res.json();
+    return res.text();
 }
 
-export async function loginMedecin(data: { email: string; password: string; code2FA?: string }) {
-    const res = await fetch("http://localhost:8080/api/medecins/login", {
+export async function login(data: { email: string; password: string }) {
+    const res = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -26,5 +25,21 @@ export async function loginMedecin(data: { email: string; password: string; code
         throw new Error(error || "Échec de la connexion");
     }
 
-    return res.json(); // doit renvoyer { token, email, role } depuis ton backend
+    return res.json();
+}
+
+export async function getUserInfo(token: string){
+    if(!token){
+        return Promise.reject(new Error("No token provided"));
+    }
+    const res = await fetch("http://localhost:8080/api/users/me",{
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if(!res.ok){
+        throw new Error("Echec de la récurépartion des informations utilisateur")
+    }
+    return res.json();
 }

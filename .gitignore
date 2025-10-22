@@ -30,3 +30,7 @@ npm-debug.log
 yarn-error.log
 .env.local
 
+# Project Specific Exclusions
+Cahier des Charges – Application de Collecte de Données Médicales V_2.0.pdf
+test_ui/
+Script de création des tables.sql

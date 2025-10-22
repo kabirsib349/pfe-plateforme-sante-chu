@@ -2,31 +2,35 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginMedecin } from "../../lib/api";
+import { login } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
-
+import { validatePassword } from "@/src/lib/validation";
 
 interface LoginResponse {
     token: string;
-    email: string;
-    role: string;
 }
-export default function LoginMedecinPage() {
+export default function Login() {
     const router = useRouter();
     const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [code2FA, setCode2FA] = useState("");
     const [error, setError] = useState("");
+    const [code2FA,setCode2FA] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
+        const passwordError = validatePassword(password);
+        if(passwordError){
+            setError(passwordError);
+            return;
+        }
+
         try {
-            const user: LoginResponse = await loginMedecin({ email, password, code2FA });
-            login(user.token, user.email);
-            router.push("/dashboard/medecin");
+            const response: LoginResponse = await login({ email, password });
+            login(response.token);
+            router.push("/dashboard");
         } catch (err: any) {
             console.error(err);
             setError("Identifiants invalides ou code incorrect.");
@@ -47,7 +51,7 @@ export default function LoginMedecinPage() {
                         <label className="block text-sm font-medium mb-1">Email</label>
                         <input
                             type="email"
-                            placeholder="votre.email@chu.fr"
+                            placeholder="votre.email@gmail.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -78,7 +82,6 @@ export default function LoginMedecinPage() {
                         <input
                             type="text"
                             placeholder="Code à 6 chiffres"
-                            value={code2FA}
                             maxLength={6}
                             onChange={(e) => setCode2FA(e.target.value)}
                             className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
