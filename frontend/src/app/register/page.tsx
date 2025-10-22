@@ -2,10 +2,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { validatePassword } from '@/src/lib/validation';
-import { register } from '@/src/lib/api'
+import { register } from '@/src/lib/api';
+import { useToast } from '@/src/hooks/useToast';
+import ToastContainer from '@/src/components/ToastContainer';
 
 export default function Register() {
   const router = useRouter();
+  const { toasts, showToast, removeToast } = useToast();
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,8 +26,10 @@ export default function Register() {
 
     try {
         await register({nom, email, password});
-        alert("Inscription réussie !");
-        router.push('/login');
+        showToast("Inscription réussie ! Redirection vers la connexion...", "success");
+        setTimeout(() => {
+          router.push('/login');
+        }, 1500);
         } catch(err: any){
           console.error(err);
           setError(err.message || "L'inscription a échoué. Veuillez réessayer.");
@@ -32,7 +37,9 @@ export default function Register() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+    <>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      <main className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
         <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
           Créer un compte Chercheur
@@ -97,5 +104,6 @@ export default function Register() {
         </form>
       </div>
     </main>
+    </>
   );
 }

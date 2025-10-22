@@ -25,7 +25,7 @@ public class UserController {
         Utilisateur user = utilisateurRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
 
-        UserResponse response = new UserResponse(user.getEmail(), user.getRole().getNom());
+        UserResponse response = new UserResponse(user.getNom(), user.getEmail(), user.getRole().getNom());
         return ResponseEntity.ok(response);
     }
 }

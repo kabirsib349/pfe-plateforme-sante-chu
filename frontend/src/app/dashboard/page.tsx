@@ -6,23 +6,24 @@ import { useAuth } from "@/src/hooks/useAuth";
 
 export default function Dashboard() {
     const router = useRouter();
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout, isLoading } = useAuth();
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isLoading && !isAuthenticated) {
             router.push("/login");
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, isLoading, router]);
 
+    if (isLoading) return <div>Chargement...</div>; // Affichage pendant le chargement
     if (!isAuthenticated) return null; // évite un rendu avant redirection
 
     return (
         <main className="min-h-screen bg-gray-50 p-8">
             <div className="bg-white rounded-xl shadow-md p-6">
                 <h1 className="text-2xl font-semibold text-blue-700 mb-4">
-                    Tableau de Bord - Médecin
+                    Tableau de Bord
                 </h1>
-                <p className="text-gray-700 mb-6">Bienvenue, <span className="font-medium">{user}</span></p>
+                <p className="text-gray-700 mb-6">Bienvenue, <span className="font-medium">{user?.nom}</span></p>
 
                 <div className="grid grid-cols-2 gap-6">
                     <div className="p-4 border rounded-lg shadow-sm">

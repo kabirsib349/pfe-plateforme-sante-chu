@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { getUserInfo } from "../lib/api";
 
 interface User{
+    nom: string;
     email: string;
     role: string;
 }
@@ -9,6 +10,7 @@ interface AuthContextType {
     user: User | null;
     token: string | null;
     isAuthenticated: boolean;
+    isLoading: boolean;
     login: (token: string) => void;
     logout: () => void;
 }
@@ -19,17 +21,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const savedToken = localStorage.getItem("token");
         if (savedToken){
             setToken(savedToken);
             fetchUserInfo(savedToken);
+        } else {
+            setIsLoading(false);
         }
     }, []);
 
     const fetchUserInfo = async (token: string) => {
-        if (!token) return;
+        if (!token) {
+            setIsLoading(false);
+            return;
+        }
         try{
             const userInfo = await getUserInfo(token);
             setUser(userInfo);
@@ -37,6 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }catch (error){
             console.error(error);
             logout();
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -54,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
+        <AuthContext.Provider value={{ user, token, isAuthenticated, isLoading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

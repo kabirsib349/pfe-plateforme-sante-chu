@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "../../lib/api";
+import { login as apiLogin } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { validatePassword } from "@/src/lib/validation";
 
@@ -15,20 +15,20 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const [code2FA,setCode2FA] = useState("");
+    const [code2FA, setCode2FA] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
         const passwordError = validatePassword(password);
-        if(passwordError){
+        if (passwordError) {
             setError(passwordError);
             return;
         }
 
         try {
-            const response: LoginResponse = await login({ email, password });
+            const response: LoginResponse = await apiLogin({ email, password });
             login(response.token);
             router.push("/dashboard");
         } catch (err: any) {
