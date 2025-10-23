@@ -1,36 +1,22 @@
-# Compiled class file
-*.class
+# IDE configuration
+.idea/
+.vscode/
+*.iml
 
-# Log file
-*.log
+# Build artifacts
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+build-number.properties
 
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
-
-# Node.js / Next.js
+# Node modules
 node_modules/
-.next/
 npm-debug.log
 yarn-error.log
-.env.local
 
-# Project Specific Exclusions
-Cahier des Charges – Application de Collecte de Données Médicales V_2.0.pdf
-test_ui/
-Script de création des tables.sql
+# Local environment variables
+.env
