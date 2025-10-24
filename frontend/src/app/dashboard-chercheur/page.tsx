@@ -12,10 +12,15 @@ export default function Dashboard() {
         if (!isLoading && !isAuthenticated) {
             router.push("/login");
         }
-    }, [isAuthenticated, isLoading, router]);
+        // Vérifier que l'utilisateur est bien un chercheur
+        if (!isLoading && isAuthenticated && user?.role !== 'chercheur') {
+            router.push("/dashboard-medecin");
+        }
+    }, [isAuthenticated, isLoading, user, router]);
 
     if (isLoading) return <div>Chargement...</div>; // Affichage pendant le chargement
     if (!isAuthenticated) return null; // évite un rendu avant redirection
+    if (user?.role !== 'chercheur') return null; // évite un rendu si mauvais rôle
 
     return (
         <main className="min-h-screen bg-gray-50 p-8">

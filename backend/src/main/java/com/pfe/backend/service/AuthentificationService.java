@@ -43,8 +43,8 @@ public class AuthentificationService {
         utilisateur.setEmail(request.getEmail());
         utilisateur.setMotDePasse(passwordEncoder.encode(request.getPassword()));
 
-        Role userRole = roleRepository.findByNom("chercheur")
-                .orElseThrow(() -> new IllegalStateException("Le rôle par défaut 'chercheur' n'a pas été trouvé."));
+        Role userRole = roleRepository.findByNom(request.getRole() != null? request.getRole() : "chercheur")
+                .orElseThrow(() -> new IllegalStateException("Le rôle spécifié n'a pas été trouvé."));
         utilisateur.setRole(userRole);
         utilisateurRepository.save(utilisateur);
     }

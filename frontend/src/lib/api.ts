@@ -1,4 +1,4 @@
-export async function register(data: { nom: string; email: string; password: string }) {
+export async function register(data: { nom: string; email: string; password: string; role: string }) {
     const res = await fetch("http://localhost:8080/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
