@@ -3,6 +3,9 @@
 import { useEffect, useState, FC, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
+import { StatCard } from "@/src/components/dashboard/StatCard";
+import { TabButton } from "@/src/components/dashboard/TabButton";
+import { Badge } from "@/src/components/Badge";
 
 export default function Dashboard() {
     const router = useRouter();
@@ -101,25 +104,6 @@ export default function Dashboard() {
 
 // --- Composants réutilisables ---
 
-const StatCard: FC<{ label: string; value: string; valueColor?: string }> = ({ label, value, valueColor = "text-emerald-600" }) => (
-    <div className="glass rounded-2xl shadow-eco p-5 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-eco-lg border border-white/20">
-        <div className="text-gray-600 text-sm font-medium">{label}</div>
-        <div className={`text-4xl font-bold mt-3 ${valueColor}`}>{value}</div>
-    </div>
-);
-
-const TabButton: FC<{ id: string; activeTab: string; setActiveTab: (id: string) => void; children: ReactNode }> = ({ id, activeTab, setActiveTab, children }) => (
-    <button
-        onClick={() => setActiveTab(id)}
-        className={`py-2 px-3 whitespace-nowrap font-medium border-b-2 transition-colors ${activeTab === id
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300"
-            }`}
-    >
-        {children}
-    </button>
-);
-
 const Card: FC<{ title: string; action?: ReactNode; children: ReactNode; className?: string }> = ({ title, action, children, className }) => (
     <div className={`bg-white rounded-lg shadow p-6 mb-6 ${className}`}>
         <div className="flex justify-between items-center pb-4 mb-4 border-b border-gray-200">
@@ -130,16 +114,7 @@ const Card: FC<{ title: string; action?: ReactNode; children: ReactNode; classNa
     </div>
 );
 
-const Badge: FC<{ color: 'green' | 'yellow' | 'red' | 'blue' | 'gray'; children: ReactNode }> = ({ color, children }) => {
-    const colors = {
-        green: "bg-green-100 text-green-800",
-        yellow: "bg-yellow-100 text-yellow-800",
-        red: "bg-red-100 text-red-800",
-        blue: "bg-blue-100 text-blue-800",
-        gray: "bg-gray-100 text-gray-800",
-    };
-    return <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${colors[color]}`}>{children}</span>;
-};
+
 
 const ChartPlaceholder: FC<{ text: string }> = ({ text }) => (
     <div className="h-72 bg-white rounded-lg p-6 shadow">
@@ -200,13 +175,18 @@ const OverviewTab = () => (
 );
 
 const FormsTab = () => {
-    const [showCreator, setShowCreator] = useState(false);
+    const router = useRouter();
 
     return (
         <div>
             <Card
                 title="Mes formulaires"
-                action={<button onClick={() => setShowCreator(!showCreator)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">{showCreator ? 'Fermer' : 'Créer un formulaire'}</button>}
+                action={
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span>📊</span>
+                        <span>{2} formulaires actifs</span>
+                    </div>
+                }
             >
                 <Table headers={["Nom du formulaire", "Étude", "Date création", "Statut", "Actions"]}>
                     {/* Table rows */}
@@ -233,49 +213,44 @@ const FormsTab = () => {
                 </Table>
             </Card>
 
-            {showCreator && (
-                <Card
-                    title="Création de formulaire"
-                    action={
-                        <div className="space-x-2">
-                            <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm">Sauvegarder brouillon</button>
-                            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">Valider le formulaire</button>
-                        </div>
-                    }
-                >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label htmlFor="form-name" className="block text-sm font-medium text-gray-700 mb-1">Nom du formulaire</label>
-                            <input type="text" id="form-name" placeholder="Ex: Étude Cardio-Vasculaire 2025" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-                        </div>
-                        <div>
-                            <label htmlFor="form-study" className="block text-sm font-medium text-gray-700 mb-1">Étude associée</label>
-                            <select id="form-study" className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white">
-                                <option>Sélectionner une étude</option>
-                                <option>Cardio-Vasculaire</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className="flex flex-col lg:flex-row gap-6">
-                        <div className="lg:w-1/3">
-                            <h3 className="font-semibold mb-2">Éléments de formulaire</h3>
-                            <div className="space-y-2">
-                                {['Texte court', 'Texte long', 'Nombre', 'Date', 'Liste déroulante', 'Boutons radio', 'Cases à cocher'].map(field => (
-                                    <div key={field} className="bg-gray-50 p-3 rounded-md border border-gray-200 cursor-move hover:bg-blue-50">
-                                        <strong>{field}</strong>
-                                    </div>
-                                ))}
+            {/* Actions principales - Une seule section claire */}
+            <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>⚡</span>
+                    Actions rapides
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                        onClick={() => router.push('/formulaire')}
+                        className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:border-blue-300 cursor-pointer transition-all hover:shadow-md group"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                <span className="text-2xl">📋</span>
                             </div>
-                        </div>
-                        <div className="lg:w-2/3 bg-white p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-[400px]">
-                            <h3 className="font-semibold mb-2">Prévisualisation du formulaire</h3>
-                            <div className="text-center text-gray-500 mt-16">
-                                Glissez-déposez des éléments ici pour construire votre formulaire
+                            <div>
+                                <h3 className="font-semibold text-blue-900 mb-1">Interface complète</h3>
+                                <p className="text-sm text-blue-700">Gérer, filtrer et organiser tous vos formulaires</p>
                             </div>
                         </div>
                     </div>
-                </Card>
-            )}
+
+                    <div 
+                        onClick={() => router.push('/formulaire/nouveau')}
+                        className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:border-green-300 cursor-pointer transition-all hover:shadow-md group"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                                <span className="text-2xl">✨</span>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-green-900 mb-1">Créer un formulaire</h3>
+                                <p className="text-sm text-green-700">Assistant de création guidée avec thèmes médicaux</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
