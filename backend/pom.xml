@@ -26,9 +26,7 @@
         <tag/>
         <url/>
     </scm>
-    <properties>
-        <java.version>17</java.version>
-    </properties>
+    <!-- La propriété java.version est déjà héritée du parent -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -93,31 +91,14 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
+            <!-- Le parent Spring Boot gère la version de ce plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
+                    <!-- La configuration pour Lombok est gérée par le parent, plus besoin de l'exclure ici -->
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -1,475 +1,327 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FC, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 
 export default function DashboardMedecin() {
     const router = useRouter();
     const { isAuthenticated, user, logout, isLoading } = useAuth();
-    const [activeTab, setActiveTab] = useState("overview");
+    const [activeTab, setActiveTab] = useState("patients");
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             router.push("/login");
         }
-        // Vérifier que l'utilisateur est bien un médecin
-        if (!isLoading && isAuthenticated && user?.role !== 'medecin') {
-            router.push("/dashboard-chercheur");
-        }
     }, [isAuthenticated, isLoading, user, router]);
 
+    // Affichage pendant le chargement
     if (isLoading) return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
+    
+    // Protection de la route : si l'utilisateur n'est pas authentifié ou n'est pas un médecin, ne rien afficher (la redirection se fera via useEffect)
     if (!isAuthenticated) return null;
     if (user?.role !== 'medecin') return null;
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-blue-50/30 to-indigo-50/50">
             {/* Navigation */}
-            <nav className="bg-white shadow-lg sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex justify-between items-center py-4">
-                        <div className="text-xl font-bold text-blue-600">
-                            MedDataCollect
+            <nav className="glass shadow-eco-lg sticky top-0 z-50 border-b border-white/20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center py-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center">
+                                <span className="text-lg">🌱⚕️</span>
+                            </div>
+                            <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                                MedDataCollect
+                            </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                                Investigateur Coordinateur
+                            <span className="bg-gradient-to-r from-emerald-100 to-blue-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-medium shadow-eco">
+                                🔬 Investigateur d'étude
                             </span>
-                            <span className="text-gray-900 font-medium">{user?.nom}</span>
+                            <span className="text-gray-900 font-medium">{user?.nom ?? 'Dr. Martin'}</span>
                             <button
                                 onClick={logout}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-eco"
                             >
-                                Se déconnecter
+                                🚪 Se déconnecter
                             </button>
                         </div>
                     </div>
                 </div>
             </nav>
 
-            <div className="max-w-7xl mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                    Tableau de Bord - Investigateur Coordinateur
-                </h1>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-eco">
+                        <span className="text-2xl">📊</span>
+                    </div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-blue-700 bg-clip-text text-transparent">
+                        Tableau de Bord - Investigateur d'étude
+                    </h1>
+                </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center hover:shadow-md transition-shadow">
-                        <div className="text-2xl font-bold text-blue-600 mb-2">5</div>
-                        <div className="text-gray-800 text-sm font-medium">Études actives</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center hover:shadow-md transition-shadow">
-                        <div className="text-2xl font-bold text-blue-600 mb-2">12</div>
-                        <div className="text-gray-800 text-sm font-medium">Formulaires créés</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center hover:shadow-md transition-shadow">
-                        <div className="text-2xl font-bold text-blue-600 mb-2">248</div>
-                        <div className="text-gray-800 text-sm font-medium">Patients inclus</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center hover:shadow-md transition-shadow">
-                        <div className="text-2xl font-bold text-blue-600 mb-2">18</div>
-                        <div className="text-gray-800 text-sm font-medium">Investigateurs actifs</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center hover:shadow-md transition-shadow">
-                        <div className="text-2xl font-bold text-blue-600 mb-2">3,842</div>
-                        <div className="text-gray-800 text-sm font-medium">Données collectées</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center hover:shadow-md transition-shadow">
-                        <div className="text-2xl font-bold text-red-600 mb-2">7</div>
-                        <div className="text-gray-800 text-sm font-medium">Feedback en attente</div>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <StatCard label="Patients assignés" value="24" />
+                    <StatCard label="Formulaires à remplir" value="8" />
+                    <StatCard label="En retard" value="3" valueColor="text-red-500" />
+                    <StatCard label="Feedback envoyés" value="5" />
                 </div>
 
                 {/* Tabs */}
                 <div className="border-b border-gray-200 mb-6">
-                    <nav className="flex space-x-8 overflow-x-auto">
-                        {[
-                            { id: "overview", label: "Vue d'ensemble" },
-                            { id: "forms", label: "Gestion des Formulaires" },
-                            { id: "data", label: "Données Collectées" },
-                            { id: "investigators", label: "Investigateurs" },
-                            { id: "feedback", label: "Feedback" },
-                            { id: "dictionary", label: "Dictionnaire de Données" }
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
-                                    ? "border-blue-500 text-blue-600"
-                                    : "border-transparent text-gray-700 hover:text-gray-900 hover:border-gray-300"
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                    <nav className="flex space-x-6">
+                        <TabButton id="patients" activeTab={activeTab} setActiveTab={setActiveTab}>Mes Patients</TabButton>
+                        <TabButton id="forms" activeTab={activeTab} setActiveTab={setActiveTab}>Formulaires à Remplir</TabButton>
+                        <TabButton id="feedback" activeTab={activeTab} setActiveTab={setActiveTab}>Feedback</TabButton>
                     </nav>
                 </div>
 
                 {/* Tab Content */}
-                {activeTab === "overview" && (
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-lg shadow-sm p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-semibold text-gray-900">Activité récente</h2>
-                                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                    Exporter le rapport
-                                </button>
-                            </div>
-
-                            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                                <div className="text-center text-gray-500">
-                                    Graphique d'activité - Données collectées par jour
-                                </div>
-                            </div>
-
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Événement</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilisateur</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Détails</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        <tr className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18/10/2025 14:30</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Nouvelle saisie</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Martin</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">Patient P-2025-0012 - Formulaire J+15</td>
-                                        </tr>
-                                        <tr className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18/10/2025 11:15</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Formulaire validé</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Vous</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">Étude Neurologique Phase II</td>
-                                        </tr>
-                                        <tr className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">17/10/2025 16:45</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Feedback reçu</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Lefebvre</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">Suggestions pour Suivi Post-opératoire</td>
-                                        </tr>
-                                        <tr className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">17/10/2025 09:20</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Nouveau patient inclus</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Bernard</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">Patient P-2025-0024</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Formulaires par statut</h3>
-                                <div className="bg-gray-50 rounded-lg p-6 h-64 flex items-center justify-center">
-                                    <div className="text-center text-gray-500">
-                                        Graphique circulaire - Statut des formulaires
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression des études</h3>
-                                <div className="bg-gray-50 rounded-lg p-6 h-64 flex items-center justify-center">
-                                    <div className="text-center text-gray-500">
-                                        Graphique à barres - Patients par étude
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === "forms" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Mes formulaires</h2>
-                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                Créer un formulaire
-                            </button>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du formulaire</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Étude</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date création</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    <tr className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">Étude Cardio-Vasculaire 2025</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">Cardio-Vasculaire</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">15/10/2025</td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                                Validé
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm space-x-2">
-                                            <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Modifier
-                                            </button>
-                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Voir données
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">Suivi Post-opératoire</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">Chirurgie</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">12/10/2025</td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                En attente
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm space-x-2">
-                                            <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Modifier
-                                            </button>
-                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Soumettre validation
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === "data" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Données agrégées et anonymisées</h2>
-                            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                Exporter toutes les données
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                            <div className="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
-                                <div className="text-2xl mb-2">📊</div>
-                                <h4 className="font-medium">Export CSV</h4>
-                                <p className="text-sm text-gray-600">Données brutes anonymisées</p>
-                            </div>
-                            <div className="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
-                                <div className="text-2xl mb-2">📈</div>
-                                <h4 className="font-medium">Export Excel</h4>
-                                <p className="text-sm text-gray-600">Format tableur avec métadonnées</p>
-                            </div>
-                            <div className="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
-                                <div className="text-2xl mb-2">📋</div>
-                                <h4 className="font-medium">Rapport statistique</h4>
-                                <p className="text-sm text-gray-600">Analyse descriptive des données</p>
-                            </div>
-                            <div className="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
-                                <div className="text-2xl mb-2">🔒</div>
-                                <h4 className="font-medium">Export sécurisé</h4>
-                                <p className="text-sm text-gray-600">Chiffré pour transfert externe</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                            <div className="text-center text-gray-500">
-                                Visualisation des données - Répartition par critères
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === "investigators" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Investigateurs d'étude</h2>
-                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                Assigner un investigateur
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="font-medium">Dr. Martin</h4>
-                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                        Actif
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600 mb-3">Cardiologie - Hôpital Central</p>
-                                <div className="flex justify-between text-center">
-                                    <div>
-                                        <div className="text-lg font-semibold text-blue-600">12</div>
-                                        <div className="text-xs text-gray-500">Patients</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg font-semibold text-blue-600">42</div>
-                                        <div className="text-xs text-gray-500">Saisies</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg font-semibold text-red-600">2</div>
-                                        <div className="text-xs text-gray-500">Retards</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="font-medium">Dr. Lefebvre</h4>
-                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                        Actif
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600 mb-3">Chirurgie - Hôpital Nord</p>
-                                <div className="flex justify-between text-center">
-                                    <div>
-                                        <div className="text-lg font-semibold text-blue-600">8</div>
-                                        <div className="text-xs text-gray-500">Patients</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg font-semibold text-blue-600">28</div>
-                                        <div className="text-xs text-gray-500">Saisies</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg font-semibold text-green-600">0</div>
-                                        <div className="text-xs text-gray-500">Retards</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border border-gray-200 rounded-lg p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="font-medium">Dr. Bernard</h4>
-                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                        Actif
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600 mb-3">Neurologie - Hôpital Est</p>
-                                <div className="flex justify-between text-center">
-                                    <div>
-                                        <div className="text-lg font-semibold text-blue-600">15</div>
-                                        <div className="text-xs text-gray-500">Patients</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg font-semibold text-blue-600">56</div>
-                                        <div className="text-xs text-gray-500">Saisies</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-lg font-semibold text-yellow-600">1</div>
-                                        <div className="text-xs text-gray-500">Retards</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === "feedback" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Feedback des investigateurs</h2>
-                            <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                7 non traités
-                            </span>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investigateur</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priorité</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    <tr className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18/10/2025</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Martin</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Question manquante</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                Moyenne
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                Nouveau
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Traiter
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === "dictionary" && (
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Dictionnaire de données</h2>
-                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                Ajouter une variable
-                            </button>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variable</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contraintes</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    <tr className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">age</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Nombre entier</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">Âge du patient en années</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18-120</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Modifier
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">sexe</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Liste déroulante</td>
-                                        <td className="px-6 py-4 text-sm text-gray-900">Sexe du patient</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">M, F, Autre</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors">
-                                                Modifier
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-            </div>
+                <div>
+                    {activeTab === 'patients' && <PatientsTab />}
+                    {activeTab === 'forms' && <FormsTab />}
+                    {activeTab === 'feedback' && <FeedbackTab />}
+                </div>
+            </main>
         </div>
     );
 }
+
+// --- Composants réutilisables ---
+
+const StatCard: FC<{ label: string; value: string; valueColor?: string }> = ({ label, value, valueColor = "text-emerald-600" }) => (
+    <div className="glass rounded-2xl shadow-eco p-6 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-eco-lg border border-white/20">
+        <div className="text-gray-600 text-sm font-medium">{label}</div>
+        <div className={`text-4xl font-bold mt-3 ${valueColor}`}>{value}</div>
+    </div>
+);
+
+const TabButton: FC<{ id: string; activeTab: string; setActiveTab: (id: string) => void; children: ReactNode }> = ({ id, activeTab, setActiveTab, children }) => (
+    <button
+        onClick={() => setActiveTab(id)}
+        className={`py-2 px-4 font-medium border-b-2 transition-colors ${activeTab === id
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300"
+            }`}
+    >
+        {children}
+    </button>
+);
+
+const Card: FC<{ title: string; action?: ReactNode; children: ReactNode }> = ({ title, action, children }) => (
+    <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="flex justify-between items-center pb-4 mb-4 border-b border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+            {action}
+        </div>
+        <div>{children}</div>
+    </div>
+);
+
+const Badge: FC<{ color: 'green' | 'yellow' | 'red' | 'blue'; children: ReactNode }> = ({ color, children }) => {
+    const colors = {
+        green: "bg-green-100 text-green-800",
+        yellow: "bg-yellow-100 text-yellow-800",
+        red: "bg-red-100 text-red-800",
+        blue: "bg-blue-100 text-blue-800",
+    };
+    return <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${colors[color]}`}>{children}</span>;
+};
+
+// --- Composants d'onglets ---
+
+const PatientsTab = () => (
+    <Card
+        title="Liste de mes patients"
+        action={<input type="text" placeholder="Rechercher un patient..." className="px-3 py-1.5 border border-gray-300 rounded-md w-64" />}
+    >
+        <div className="divide-y divide-gray-200">
+            <PatientItem
+                id="P-2025-0012"
+                inclusionDate="10/10/2025"
+                lastFollowUp="15/10/2025"
+                nextFollowUp="25/10/2025 (J+15) - EN RETARD"
+                isUrgent={true}
+            />
+            <PatientItem
+                id="P-2025-0015"
+                inclusionDate="12/10/2025"
+                lastFollowUp="17/10/2025"
+                nextFollowUp="27/10/2025 (J+15)"
+            />
+            <PatientItem
+                id="P-2025-0020"
+                inclusionDate="18/10/2025"
+                lastFollowUp="-"
+                nextFollowUp="19/10/2025 (J+1)"
+            />
+            <PatientItem
+                id="P-2025-0008"
+                inclusionDate="05/10/2025"
+                lastFollowUp="20/10/2025"
+                status={<Badge color="green">Étude terminée</Badge>}
+                isFinished={true}
+            />
+        </div>
+    </Card>
+);
+
+const PatientItem: FC<{ id: string; inclusionDate: string; lastFollowUp: string; nextFollowUp?: string; status?: ReactNode; isUrgent?: boolean; isFinished?: boolean }> = ({ id, inclusionDate, lastFollowUp, nextFollowUp, status, isUrgent, isFinished }) => (
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4">
+        <div>
+            <h4 className="font-semibold text-gray-800">{id}</h4>
+            <p className="text-sm text-gray-500 mt-1">Inclusion: {inclusionDate} • Dernier suivi: {lastFollowUp}</p>
+            {nextFollowUp && <p className={`text-sm mt-1 ${isUrgent ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>Prochain suivi: {nextFollowUp}</p>}
+            {status && <div className="mt-1">{status}</div>}
+        </div>
+        <div className="flex space-x-2 mt-3 sm:mt-0">
+            <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-md text-sm font-medium transition-colors">Voir historique</button>
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors">
+                {isFinished ? 'Rapport final' : 'Saisir données'}
+            </button>
+        </div>
+    </div>
+);
+
+const FormsTab = () => (
+    <div className="space-y-8">
+        <Card
+            title="Formulaires en attente"
+            action={
+                <select className="px-3 py-1.5 border border-gray-300 rounded-md">
+                    <option>Tous les formulaires</option>
+                    <option>En retard</option>
+                    <option>À venir</option>
+                </select>
+            }
+        >
+            <div className="overflow-x-auto">
+                <table className="min-w-full">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Formulaire</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Échéance</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td className="px-4 py-3 text-sm">P-2025-0012</td>
+                            <td className="px-4 py-3 text-sm">Questionnaire J+15</td>
+                            <td className="px-4 py-3 text-sm text-red-600 font-semibold">25/10/2025</td>
+                            <td className="px-4 py-3"><Badge color="red">En retard</Badge></td>
+                            <td className="px-4 py-3"><button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">Remplir</button></td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-3 text-sm">P-2025-0020</td>
+                            <td className="px-4 py-3 text-sm">Questionnaire initial</td>
+                            <td className="px-4 py-3 text-sm">19/10/2025</td>
+                            <td className="px-4 py-3"><Badge color="yellow">À faire</Badge></td>
+                            <td className="px-4 py-3"><button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">Remplir</button></td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-3 text-sm">P-2025-0015</td>
+                            <td className="px-4 py-3 text-sm">Questionnaire J+15</td>
+                            <td className="px-4 py-3 text-sm">27/10/2025</td>
+                            <td className="px-4 py-3"><Badge color="blue">Planifié</Badge></td>
+                            <td className="px-4 py-3"><button className="bg-gray-300 text-gray-500 px-3 py-1 rounded-md text-sm cursor-not-allowed" disabled>Remplir</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+
+        <Card title="Formulaires validés disponibles">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold">Étude Cardio-Vasculaire 2025</h4>
+                    <p className="text-sm text-gray-500 mt-1">Version: 2.1 • Validé le: 15/10/2025</p>
+                    <button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm">Voir le formulaire</button>
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold">Suivi Post-opératoire</h4>
+                    <p className="text-sm text-gray-500 mt-1">Version: 1.0 • Validé le: 10/10/2025</p>
+                    <button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm">Voir le formulaire</button>
+                </div>
+            </div>
+        </Card>
+    </div>
+);
+
+const FeedbackTab = () => (
+    <div className="space-y-8">
+        <Card title="Nouveau feedback">
+            <form className="space-y-4">
+                <div>
+                    <label htmlFor="feedback-form" className="block text-sm font-medium text-gray-700 mb-1">Formulaire concerné</label>
+                    <select id="feedback-form" className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option>Sélectionner un formulaire</option>
+                        <option>Étude Cardio-Vasculaire 2025</option>
+                        <option>Suivi Post-opératoire</option>
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="feedback-type" className="block text-sm font-medium text-gray-700 mb-1">Type de problème</label>
+                    <select id="feedback-type" className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option>Sélectionner un type</option>
+                        <option>Question manquante</option>
+                        <option>Incohérence dans les questions</option>
+                        <option>Problème de validation</option>
+                        <option>Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="feedback-message" className="block text-sm font-medium text-gray-700 mb-1">Description détaillée</label>
+                    <textarea id="feedback-message" rows={4} placeholder="Décrivez précisément le problème rencontré..." className="w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
+                </div>
+                <div className="text-right">
+                    <button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-4 py-2 rounded-md">Envoyer le feedback</button>
+                </div>
+            </form>
+        </Card>
+
+        <Card title="Historique des feedbacks">
+            <div className="overflow-x-auto">
+                <table className="min-w-full">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Formulaire</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Réponse</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td className="px-4 py-3 text-sm">17/10/2025</td>
+                            <td className="px-4 py-3 text-sm">Étude Cardio-Vasculaire</td>
+                            <td className="px-4 py-3 text-sm">Question manquante</td>
+                            <td className="px-4 py-3"><Badge color="green">Traité</Badge></td>
+                            <td className="px-4 py-3 text-sm">Question ajoutée dans v2.1</td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-3 text-sm">15/10/2025</td>
+                            <td className="px-4 py-3 text-sm">Suivi Post-opératoire</td>
+                            <td className="px-4 py-3 text-sm">Incohérence</td>
+                            <td className="px-4 py-3"><Badge color="yellow">En cours</Badge></td>
+                            <td className="px-4 py-3 text-sm">-</td>
+                        </tr>
+                        <tr>
+                            <td className="px-4 py-3 text-sm">10/10/2025</td>
+                            <td className="px-4 py-3 text-sm">Étude Cardio-Vasculaire</td>
+                            <td className="px-4 py-3 text-sm">Problème de validation</td>
+                            <td className="px-4 py-3"><Badge color="green">Traité</Badge></td>
+                            <td className="px-4 py-3 text-sm">Corrigé dans v2.0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+    </div>
+);

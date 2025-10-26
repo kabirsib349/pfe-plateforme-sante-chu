@@ -4,18 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login as apiLogin, getUserInfo } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
-import { validatePassword } from "@/src/lib/validation";
 
 interface LoginResponse {
     token: string;
 }
+
 export default function Login() {
     const router = useRouter();
     const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,93 +39,91 @@ export default function Login() {
                 setError(err.message || "Une erreur est survenue lors de la connexion.");
             }
         }
-
     };
 
     return (
-        <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
-            <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md border border-gray-100">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Connexion
-                    </h1>
-                    <p className="text-gray-600">Accédez à MedDataCollect</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Champ email */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="email">Adresse email</label>
-                        <input
-                            id="email"
-                            type="email"
-                            placeholder="votre.email@chu.fr"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
-                        <p className="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded">
-                            💡 Comptes de test : <code className="bg-white px-1 rounded">etude@chu.fr</code> ou <code className="bg-white px-1 rounded">admin@chu.fr</code>
-                        </p>
-                    </div>
-
-                    {/* Mot de passe */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="password">Mot de passe</label>
-                        <input
-                            id="password"
-                            type="password"
-                            placeholder="Entrez votre mot de passe"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
-                    </div>
-
-                    {/* 2FA */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">
-                            Code d’authentification à deux facteurs
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Code à 6 chiffres"
-                            maxLength={6}
-                            onChange={(e) => setCode2FA(e.target.value)}
-                            className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                    </div>
-
-                    {/* Message d’erreur */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <p className="text-red-700 text-sm font-medium">{error}</p>
+        <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-indigo-100 p-4 relative overflow-hidden">
+            {/* Éléments décoratifs animés */}
+            <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200 rounded-full opacity-20 animate-float"></div>
+            <div className="absolute bottom-20 right-10 w-24 h-24 bg-blue-200 rounded-full opacity-30 animate-pulse-soft"></div>
+            <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-indigo-200 rounded-full opacity-25 animate-bounce"></div>
+            
+            <div className="flex flex-col items-center justify-center min-h-screen relative z-10">
+                <div className="glass rounded-3xl p-8 w-full max-w-md shadow-eco-lg border border-white/20 animate-fade-in-up">
+                    <div className="text-center mb-8">
+                        {/* Logo eco-friendly */}
+                        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-eco">
+                            <span className="text-2xl">🌱⚕️</span>
                         </div>
-                    )}
-
-                    {/* Bouton */}
-                    <button
-                        type="submit"
-                        aria-label="Se connecter"
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                        Se connecter
-                    </button>
-
-                    <div className="text-center mt-6 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-600 mb-3">
-                            Pas encore de compte ?{' '}
-                            <a href="/register" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                                S'inscrire
-                            </a>
-                        </p>
-                        <a href="#" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                            Mot de passe oublié ?
-                        </a>
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                            Connexion
+                        </h1>
+                        <p className="text-gray-600">Accédez à votre espace MedDataCollect</p>
                     </div>
-                </form>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Champ email */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="email">Adresse email</label>
+                            <input
+                                id="email"
+                                type="email"
+                                placeholder="votre.email@chu.fr"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 bg-white/80 backdrop-blur-sm focus-eco transition-all duration-300 hover:border-emerald-300"
+                            />
+                            <p className="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                                💡 Comptes de test : <code className="bg-white px-1 rounded">etude@chu.fr</code> ou <code className="bg-white px-1 rounded">admin@chu.fr</code>
+                            </p>
+                        </div>
+
+                        {/* Mot de passe */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="password">Mot de passe</label>
+                            <input
+                                id="password"
+                                type="password"
+                                placeholder="Entrez votre mot de passe"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 bg-white/80 backdrop-blur-sm focus-eco transition-all duration-300 hover:border-emerald-300"
+                            />
+                        </div>
+
+                        {/* Message d'erreur */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <p className="text-red-700 text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Bouton amélioré */}
+                        <button
+                            type="submit"
+                            aria-label="Se connecter"
+                            className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco"
+                        >
+                            <span className="flex items-center justify-center gap-2">
+                                🔐 Se connecter
+                            </span>
+                        </button>
+
+                        <div className="text-center mt-6 pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-600 mb-3">
+                                Pas encore de compte ?{' '}
+                                <a href="/register" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                                    S'inscrire
+                                </a>
+                            </p>
+                            <a href="#" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                Mot de passe oublié ?
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </main>
     );
