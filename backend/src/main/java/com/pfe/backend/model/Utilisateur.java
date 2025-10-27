@@ -14,7 +14,7 @@ import jakarta.persistence.GenerationType;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="utilisateur")
+@Table(name="\"Utilisateur\"")
 @Getter
 @Setter
 public class Utilisateur {

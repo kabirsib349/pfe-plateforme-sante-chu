@@ -6,6 +6,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
+import { Card } from "@/src/components/Card";
 
 export default function Dashboard() {
     const router = useRouter();
@@ -67,7 +68,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
                     <StatCard label="Études actives" value="5" />
                     <StatCard label="Formulaires créés" value="12" />
                     <StatCard label="Patients inclus" value="248" />
@@ -103,16 +104,6 @@ export default function Dashboard() {
 }
 
 // --- Composants réutilisables ---
-
-const Card: FC<{ title: string; action?: ReactNode; children: ReactNode; className?: string }> = ({ title, action, children, className }) => (
-    <div className={`bg-white rounded-lg shadow p-6 mb-6 ${className}`}>
-        <div className="flex justify-between items-center pb-4 mb-4 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
-            {action}
-        </div>
-        <div>{children}</div>
-    </div>
-);
 
 
 

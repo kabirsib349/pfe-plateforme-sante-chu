@@ -48,7 +48,7 @@ export const Card: FC<CardProps> = ({
               )}
             </div>
           </div>
-          {action}
+          {action && <div className="flex-shrink-0">{action}</div>}
         </div>
       )}
       <div className="p-6">

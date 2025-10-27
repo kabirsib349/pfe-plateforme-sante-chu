@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, EyeIcon, ClipboardDocumentListIcon, CalendarDaysIcon, HashtagIcon, DocumentTextIcon, CheckCircleIcon, UserIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 
@@ -29,7 +29,7 @@ interface FormulaireApercu {
   champs: ChampFormulaire[];
 }
 
-export default function ApercuFormulaire() {
+function ApercuFormulaireContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const formulaireId = searchParams.get('id');
@@ -371,5 +371,20 @@ export default function ApercuFormulaire() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ApercuFormulaire() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement de l'aperçu...</p>
+        </div>
+      </div>
+    }>
+      <ApercuFormulaireContent />
+    </Suspense>
   );
 }
