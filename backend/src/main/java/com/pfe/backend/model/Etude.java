@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"Etude\"")
+@Table(name = "etude")
 @Getter
 @Setter
 public class Etude {
@@ -24,7 +24,7 @@ public class Etude {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
     
-    @Column(name = "domaine")
+    @Column(name = "domaine", length = 100)
     private String domaine;
 
     @Column(name = "date_debut")

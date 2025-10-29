@@ -2,6 +2,7 @@
 .idea/
 .vscode/
 *.iml
+Periope/
 
 # Build artifacts
 target/

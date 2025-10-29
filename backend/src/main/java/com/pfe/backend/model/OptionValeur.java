@@ -1,11 +1,12 @@
 package com.pfe.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "\"Optionvaleur\"")
+@Table(name = "optionvaleur")
 @Getter
 @Setter
 public class OptionValeur {
@@ -17,11 +18,12 @@ public class OptionValeur {
 
     @ManyToOne
     @JoinColumn(name = "id_liste_valeur", nullable = false)
+    @JsonBackReference
     private ListeValeur listeValeur;
 
-    @Column(name = "valeur")
+    @Column(name = "valeur", length = 100)
     private String valeur;
 
-    @Column(name = "libelle")
+    @Column(name = "libelle", length = 255)
     private String libelle;
 }

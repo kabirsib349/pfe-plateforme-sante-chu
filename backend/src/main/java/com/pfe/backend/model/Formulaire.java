@@ -1,5 +1,6 @@
 package com.pfe.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "\"Formulaire\"")  
+@Table(name = "formulaire")  
 @Getter
 @Setter
 public class Formulaire {
@@ -42,6 +43,7 @@ public class Formulaire {
     private Etude etude;
 
     @OneToMany(mappedBy = "formulaire", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Champ> champs;
 
     @PrePersist
