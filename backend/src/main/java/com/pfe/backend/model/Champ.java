@@ -1,11 +1,12 @@
 package com.pfe.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "\"Champ\"")
+@Table(name = "champ")
 @Getter
 @Setter
 public class Champ {
@@ -17,6 +18,7 @@ public class Champ {
 
     @ManyToOne
     @JoinColumn(name = "id_formulaire", nullable = false)
+    @JsonBackReference
     private Formulaire formulaire;
 
     @Column(name = "label", nullable = false)
@@ -25,7 +27,7 @@ public class Champ {
     @Column(name = "type", length = 30)
     private TypeChamp type;
 
-    @Column(name = "obligatoire")
+    @Column(name = "obligatoire", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean obligatoire;
 
     @Column(name = "valeur_min")
@@ -34,7 +36,7 @@ public class Champ {
     @Column(name = "valeur_max")
     private Float valeurMax;
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "id_liste_valeur")
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "id_liste_valeur", foreignKey = @ForeignKey(name = "fk_liste_valeur"))
     private ListeValeur listeValeur;
 }

@@ -14,7 +14,7 @@ import jakarta.persistence.GenerationType;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="\"Utilisateur\"")
+@Table(name="utilisateur")
 @Getter
 @Setter
 public class Utilisateur {
@@ -33,7 +33,7 @@ public class Utilisateur {
     @Column(name="mot_de_passe",nullable=false)
     private String motDePasse;
 
-    @Column(name="date_creation",updatable=false)
+    @Column(name="date_creation",updatable=false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime dateCreation;
 
     @Column(name="derniere_connexion")

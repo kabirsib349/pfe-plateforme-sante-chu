@@ -36,6 +36,9 @@ export const MESSAGES = {
     aucunFormulaire: 'Aucun formulaire trouvé. Créez votre premier formulaire pour commencer.',
     aucunResultat: 'Aucun formulaire ne correspond à vos critères de recherche.',
     chargementEnCours: 'Chargement en cours...',
-    sauvegardeEnCours: 'Sauvegarde en cours...'
+    sauvegardeEnCours: 'Sauvegarde en cours...',
+    premierFormulaire: 'Commencez par créer votre premier formulaire !',
+    aucuneActivite: 'Aucune activité récente. Créez votre premier formulaire pour commencer !',
+    statistiquesVides: 'Vos statistiques apparaîtront ici une fois que vous aurez créé des formulaires.'
   }
 } as const;
