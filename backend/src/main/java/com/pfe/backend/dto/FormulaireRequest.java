@@ -10,7 +10,8 @@ import java.util.List;
 public class FormulaireRequest {
     private String titre;
     private String description;
-    private Long idEtude;
+    private String titreEtude;
+    private String descriptionEtude;
     private String statut;
     private List<ChampRequest> champs;
 }

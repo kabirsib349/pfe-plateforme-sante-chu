@@ -22,3 +22,33 @@ export const validatePassword = (password: string): string | null => {
     }
     return null
 };
+
+/**
+ * Valide un nom de variable selon les règles du dictionnaire de données
+ * @param nomVariable Le nom de variable à valider
+ * @param existingVariables Liste des noms de variables existants pour vérifier l'unicité
+ * @returns Un message d'erreur si la validation échoue, sinon null
+ */
+export const validateNomVariable = (nomVariable: string, existingVariables: string[] = []): string | null => {
+    if (!nomVariable.trim()) {
+        return "Le nom de variable est obligatoire";
+    }
+    
+    if (nomVariable.length > 25) {
+        return "Le nom de variable ne doit pas dépasser 25 caractères";
+    }
+    
+    if (!/^[A-Z0-9_]+$/.test(nomVariable)) {
+        return "Le nom de variable doit contenir uniquement des majuscules, chiffres et underscores";
+    }
+    
+    if (nomVariable !== nomVariable.toUpperCase()) {
+        return "Le nom de variable doit être en majuscules";
+    }
+    
+    if (existingVariables.includes(nomVariable)) {
+        return "Ce nom de variable existe déjà";
+    }
+    
+    return null;
+};

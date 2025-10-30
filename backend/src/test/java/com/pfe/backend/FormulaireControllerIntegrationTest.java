@@ -19,7 +19,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +35,7 @@ import static org.hamcrest.Matchers.notNullValue;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-// @ActiveProfiles("test") // 🎯 Commenté pour utiliser PostgreSQL au lieu de H2
+// @ActiveProfiles("test") // Commenté pour utiliser PostgreSQL au lieu de H2
 public class FormulaireControllerIntegrationTest {
 
     @Autowired
@@ -114,7 +113,8 @@ public class FormulaireControllerIntegrationTest {
         request.setTitre("Formulaire de test");
         request.setDescription("Description du formulaire de test");
         request.setStatut("BROUILLON");
-        request.setIdEtude(testEtude.getIdEtude());
+        request.setTitreEtude("Étude de test");
+        request.setDescriptionEtude("Description de l'étude de test");
         request.setChamps(List.of(champTexte, champChoixMultiple));
 
         // Act & Assert

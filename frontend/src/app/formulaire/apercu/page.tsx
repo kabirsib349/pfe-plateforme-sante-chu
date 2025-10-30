@@ -8,14 +8,13 @@ import { ArrowLeftIcon, EyeIcon, ClipboardDocumentListIcon, CalendarDaysIcon, Ha
 interface ChampFormulaire {
   nomVariable: string;
   question: string;
-  type: 'TEXTE' | 'TEXTE_LONG' | 'NOMBRE' | 'DATE' | 'CHOIX_UNIQUE' | 'CHOIX_MULTIPLE' | 'ECHELLE' | 'CALCULE';
+  type: 'TEXTE' | 'NOMBRE' | 'DATE' | 'CHOIX_MULTIPLE';
   obligatoire: boolean;
   options?: string[];
   codesModalites?: string[];
   unite?: string;
   valeurMin?: number;
   valeurMax?: number;
-  formuleCalcul?: string;
 }
 
 interface FormulaireApercu {
@@ -33,72 +32,103 @@ function ApercuFormulaireContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const formulaireId = searchParams.get('id');
+  const [formulaire, setFormulaire] = React.useState<FormulaireApercu | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  // Données mockées pour l'instant (sera remplacé par API call)
-  const formulaire: FormulaireApercu = {
-    idFormulaire: 1,
-    titre: "Protocole Évaluation Cardiovasculaire",
-    description: "Formulaire de suivi post-opératoire pour patients cardiaques",
-    etude: "CARDIO-2025",
-    createurNom: "Dr. Marie Dubois",
-    statut: "PUBLIE",
-    dateCreation: "2025-10-15",
-    champs: [
-      {
-        nomVariable: "AGE_PATIENT",
-        question: "Quel est l'âge du patient en années complètes ?",
-        type: "NOMBRE",
-        obligatoire: true,
-        unite: "ans",
-        valeurMin: 0,
-        valeurMax: 120
-      },
-      {
-        nomVariable: "POIDS_KG",
-        question: "Poids du patient",
-        type: "NOMBRE",
-        obligatoire: true,
-        unite: "kg",
-        valeurMin: 1,
-        valeurMax: 300
-      },
-      {
-        nomVariable: "DIABETIQUE",
-        question: "Le patient est-il diabétique ?",
-        type: "CHOIX_UNIQUE",
-        obligatoire: true,
-        options: ["Oui", "Non", "Ne sait pas"],
-        codesModalites: ["1", "0", "9"]
-      },
-      {
-        nomVariable: "DOULEUR_ECHELLE",
-        question: "Niveau de douleur ressentie (échelle de 1 à 10)",
-        type: "ECHELLE",
-        obligatoire: false,
-        valeurMin: 1,
-        valeurMax: 10
-      },
-      {
-        nomVariable: "IMC_CALCULE",
-        question: "Indice de Masse Corporelle (calculé automatiquement)",
-        type: "CALCULE",
-        obligatoire: false,
-        formuleCalcul: "POIDS_KG/(TAILLE_CM/100)^2"
+  React.useEffect(() => {
+    const fetchFormulaire = async () => {
+      if (!formulaireId) {
+        setError('ID de formulaire manquant');
+        setIsLoading(false);
+        return;
       }
-    ]
-  };
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setFormulaire({
+            idFormulaire: data.idFormulaire,
+            titre: data.titre,
+            description: data.description || '',
+            etude: data.etude?.titre || 'N/A',
+            createurNom: data.chercheur?.nom || 'N/A',
+            statut: data.statut,
+            dateCreation: data.dateCreation,
+            champs: data.champs?.map((champ: any) => ({
+              nomVariable: champ.label?.toUpperCase().replace(/\s+/g, '_') || 'VARIABLE',
+              question: champ.label,
+              type: champ.type?.toUpperCase() || 'TEXTE',
+              obligatoire: champ.obligatoire || false,
+              options: champ.listeValeur?.options?.map((opt: any) => opt.libelle) || [],
+              codesModalites: champ.listeValeur?.options?.map((opt: any) => opt.valeur) || [],
+              unite: champ.unite,
+              valeurMin: champ.valeurMin,
+              valeurMax: champ.valeurMax
+            })) || []
+          });
+        } else {
+          setError('Formulaire non trouvé');
+        }
+      } catch (err) {
+        setError('Erreur lors du chargement du formulaire');
+        console.error('Erreur:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFormulaire();
+  }, [formulaireId, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement de l'aperçu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !formulaire) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error || 'Formulaire non trouvé'}</p>
+          <button 
+            onClick={() => router.push('/formulaire')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Retour aux formulaires
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
 
   const renderChampPreview = (champ: ChampFormulaire, index: number) => {
     const getTypeIcon = (type: string) => {
       switch (type) {
         case 'TEXTE': return <DocumentTextIcon className="w-4 h-4 text-blue-600" />;
-        case 'TEXTE_LONG': return <DocumentTextIcon className="w-4 h-4 text-blue-600" />;
         case 'NOMBRE': return <HashtagIcon className="w-4 h-4 text-green-600" />;
         case 'DATE': return <CalendarDaysIcon className="w-4 h-4 text-purple-600" />;
-        case 'CHOIX_UNIQUE': return <CheckCircleIcon className="w-4 h-4 text-orange-600" />;
-        case 'CHOIX_MULTIPLE': return <ClipboardDocumentListIcon className="w-4 h-4 text-orange-600" />;
-        case 'ECHELLE': return <div className="w-4 h-4 bg-indigo-600 rounded text-xs text-white flex items-center justify-center">═</div>;
-        case 'CALCULE': return <div className="w-4 h-4 bg-gray-600 rounded text-xs text-white flex items-center justify-center">f(x)</div>;
+        case 'CHOIX_MULTIPLE': return <CheckCircleIcon className="w-4 h-4 text-orange-600" />;
         default: return <DocumentTextIcon className="w-4 h-4 text-gray-600" />;
       }
     };
@@ -137,15 +167,6 @@ function ApercuFormulaireContent() {
             />
           )}
 
-          {champ.type === 'TEXTE_LONG' && (
-            <textarea 
-              placeholder="Saisie de texte long..."
-              rows={3}
-              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-              disabled
-            />
-          )}
-
           {champ.type === 'NOMBRE' && (
             <div className="flex items-center gap-2">
               <input 
@@ -175,7 +196,7 @@ function ApercuFormulaireContent() {
             />
           )}
 
-          {champ.type === 'CHOIX_UNIQUE' && (
+          {champ.type === 'CHOIX_MULTIPLE' && (
             <div className="space-y-2">
               {champ.options?.map((option, idx) => (
                 <label key={idx} className="flex items-center gap-2 text-gray-700">
@@ -196,67 +217,20 @@ function ApercuFormulaireContent() {
               ))}
             </div>
           )}
-
-          {champ.type === 'CHOIX_MULTIPLE' && (
-            <div className="space-y-2">
-              {champ.options?.map((option, idx) => (
-                <label key={idx} className="flex items-center gap-2 text-gray-700">
-                  <input 
-                    type="checkbox" 
-                    value={champ.codesModalites?.[idx] || idx.toString()}
-                    className="text-blue-600"
-                    disabled
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          )}
-
-          {champ.type === 'ECHELLE' && (
-            <div className="space-y-2">
-              <input 
-                type="range" 
-                min={champ.valeurMin || 1} 
-                max={champ.valeurMax || 10}
-                className="w-64"
-                disabled
-              />
-              <div className="flex justify-between text-sm text-gray-600 w-64">
-                <span>{champ.valeurMin || 1}</span>
-                <span>{Math.floor(((champ.valeurMax || 10) + (champ.valeurMin || 1)) / 2)}</span>
-                <span>{champ.valeurMax || 10}</span>
-              </div>
-            </div>
-          )}
-
-          {champ.type === 'CALCULE' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-              <div className="flex items-center gap-2">
-                <InformationCircleIcon className="w-4 h-4 text-blue-600" />
-                <span className="text-sm text-blue-800 font-medium">
-                  Champ calculé automatiquement
-                </span>
-              </div>
-              {champ.formuleCalcul && (
-                <p className="text-xs text-blue-700 mt-1">
-                  Formule: {champ.formuleCalcul}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
     );
   };
 
   const getStatutBadge = (statut: string) => {
-    switch (statut) {
-      case 'BROUILLON':
+    switch (statut?.toLowerCase()) {
+      case 'brouillon':
         return <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-medium">Brouillon</span>;
-      case 'PUBLIE':
-        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Publié</span>;
-      case 'ARCHIVE':
+      case 'envoye':
+      case 'envoyé':
+        return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Envoyé</span>;
+      case 'archive':
+      case 'archivé':
         return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">Archivé</span>;
       default:
         return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">{statut}</span>;
