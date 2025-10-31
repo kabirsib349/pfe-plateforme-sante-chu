@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { TYPES_ETUDES } from "@/src/constants/etudes";
 import { MESSAGES } from "@/src/constants/messages";
 import { ToastContainer } from "@/src/components/ToastContainer";
@@ -35,6 +35,8 @@ export default function Formulaire() {
     const [statusFilter, setStatusFilter] = useState("");
     const [formulaires, setFormulaires] = useState<FormulaireAPI[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [formulaireToDelete, setFormulaireToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchFormulaires = async () => {
@@ -88,31 +90,44 @@ export default function Formulaire() {
         router.push(`/formulaire/modifier/${id}`);
     };
 
-    const handleDelete = async (id: number) => {
-        if (confirm(MESSAGES.confirmation.supprimerFormulaire)) {
-            if (!token) {
-                showToast("Authentification requise.", "error");
-                return;
-            }
-            try {
-                const response = await fetch(`http://localhost:8080/api/formulaires/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+    const openDeleteModal = (id: number) => {
+        setFormulaireToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
 
-                if (response.ok) {
-                    setFormulaires(formulaires.filter(f => f.idFormulaire !== id));
-                    showToast(MESSAGES.success.formulaireSupprime, "success");
-                    triggerStatsRefresh(); // Rafraîchir les stats
-                } else {
-                    showToast(MESSAGES.error.suppression, "error");
-                }
-            } catch (error) {
-                console.error("Erreur réseau:", error);
-                showToast(MESSAGES.error.reseau, "error");
+    const closeDeleteModal = () => {
+        setFormulaireToDelete(null);
+        setIsDeleteModalOpen(false);
+    };
+
+    const confirmDelete = async () => {
+        if (formulaireToDelete === null) return;
+
+        if (!token) {
+            showToast("Authentification requise.", "error");
+            closeDeleteModal();
+            return;
+        }
+        try {
+            const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                setFormulaires(formulaires.filter(f => f.idFormulaire !== formulaireToDelete));
+                showToast(MESSAGES.success.formulaireSupprime, "success");
+                triggerStatsRefresh(); // Rafraîchir les stats
+            } else {
+                showToast(MESSAGES.error.suppression, "error");
             }
+        } catch (error) {
+            console.error("Erreur réseau:", error);
+            showToast(MESSAGES.error.reseau, "error");
+        } finally {
+            closeDeleteModal();
         }
     };
 
@@ -172,7 +187,35 @@ export default function Formulaire() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gray-100 relative">
+            {/* Bannière de confirmation de suppression */}
+            {isDeleteModalOpen && (
+                <div className="fixed top-5 left-1/2 -translate-x-1/2 w-full max-w-md z-50">
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <ExclamationCircleIcon className="h-6 w-6 text-red-500 flex-shrink-0" />
+                                <p className="text-sm font-medium text-gray-800">Êtes-vous sûr de vouloir supprimer ce formulaire ?</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                                <button
+                                    onClick={confirmDelete}
+                                    className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                                >
+                                    Supprimer
+                                </button>
+                                <button
+                                    onClick={closeDeleteModal}
+                                    className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+                                >
+                                    <XMarkIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -314,7 +357,7 @@ export default function Formulaire() {
                                         Modifier
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(formulaire.idFormulaire)}
+                                        onClick={() => openDeleteModal(formulaire.idFormulaire)}
                                         className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 ..."
                                         title="Supprimer le formulaire"
                                     >

@@ -207,8 +207,10 @@ export default function ModifierFormulaire() {
           ? 'Formulaire modifié et sauvegardé comme brouillon !'
           : 'Formulaire modifié et publié avec succès !';
         showToast(message, 'success');
-        triggerStatsRefresh(); // Rafraîchir les stats
-        // Pas de redirection automatique - l'utilisateur reste sur la page
+        triggerStatsRefresh();
+        setTimeout(() => {
+          router.push('/formulaire');
+        }, 1500); // Redirection après 1.5 secondes
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Réponse invalide du serveur' }));
         console.error('Erreur de l\'API:', errorData);
@@ -248,7 +250,7 @@ export default function ModifierFormulaire() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => router.back()} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              <button onClick={() => router.push('/formulaire')} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                 Retour
               </button>
               <button onClick={() => sauvegarderFormulaire('BROUILLON')} disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50">

@@ -264,7 +264,7 @@ function ApercuFormulaireContent() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push('/formulaire')}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeftIcon className="w-5 h-5" />
@@ -330,7 +330,7 @@ function ApercuFormulaireContent() {
               Sauvegarder (Aperçu)
             </button>
             <button 
-              onClick={() => router.back()}
+              onClick={() => router.push('/formulaire')}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors cursor-pointer"
             >
               Annuler (Aperçu)
