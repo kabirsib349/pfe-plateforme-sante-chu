@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FormulaireRepository extends JpaRepository<Formulaire, Long> {
@@ -17,7 +18,16 @@ public interface FormulaireRepository extends JpaRepository<Formulaire, Long> {
            "LEFT JOIN FETCH c.listeValeur " +
            "WHERE f.chercheur.email = :email")
     List<Formulaire> findAllWithChampsByChercheurEmail(@Param("email") String email);
-    
+
+    @Query("SELECT f FROM Formulaire f " +
+           "LEFT JOIN FETCH f.champs c " +
+           "LEFT JOIN FETCH c.listeValeur " +
+           "WHERE f.idFormulaire = :id")
+    Optional<Formulaire> findByIdWithChamps(@Param("id") Long id);
+
+    Optional<Formulaire> findByIdFormulaire(Long idFormulaire);
+
+
     @Query("SELECT COUNT(f) FROM Formulaire f WHERE f.chercheur.email = :email")
     long countByUserEmail(@Param("email") String email);
     

@@ -330,8 +330,8 @@ function ApercuFormulaireContent() {
               Sauvegarder (Aperçu)
             </button>
             <button 
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium opacity-50 cursor-not-allowed"
-              disabled
+              onClick={() => router.back()}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors cursor-pointer"
             >
               Annuler (Aperçu)
             </button>

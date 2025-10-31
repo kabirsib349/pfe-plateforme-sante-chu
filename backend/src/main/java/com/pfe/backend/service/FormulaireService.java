@@ -101,10 +101,28 @@ public class FormulaireService {
 
         return formulaires;
     }
+    
+    @Transactional(readOnly = true)
     public Formulaire getFormulaireById(Long id) {
-        return formulaireRepository.findById(id)
+        // 1. Récupérer le formulaire avec ses champs et listes (mais sans les options)
+        Formulaire formulaire = formulaireRepository.findByIdWithChamps(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
+
+        // 2. Récupérer les listes de valeurs qui ne sont pas null
+        List<ListeValeur> listes = formulaire.getChamps().stream()
+                .map(Champ::getListeValeur)
+                .filter(lv -> lv != null)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 3. Si des listes existent, charger leurs options dans une seconde requête
+        if (!listes.isEmpty()) {
+            listeValeurRepository.findWithFetchedOptions(listes);
+        }
+
+        return formulaire;
     }
+
 
     @Transactional
     public Formulaire updateFormulaire(Long id, FormulaireRequest request, String userEmail) {
@@ -165,6 +183,7 @@ public class FormulaireService {
             for (ChampRequest champRequest : champsRequest) {
                 Champ champ = new Champ();
                 champ.setLabel(champRequest.getLabel());
+                champ.setUnite(champRequest.getUnite());
                 champ.setObligatoire(champRequest.isObligatoire());
                 champ.setValeurMin(champRequest.getValeurMin());
                 champ.setValeurMax(champRequest.getValeurMax());

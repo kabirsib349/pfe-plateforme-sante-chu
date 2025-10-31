@@ -10,6 +10,7 @@ import java.util.List;
 public class ChampRequest {
     private String label;
     private String type;
+    private String unite; // AJOUT DE CETTE LIGNE
     private boolean obligatoire;
     private Float valeurMin;
     private Float valeurMax;
