@@ -27,6 +27,9 @@ public class Champ {
     @Column(name = "type", length = 30)
     private TypeChamp type;
 
+    @Column(name = "unite", length = 50) // AJOUT DE CETTE LIGNE
+    private String unite;                 // AJOUT DE CETTE LIGNE
+
     @Column(name = "obligatoire", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean obligatoire;
 
