@@ -81,6 +81,7 @@ export default function ModifierFormulaire() {
             })),
             valeurMin: champ.valeurMin,
             valeurMax: champ.valeurMax,
+            unite: champ.unite || '', // Assurer que unite est toujours une chaîne
           }));
           
           setChamps(champsConverts);
@@ -102,13 +103,13 @@ export default function ModifierFormulaire() {
 
   const ajouterChamp = (type: TypeChamp) => {
     const nouveauChamp: ChampFormulaire = {
-      id: Date.now().toString(),
+      id: `new-${Date.now().toString()}`,
       type,
       nomVariable: '',
       question: '',
       obligatoire: false,
       options: type === 'choix_multiple' ? [{ libelle: 'Oui', valeur: '1' }, { libelle: 'Non', valeur: '0' }] : undefined,
-      unite: type === 'nombre' ? '' : undefined,
+      unite: '', // Toujours initialiser comme une chaîne vide
     };
     setChamps([...champs, nouveauChamp]);
     setModeAjout(false);
@@ -179,12 +180,14 @@ export default function ModifierFormulaire() {
       titreEtude: titreEtude,
       descriptionEtude: `Étude concernant le formulaire : ${nomFormulaire}`,
       champs: champs.map(champ => ({
+        id: champ.id.startsWith('new-') ? null : champ.id, // Envoyer null pour les nouveaux champs
         label: champ.question,
         type: champ.type.toUpperCase(),
         obligatoire: champ.obligatoire,
         valeurMin: champ.valeurMin,
         valeurMax: champ.valeurMax,
-        nomListeValeur: champ.type === 'choix_multiple' && champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
+        unite: champ.unite || '',
+        nomListeValeur: champ.type === 'choix_multiple' ? `LISTE_${champ.nomVariable || champ.id}` : undefined,
         options: champ.options,
       })),
     };
