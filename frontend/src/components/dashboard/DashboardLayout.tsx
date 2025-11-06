@@ -60,7 +60,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {title}
             </h1>
             {subtitle && (
-              <p className="text-gray-600 mt-1">{subtitle}</p>
+              <p className="text-gray-800 mt-1">{subtitle}</p>
             )}
           </div>
         </div>

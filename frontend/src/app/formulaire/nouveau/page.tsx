@@ -48,11 +48,14 @@ export default function NouveauFormulaire() {
           icon: UserIcon,
           champs: [
             { 
-              type: 'choix_multiple' as TypeChamp, 
+              type: 'choix_unique' as TypeChamp, 
               question: 'Sexe', 
               nomVariable: 'SEXE',
               obligatoire: true, 
-              options: ['Masculin', 'Féminin'].map((opt, i) => ({libelle: opt, valeur: ['0', '1'][i]}))
+              options: [
+                {libelle: 'Masculin', valeur:'0'},
+                {libelle: 'Féminin', valeur:'1'}
+              ]
             },
             { 
               type: 'nombre' as TypeChamp, 
@@ -75,6 +78,14 @@ export default function NouveauFormulaire() {
               unite: 'kg',
               obligatoire: true 
             },
+            { 
+              type: 'calcule' as TypeChamp, 
+              question: 'IMC', 
+              nomVariable: 'IMC',
+              obligatoire: true,
+              formuleCalcul: 'POIDS/(TAILLE^2)',
+              champsRequis: ['POIDS', 'TAILLE']
+            },
              { 
               type: 'nombre' as TypeChamp, 
               question: 'ASA', 
@@ -88,7 +99,11 @@ export default function NouveauFormulaire() {
               question: 'Type de chirurgie prevue', 
               nomVariable: 'CHIRURGIE_PROGRAMMEE',
               obligatoire: true,
-              options: ['PTH', 'PTG', 'PUC'].map((opt, i) => ({libelle: opt, valeur: ['1', '2', '3'][i]}))
+              options: [
+                { libelle: 'PTH', valeur: '1' },
+                { libelle: 'PTG', valeur: '2' },
+                { libelle: 'PUC', valeur: '3' }
+              ]
             }
           ]
         },
@@ -98,17 +113,78 @@ export default function NouveauFormulaire() {
           icon: ClipboardDocumentListIcon,
           champs: [
             { 
-              type: 'choix_multiple' as TypeChamp, 
+              type: 'choix_unique' as TypeChamp, 
               question: 'Traitement antiplaquettaire',
               nomVariable: 'ANTI_AGG_PLAQ',
               obligatoire: true, 
-              options: ['Oui', 'Non'].map((opt, i) => ({libelle: opt, valeur: ['1', '0'][i]}))
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
             },
             { 
               type: 'texte' as TypeChamp, 
               question: 'Nom du traitement antiplaquettaire le cas échéant', 
               nomVariable: 'ANTI_AGG_PLAQ_CPL',
               obligatoire: true
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Traitement Beta-bloquant',
+              nomVariable: 'BETA_BLOQUANT',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+            { 
+              type: 'texte' as TypeChamp, 
+              question: 'Nom du traitement beta-bloquant le cas échéant', 
+              nomVariable: 'BETA_BLOQUANT_CPL',
+              obligatoire: true
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Chimiothérapie',
+              nomVariable: 'CHIMIOTHERAPIE',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+            { 
+              type: 'texte' as TypeChamp, 
+              question: 'Nom de la chimiothérapie le cas échéant', 
+              nomVariable: 'CHIMIOTHERAPIE_CPL',
+              obligatoire: true
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Autres traitements habituels',
+              nomVariable: 'AUTRES_TTT',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+            { 
+              type: 'texte' as TypeChamp, 
+              question: 'Nom des autres traitements le cas échéant', 
+              nomVariable: 'AUTRES_TTT_CPL',
+              obligatoire: true
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Antécédents cardiovasculaires', 
+              nomVariable: 'ATCD_CV',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
             },
           ]
         },
@@ -118,11 +194,14 @@ export default function NouveauFormulaire() {
           icon: BuildingOffice2Icon,
           champs: [
             { 
-              type: 'choix_multiple' as TypeChamp, 
+              type: 'choix_unique' as TypeChamp, 
               question: 'Lieu avant le séjour à l\'hôpital', 
               nomVariable: 'PROVENANCE',
               obligatoire: true,
-              options: ['DOMICILE', 'AUTRE ETABLISSEMENT'].map((opt, i) => ({libelle: opt, valeur: ['1', '2'][i]}))
+              options: [
+                { libelle: 'DOMICILE', valeur: '1' },
+                { libelle: 'AUTRE ETABLISSEMENT', valeur: '2' }
+              ]
             },
             { 
               type: 'date' as TypeChamp, 
@@ -130,7 +209,29 @@ export default function NouveauFormulaire() {
               nomVariable: 'DATE_ENTREE',
               obligatoire: true
             },
-          ]
+            { 
+              type: 'choix_multiple' as TypeChamp, 
+              question: 'Lieu après le séjour à l\'hôpital', 
+              nomVariable: 'DESTINATION',
+              obligatoire: true,
+              options: [
+                { libelle: 'DOMICILE', valeur: '1' },
+                { libelle: 'AUTRE ETABLISSEMENT', valeur: '2' },
+                { libelle: 'SSR', valeur: '3' },
+                { libelle: 'HAD', valeur: '4' }
+              ]
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Parcours RAAC', 
+              nomVariable: 'RAAC',
+              obligatoire: true,
+              options: [
+                { libelle: 'OUI', valeur: '1' },
+                { libelle: 'NON', valeur: '0' }
+              ]
+            },
+          ] 
         },
         {
           nom: "CONSULTATION",
@@ -161,7 +262,10 @@ export default function NouveauFormulaire() {
               question: 'Bilan', 
               nomVariable: 'BILAN',
               obligatoire: true,
-              options: ['En Ville', 'ETBS'].map((opt, i) => ({libelle: opt, valeur: ['1', '2'][i]}))
+              options: [
+                { libelle: 'En Ville', valeur: '1' },
+                { libelle: 'ETBS', valeur: '2' }
+              ]
             },
             { 
               type: 'nombre' as TypeChamp, 
@@ -169,6 +273,191 @@ export default function NouveauFormulaire() {
               nomVariable: 'PREOP_FERRI',
               unite: 'mmHg',
               obligatoire: true
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Fréquence cardiaque', 
+              nomVariable: 'FC',
+              unite: 'bpm',
+              obligatoire: false 
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Température corporelle', 
+              nomVariable: 'TEMPERATURE',
+              unite: '°C',
+              obligatoire: false 
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Échelle de douleur', 
+              nomVariable: 'DOULEUR',
+              obligatoire: false, 
+              valeurMin: 0, 
+              valeurMax: 10 
+            }
+          ]
+        },
+        {
+          nom: "PER OPERATOIRE",
+          description: "Données per-opératoires",
+          icon: ClipboardDocumentListIcon,
+          champs: [
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Type d\'anesthésie',
+              nomVariable: 'TYPE_ANESTHESIE',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Générale', valeur: '1' },
+                { libelle: 'Péridurale', valeur: '2' },
+                { libelle: 'Rachianesthésie', valeur: '3' }
+              ]
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Durée de l\'intervention', 
+              nomVariable: 'DUREE_INTERVENTION',
+              unite: 'minutes',
+              obligatoire: true
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Complications per-opératoires',
+              nomVariable: 'COMPLICATIONS_PEROP',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+          ]
+        },
+        {
+          nom: "POST OPERATOIRE",
+          description: "Suivi post-opératoire immédiat",
+          icon: ClipboardDocumentListIcon,
+          champs: [
+            { 
+              type: 'date' as TypeChamp, 
+              question: 'Date de sortie de salle de réveil',
+              nomVariable: 'DATE_SORTIE_SR',
+              obligatoire: true
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Score de douleur à la sortie', 
+              nomVariable: 'DOULEUR_SORTIE',
+              obligatoire: true,
+              valeurMin: 0, 
+              valeurMax: 10
+            },
+            { 
+              type: 'choix_multiple' as TypeChamp, 
+              question: 'Antalgiques administrés',
+              nomVariable: 'ANTALGIQUES',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Paracétamol', valeur: '1' },
+                { libelle: 'Tramadol', valeur: '2' },
+                { libelle: 'Morphine', valeur: '3' }
+              ]
+            },
+          ]
+        },
+        {
+          nom: "TRANSFUSION",
+          description: "Produits sanguins transfusés",
+          icon: ClipboardDocumentListIcon,
+          champs: [
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Transfusion per-opératoire',
+              nomVariable: 'TRANSFUSION_PEROP',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Nombre de culots globulaires', 
+              nomVariable: 'NB_CULOTS',
+              obligatoire: false
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Transfusion post-opératoire',
+              nomVariable: 'TRANSFUSION_POSTOP',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+          ]
+        },
+        {
+          nom: "RECUPERATION",
+          description: "Suivi de la récupération et réhabilitation",
+          icon: ClipboardDocumentListIcon,
+          champs: [
+            { 
+              type: 'date' as TypeChamp, 
+              question: 'Date correspondant au J1 de la chirurgie',
+              nomVariable: 'J1',
+              obligatoire: true
+            },
+            { 
+              type: 'date' as TypeChamp, 
+              question: 'Date de fin du traitement antiplaquettaire',
+              nomVariable: 'ANTI_AGG_PLAQ_DATE_FIN',
+              obligatoire: true
+            },
+            { 
+              type: 'nombre' as TypeChamp, 
+              question: 'Distance marchée au J3', 
+              nomVariable: 'DISTANCE_MARCHE_J3',
+              unite: 'mètres',
+              obligatoire: false
+            },
+          ]
+        },
+        {
+          nom: "COMPLICATIONS",
+          description: "Complications post-opératoires",
+          icon: ClipboardDocumentListIcon,
+          champs: [
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Complications infectieuses',
+              nomVariable: 'COMPLICATIONS_INFECTIEUSES',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Complications thromboemboliques',
+              nomVariable: 'COMPLICATIONS_THROMBO',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
+            },
+            { 
+              type: 'choix_unique' as TypeChamp, 
+              question: 'Réadmission sous 30 jours',
+              nomVariable: 'READMISSION_30J',
+              obligatoire: true, 
+              options: [
+                { libelle: 'Oui', valeur: '1' },
+                { libelle: 'Non', valeur: '0' }
+              ]
             },
           ]
         },
@@ -190,6 +479,8 @@ export default function NouveauFormulaire() {
         obligatoire: false,
         options: type === 'choix_multiple' ? [{ libelle: 'Oui', valeur: '1' }, { libelle: 'Non', valeur: '0' }] : undefined,
         unite: type === 'nombre' ? '' : undefined,
+        formuleCalcul: type === 'calcule' ? 'POIDS/(TAILLE^2)' : undefined,
+        champsRequis: type === 'calcule' ? ['POIDS', 'TAILLE'] : undefined
       };
       setChamps([...champs, nouveauChamp]);
       setModeAjout(false);
@@ -259,15 +550,36 @@ export default function NouveauFormulaire() {
             statut: statut,
             titreEtude: titreEtude,
             descriptionEtude: `Étude concernant le formulaire : ${nomFormulaire}`,
-            champs: champs.map(champ => ({
-              label: champ.question,
-              type: champ.type.toUpperCase(),
-              obligatoire: champ.obligatoire,
-              valeurMin: champ.valeurMin,
-              valeurMax: champ.valeurMax,
-              nomListeValeur: champ.type === 'choix_multiple' && champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
-              options: champ.options, 
-            })),
+            champs: champs.map(champ => {
+               if (champ.type === 'calcule') {
+                return {
+                  label: champ.question,
+                  type: 'TEXTE', 
+                  obligatoire: champ.obligatoire,
+                  unite: `CALCULE:${champ.formuleCalcul}|${champ.champsRequis?.join(',')}`,
+                  // Stocke les infos de calcul dans unite
+                };
+              }
+              if (champ.type === 'choix_unique') {
+                return {
+                  label: champ.question,
+                  type: 'CHOIX_MULTIPLE', 
+                  obligatoire: champ.obligatoire,
+                  nomListeValeur: champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
+                  options: champ.options,
+                };
+              }
+              return {
+                label: champ.question,
+                type: champ.type.toUpperCase(),
+                obligatoire: champ.obligatoire,
+                valeurMin: champ.valeurMin,
+                valeurMax: champ.valeurMax,
+                nomListeValeur: champ.type === 'choix_multiple' && champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
+                options: champ.options, 
+                unite: champ.unite,
+              }
+            }), 
           };
       
           try {
@@ -305,15 +617,15 @@ export default function NouveauFormulaire() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+                  <ArrowLeftIcon className="w-5 h-5 text-gray-800" />
                 </button>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">Nouveau formulaire</h1>
-                  <p className="text-sm text-gray-600">Créez un nouveau formulaire et l'étude associée</p>
+                  <p className="text-sm text-gray-800">Créez un nouveau formulaire et l'étude associée</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => router.push('/formulaire')} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                <button onClick={() => router.push('/formulaire')} className="px-4 py-2 text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                   Retour
                 </button>
                 <button onClick={() => sauvegarderFormulaire('BROUILLON')} disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50">
@@ -331,7 +643,7 @@ export default function NouveauFormulaire() {
               <RocketLaunchIcon className="w-6 h-6 text-blue-600" />
               <h2 className="text-xl font-semibold text-gray-900">Ajouter des thèmes médicaux</h2>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-800 mb-4">
               Cliquez sur les thèmes pour ajouter progressivement les questions à votre formulaire. 
               Chaque clic <strong>ajoute</strong> les questions du thème à celles déjà présentes.
             </p>
@@ -345,7 +657,7 @@ export default function NouveauFormulaire() {
                       <theme.icon className="w-8 h-8 text-blue-600" />
                     </div>
                     <h3 className="font-medium text-gray-900 mb-2">{theme.nom}</h3>
-                    <p className="text-xs text-gray-600 mb-2">{theme.description}</p>
+                    <p className="text-xs text-gray-800 mb-2">{theme.description}</p>
                     <div className="flex items-center justify-center gap-1 text-xs text-blue-600">
                       <PlusIcon className="w-3 h-3" />
                       <span>+{theme.champs.length} questions</span>
@@ -372,15 +684,15 @@ export default function NouveauFormulaire() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom du formulaire *</label>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Nom du formulaire *</label>
                 <input type="text" value={nomFormulaire} onChange={(e) => setNomFormulaire(e.target.value)} placeholder="Ex: Protocole de suivi post-opératoire" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'étude associée *</label>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Nom de l'étude associée *</label>
                 <input type="text" value={titreEtude} onChange={(e) => setTitreEtude(e.target.value)} placeholder="Ex: Étude sur l'efficacité de la molécule X" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description du formulaire</label>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Description du formulaire</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez brièvement l'objectif de ce formulaire..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
             </div>
@@ -415,7 +727,7 @@ export default function NouveauFormulaire() {
                           </div>
                           <div className="font-semibold text-gray-900">Texte</div>
                         </div>
-                        <div className="text-xs text-gray-600">Réponse courte ou longue</div>
+                        <div className="text-xs text-gray-800">Réponse courte ou longue</div>
                     </button>
                     <button 
                       onClick={() => ajouterChamp('nombre')} 
@@ -427,7 +739,7 @@ export default function NouveauFormulaire() {
                           </div>
                           <div className="font-semibold text-gray-900">Nombre</div>
                         </div>
-                        <div className="text-xs text-gray-600">Valeur numérique avec limites</div>
+                        <div className="text-xs text-gray-800">Valeur numérique avec limites</div>
                     </button>
                     <button 
                       onClick={() => ajouterChamp('date')} 
@@ -439,7 +751,7 @@ export default function NouveauFormulaire() {
                           </div>
                           <div className="font-semibold text-gray-900">Date</div>
                         </div>
-                        <div className="text-xs text-gray-600">Sélecteur de date</div>
+                        <div className="text-xs text-gray-800">Sélecteur de date</div>
                     </button>
                     <button 
                       onClick={() => ajouterChamp('choix_multiple')} 
@@ -451,13 +763,37 @@ export default function NouveauFormulaire() {
                           </div>
                           <div className="font-semibold text-gray-900">Choix Multiple</div>
                         </div>
-                        <div className="text-xs text-gray-600">Liste d'options prédéfinies</div>
+                        <div className="text-xs text-gray-800">Liste d'options prédéfinies</div>
+                    </button>
+                    <button 
+                      onClick={() => ajouterChamp('choix_unique')} 
+                      className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                          <CheckCircleIcon className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div className="font-semibold text-gray-900">Choix Unique</div>
+                      </div>
+                      <div className="text-xs text-gray-800">Boutons radio - un seul choix</div>
+                    </button>
+                    <button 
+                      onClick={() => ajouterChamp('calcule')} 
+                      className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-orange-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                          <RocketLaunchIcon className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div className="font-semibold text-gray-900">Champ Calculé</div>
+                      </div>
+                      <div className="text-xs text-gray-800">Calcul automatique (IMC, etc.)</div>
                     </button>
                 </div>
                 <div className="mt-4 text-center">
                   <button 
                     onClick={() => setModeAjout(false)}
-                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                    className="text-sm text-gray-800 hover:text-gray-700 transition-colors"
                   >
                     Annuler
                   </button>
@@ -484,7 +820,7 @@ export default function NouveauFormulaire() {
                 </div>
               ))}
               {champs.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-800">
                   <p>Aucune question pour le moment.</p>
                   <p className="text-sm">Cliquez sur "Ajouter une question" pour commencer à construire votre formulaire.</p>
                 </div>

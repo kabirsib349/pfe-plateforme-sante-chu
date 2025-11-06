@@ -44,7 +44,7 @@ export const Card: FC<CardProps> = ({
                 </h3>
               )}
               {subtitle && (
-                <p className="text-gray-600 text-sm mt-1">{subtitle}</p>
+                <p className="text-gray-800 text-sm mt-1">{subtitle}</p>
               )}
             </div>
           </div>

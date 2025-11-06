@@ -5,7 +5,7 @@ import { TrashIcon, ExclamationTriangleIcon, Bars3Icon } from "@heroicons/react/
 import { validateNomVariable } from '@/src/lib/validation';
 
 // Ce type est maintenant aligné avec l'énumération TypeChamp du backend
-export type TypeChamp = 'texte' | 'nombre' | 'choix_multiple' | 'date';
+export type TypeChamp = 'texte' | 'nombre' | 'choix_multiple' |'choix_unique' | 'date' | 'calcule';
 
 // Interface pour une seule option de choix
 export interface Option {
@@ -23,6 +23,8 @@ export interface ChampFormulaire {
   unite?: string;
   valeurMin?: number;
   valeurMax?: number;
+  formuleCalcul?: string;
+  champsRequis?: string[];
 }
 
 interface QuestionProps {
@@ -94,7 +96,7 @@ const Question: React.FC<QuestionProps> = ({
   const commonFields = (
     <>
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-600 mb-1">Nom de la variable (unique, majuscules)</label>
+        <label className="block text-sm font-medium text-gray-800 mb-1">Nom de la variable (unique, majuscules)</label>
         <div className="relative">
           <input
             type="text"
@@ -130,7 +132,7 @@ const Question: React.FC<QuestionProps> = ({
         return (
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Valeur Min</label>
+              <label className="block text-sm font-medium text-gray-800 mb-1">Valeur Min</label>
               <input
                 type="number"
                 value={champ.valeurMin || ''}
@@ -140,7 +142,7 @@ const Question: React.FC<QuestionProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Valeur Max</label>
+              <label className="block text-sm font-medium text-gray-800 mb-1">Valeur Max</label>
               <input
                 type="number"
                 value={champ.valeurMax || ''}
@@ -149,14 +151,25 @@ const Question: React.FC<QuestionProps> = ({
                 className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
               />
             </div>
+            {/* Ajout du champ unité */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-800 mb-1">Unité de mesure</label>
+              <input
+                type="text"
+                value={champ.unite || ''}
+                onChange={(e) => onUpdate(champ.id, { unite: e.target.value })}
+                placeholder="Ex: kg, cm, années, mmHg"
+                className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              />
+            </div>
           </div>
         );
       case 'choix_multiple':
         return (
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-600 mb-2">Options de réponse</label>
+            <label className="block text-sm font-medium text-gray-800 mb-2">Options de réponse</label>
             <div className="space-y-2">
-              <div className="grid grid-cols-10 gap-2 text-xs text-gray-500 font-medium">
+              <div className="grid grid-cols-10 gap-2 text-xs text-gray-800 font-medium">
                   <div className="col-span-5">Libellé (vu par l'utilisateur)</div>
                   <div className="col-span-4">Valeur (stockée)</div>
               </div>
@@ -184,6 +197,75 @@ const Question: React.FC<QuestionProps> = ({
               </button>
             </div>
           </div>
+      );
+      case 'choix_unique': 
+        return (
+          <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-800 mb-2">
+            Options de réponse (choix unique)
+          </label>
+          <div className="space-y-2">
+            <div className="grid grid-cols-10 gap-2 text-xs text-gray-800 font-medium">
+              <div className="col-span-5">Libellé (vu par l'utilisateur)</div>
+              <div className="col-span-4">Valeur (stockée)</div>
+            </div>
+            {(champ.options || []).map((option, i) => (
+              <div key={i} className="grid grid-cols-10 items-center gap-2">
+                <input
+                  type="text"
+                  value={option.libelle}
+                  onChange={(e) => handleOptionChange(i, 'libelle', e.target.value)}
+                  className="col-span-5 bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  value={option.valeur}
+                  onChange={(e) => handleOptionChange(i, 'valeur', e.target.value)}
+                  className="col-span-4 bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+                <button onClick={() => removeOption(i)} className="col-span-1 p-1 text-gray-400 hover:text-red-500 justify-self-center">
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <button onClick={addOption} className="text-sm text-blue-600 hover:text-blue-800 pt-2">
+              Ajouter une option
+            </button>
+          </div>
+        </div>
+        );
+    
+      case 'calcule':
+        return (
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-1">Formule de calcul</label>
+              <input
+                type="text"
+                value={champ.formuleCalcul || ''}
+                onChange={(e) => onUpdate(champ.id, { formuleCalcul: e.target.value })}
+                placeholder="Ex: POIDS/(TAILLE^2) pour l'IMC"
+                className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-1">Variables requises (séparées par des virgules)</label>
+              <input
+                type="text"
+                value={champ.champsRequis?.join(', ') || ''}
+                onChange={(e) => {
+                  const variables = e.target.value.split(',').map(v => v.trim().toUpperCase()).filter(v => v);
+                  onUpdate(champ.id, { champsRequis: variables });
+                }}
+                placeholder="Ex: POIDS, TAILLE"
+                className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
+              />
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+              <strong>Information :</strong> Ce champ sera calculé automatiquement lors du remplissage du formulaire. 
+              Il sera en lecture seule pour les utilisateurs.
+            </div>
+          </div>
         );
       default:
         return null;
@@ -207,7 +289,7 @@ const Question: React.FC<QuestionProps> = ({
           <div className="cursor-move p-1 text-gray-400 hover:text-gray-600 transition-colors">
             <Bars3Icon className="w-4 h-4" />
           </div>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
             {index + 1}
           </div>
         </div>
@@ -220,7 +302,7 @@ const Question: React.FC<QuestionProps> = ({
             placeholder="Saisissez votre question..."
             className={`w-full text-base font-medium border-b-2 outline-none bg-transparent transition-colors ${isActive ? 'text-gray-900 border-gray-200 focus:border-blue-500' : 'text-gray-700 border-transparent'}`}
           />
-          {!isActive && <p className="text-sm text-gray-500 mt-1">{champ.nomVariable || "Aucun nom de variable"}</p>}
+          {!isActive && <p className="text-sm text-gray-800 mt-1">{champ.nomVariable || "Aucun nom de variable"}</p>}
         </div>
       </div>
 
@@ -230,7 +312,7 @@ const Question: React.FC<QuestionProps> = ({
           {renderOptions()}
           <hr className="my-4" />
           <div className="flex items-center justify-end gap-4">
-             <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+             <label className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
               <input
                 type="checkbox"
                 checked={champ.obligatoire}

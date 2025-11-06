@@ -23,7 +23,7 @@ export const StatCard: FC<StatCardProps> = ({
         <span className="text-xl">{icon}</span>
       </div>
     )}
-    <div className="text-gray-600 text-sm font-medium">{label}</div>
+    <div className="text-gray-800 text-sm font-medium">{label}</div>
     <div className={`text-4xl font-bold mt-3 ${valueColor}`}>
       {isLoading ? (
         <div className="animate-pulse bg-gray-200 h-10 w-16 mx-auto rounded"></div>
