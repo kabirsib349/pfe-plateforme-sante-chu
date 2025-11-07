@@ -7,6 +7,7 @@ import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
 import { Card } from "@/src/components/Card";
+import {UserCircleIcon} from "@heroicons/react/24/outline";
 
 export default function DashboardMedecin() {
     const router = useRouter();
@@ -45,6 +46,13 @@ export default function DashboardMedecin() {
                                 Investigateur d'étude
                             </span>
                             <span className="text-gray-900 font-medium">{user?.nom ?? 'Dr. Martin'}</span>
+                             <button
+                                   onClick={() => router.push('/parametres')}
+                                    className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                                    title="Profil"
+                                      >
+                                    <UserCircleIcon className="w-6 h-6" />
+                             </button>
                             <button
                                 onClick={logout}
                                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
