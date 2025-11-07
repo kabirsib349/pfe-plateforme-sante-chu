@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Card } from '@/src/components/Card';
-import { ArrowLeftIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, UserCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 interface Message {
     text: string;
@@ -27,6 +27,11 @@ export default function ParametresPage() {
     const [confirmationPassword, setConfirmationPassword] = useState('');
     const [isPasswordSaving, setIsPasswordSaving] = useState(false);
     const [passwordMessage, setPasswordMessage] = useState<Message | null>(null);
+
+    // State pour afficher/masquer mot de passe
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmationPassword, setShowConfirmationPassword] = useState(false);
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -58,7 +63,6 @@ export default function ParametresPage() {
             }
 
             setProfileMessage({ text: 'Profil mis à jour avec succès !', type: 'success' });
-            // Optionnel: Mettre à jour le contexte utilisateur global si nécessaire
 
         } catch (error: any) {
             setProfileMessage({ text: error.message, type: 'error' });
@@ -91,9 +95,8 @@ export default function ParametresPage() {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Une erreur est survenue.');
             }
-            
+
             setPasswordMessage({ text: 'Mot de passe mis à jour avec succès !', type: 'success' });
-            // Vider les champs après succès
             setCurrentPassword('');
             setNewPassword('');
             setConfirmationPassword('');
@@ -169,35 +172,56 @@ export default function ParametresPage() {
                     {/* --- Formulaire de mot de passe --- */}
                     <Card title="Changer le mot de passe">
                         <form onSubmit={handlePasswordChange} className="space-y-4">
-                            <div>
+                            <div className="relative">
                                 <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Mot de passe actuel</label>
                                 <input
-                                    type="password"
+                                    type={showCurrentPassword ? 'text' : 'password'}
                                     id="currentPassword"
                                     value={currentPassword}
                                     onChange={(e) => setCurrentPassword(e.target.value)}
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 />
+                                <button
+                                    type="button"
+                                    className="absolute right-2 top-8 text-gray-500"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                >
+                                    {showCurrentPassword ? <EyeSlashIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+                                </button>
                             </div>
-                            <div>
+                            <div className="relative">
                                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Nouveau mot de passe</label>
                                 <input
-                                    type="password"
+                                    type={showNewPassword ? 'text' : 'password'}
                                     id="newPassword"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 />
+                                <button
+                                    type="button"
+                                    className="absolute right-2 top-8 text-gray-500"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                >
+                                    {showNewPassword ? <EyeSlashIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+                                </button>
                             </div>
-                            <div>
+                            <div className="relative">
                                 <label htmlFor="confirmationPassword" className="block text-sm font-medium text-gray-700">Confirmer le nouveau mot de passe</label>
                                 <input
-                                    type="password"
+                                    type={showConfirmationPassword ? 'text' : 'password'}
                                     id="confirmationPassword"
                                     value={confirmationPassword}
                                     onChange={(e) => setConfirmationPassword(e.target.value)}
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 />
+                                <button
+                                    type="button"
+                                    className="absolute right-2 top-8 text-gray-500"
+                                    onClick={() => setShowConfirmationPassword(!showConfirmationPassword)}
+                                >
+                                    {showConfirmationPassword ? <EyeSlashIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+                                </button>
                             </div>
                             <div className="flex items-center justify-between">
                                 <button
