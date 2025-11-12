@@ -15,10 +15,11 @@ export const useToast = () => {
     
     setToasts(prev => [...prev, newToast]);
     
-    // Auto-remove after 3 seconds
+    // Auto-remove after 5 seconds for errors, 3 seconds for others
+    const duration = type === 'error' ? 5000 : 3000;
     setTimeout(() => {
       setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 3000);
+    }, duration);
   }, []);
 
   const removeToast = useCallback((id: string) => {

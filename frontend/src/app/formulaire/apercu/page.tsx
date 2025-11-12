@@ -35,6 +35,16 @@ function ApercuFormulaireContent() {
   const [formulaire, setFormulaire] = React.useState<FormulaireApercu | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+
+  // Fonction pour obtenir le dashboard approprié selon le rôle
+  const getDashboardPath = () => {
+    return userRole === 'medecin' ? '/dashboard-medecin' : '/dashboard-chercheur';
+  };
+
+  const getFormulairesPath = () => {
+    return userRole === 'medecin' ? '/dashboard-medecin' : '/formulaire';
+  };
 
   React.useEffect(() => {
     const fetchFormulaire = async () => {
@@ -49,6 +59,18 @@ function ApercuFormulaireContent() {
         if (!token) {
           router.push('/login');
           return;
+        }
+
+        // Récupérer le rôle de l'utilisateur
+        const userResponse = await fetch('http://localhost:8080/api/users/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUserRole(userData.role);
         }
 
         const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireId}`, {
@@ -110,10 +132,10 @@ function ApercuFormulaireContent() {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'Formulaire non trouvé'}</p>
           <button 
-            onClick={() => router.push('/formulaire')}
+            onClick={() => router.push(getFormulairesPath())}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg"
           >
-            Retour aux formulaires
+            Retour
           </button>
         </div>
       </div>
@@ -245,26 +267,30 @@ function ApercuFormulaireContent() {
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
             <button 
-              onClick={() => router.push('/dashboard-chercheur')}
+              onClick={() => router.push(getDashboardPath())}
               className="hover:text-blue-600 transition-colors"
             >
               Dashboard
             </button>
             <span>›</span>
-            <button 
-              onClick={() => router.push('/formulaire')}
-              className="hover:text-blue-600 transition-colors"
-            >
-              Formulaires
-            </button>
-            <span>›</span>
+            {userRole !== 'medecin' && (
+              <>
+                <button 
+                  onClick={() => router.push('/formulaire')}
+                  className="hover:text-blue-600 transition-colors"
+                >
+                  Formulaires
+                </button>
+                <span>›</span>
+              </>
+            )}
             <span className="text-gray-900 font-medium">Aperçu</span>
           </div>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/formulaire')}
+                onClick={() => router.push(getFormulairesPath())}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeftIcon className="w-5 h-5" />
@@ -324,16 +350,10 @@ function ApercuFormulaireContent() {
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex justify-center gap-4">
             <button 
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium opacity-50 cursor-not-allowed"
-              disabled
-            >
-              Sauvegarder (Aperçu)
-            </button>
-            <button 
-              onClick={() => router.push('/formulaire')}
+              onClick={() => router.push(getFormulairesPath())}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors cursor-pointer"
             >
-              Annuler (Aperçu)
+              Fermer l'aperçu
             </button>
           </div>
           <p className="text-center text-sm text-gray-500 mt-3">

@@ -3,6 +3,7 @@
 import { useEffect, useState, FC, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useFormulairesRecus } from "@/src/hooks/useFormulairesRecus";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
@@ -11,7 +12,8 @@ import { Card } from "@/src/components/Card";
 export default function DashboardMedecin() {
     const router = useRouter();
     const { isAuthenticated, user, logout, isLoading } = useAuth();
-    const [activeTab, setActiveTab] = useState("patients");
+    const { formulairesRecus, isLoading: isLoadingFormulaires, error: errorFormulaires } = useFormulairesRecus();
+    const [activeTab, setActiveTab] = useState("formulaires-recus");
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -68,15 +70,36 @@ export default function DashboardMedecin() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <StatCard label="Patients assignés" value="24" />
-                    <StatCard label="Formulaires à remplir" value="8" />
-                    <StatCard label="En retard" value="3" valueColor="text-red-500" />
-                    <StatCard label="Feedback envoyés" value="5" />
+                    <StatCard 
+                        label="Formulaires reçus" 
+                        value={formulairesRecus.length} 
+                        isLoading={isLoadingFormulaires}
+                        icon="📬"
+                    />
+                    <StatCard 
+                        label="Non lus" 
+                        value={formulairesRecus.filter(f => !f.lu).length}
+                        valueColor="text-blue-600"
+                        isLoading={isLoadingFormulaires}
+                        icon="🆕"
+                    />
+                    <StatCard label="Patients assignés" value="24" icon="👥" />
+                    <StatCard label="Feedback envoyés" value="5" icon="💬" />
                 </div>
 
                 {/* Tabs */}
                 <div className="border-b border-gray-200 mb-6">
-                    <nav className="flex space-x-6">
+                    <nav className="flex space-x-6 overflow-x-auto">
+                        <TabButton id="formulaires-recus" activeTab={activeTab} setActiveTab={setActiveTab}>
+                            <span className="flex items-center gap-2">
+                                📬 Formulaires Reçus
+                                {formulairesRecus.filter(f => !f.lu).length > 0 && (
+                                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {formulairesRecus.filter(f => !f.lu).length}
+                                    </span>
+                                )}
+                            </span>
+                        </TabButton>
                         <TabButton id="patients" activeTab={activeTab} setActiveTab={setActiveTab}>Mes Patients</TabButton>
                         <TabButton id="forms" activeTab={activeTab} setActiveTab={setActiveTab}>Formulaires à Remplir</TabButton>
                         <TabButton id="feedback" activeTab={activeTab} setActiveTab={setActiveTab}>Feedback</TabButton>
@@ -85,6 +108,7 @@ export default function DashboardMedecin() {
 
                 {/* Tab Content */}
                 <div>
+                    {activeTab === 'formulaires-recus' && <FormulairesRecusTab formulairesRecus={formulairesRecus} isLoading={isLoadingFormulaires} error={errorFormulaires} />}
                     {activeTab === 'patients' && <PatientsTab />}
                     {activeTab === 'forms' && <FormsTab />}
                     {activeTab === 'feedback' && <FeedbackTab />}
@@ -99,6 +123,118 @@ export default function DashboardMedecin() {
 
 
 // --- Composants d'onglets ---
+
+const FormulairesRecusTab: FC<{ formulairesRecus: any[]; isLoading: boolean; error?: string | null }> = ({ formulairesRecus, isLoading, error }) => {
+    const router = useRouter();
+
+    if (isLoading) {
+        return (
+            <Card title="Formulaires reçus">
+                <div className="text-center py-12">
+                    <div className="animate-pulse">Chargement des formulaires...</div>
+                </div>
+            </Card>
+        );
+    }
+
+    if (error) {
+        return (
+            <Card title="Formulaires reçus">
+                <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span className="text-3xl">⚠️</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de chargement</h3>
+                    <p className="text-red-600">{error}</p>
+                </div>
+            </Card>
+        );
+    }
+
+    if (formulairesRecus.length === 0) {
+        return (
+            <Card title="Formulaires reçus">
+                <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span className="text-3xl">📬</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun formulaire reçu</h3>
+                    <p className="text-gray-600">Les formulaires qui vous seront envoyés par les chercheurs apparaîtront ici.</p>
+                </div>
+            </Card>
+        );
+    }
+
+    return (
+        <Card
+            title="Formulaires reçus"
+            subtitle={`${formulairesRecus.length} formulaire${formulairesRecus.length !== 1 ? 's' : ''} à consulter`}
+        >
+            <div className="space-y-4">
+                {formulairesRecus.map((formulaireRecu) => (
+                    <div 
+                        key={formulaireRecu.id} 
+                        className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                        {formulaireRecu.formulaire.titre}
+                                    </h3>
+                                    {!formulaireRecu.lu && <Badge color="blue">Nouveau</Badge>}
+                                    {formulaireRecu.complete && <Badge color="green">Complété</Badge>}
+                                </div>
+                                
+                                {formulaireRecu.formulaire.description && (
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        {formulaireRecu.formulaire.description}
+                                    </p>
+                                )}
+
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                                    <span className="flex items-center gap-1">
+                                        <span>📚</span>
+                                        <span>{formulaireRecu.formulaire.etude?.titre || 'N/A'}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span>👤</span>
+                                        <span>Envoyé par {formulaireRecu.chercheur.nom}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span>📅</span>
+                                        <span>Reçu le {new Date(formulaireRecu.dateEnvoi).toLocaleDateString('fr-FR')}</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <span>❓</span>
+                                        <span>{formulaireRecu.formulaire.champs?.length || 0} question{(formulaireRecu.formulaire.champs?.length || 0) !== 1 ? 's' : ''}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 ml-4">
+                                <button
+                                    onClick={() => router.push(`/formulaire/remplir?id=${formulaireRecu.id}`)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                                >
+                                    <span>✏️</span>
+                                    <span>Remplir le formulaire</span>
+                                </button>
+                                <button
+                                    onClick={() => router.push(`/formulaire/apercu?id=${formulaireRecu.formulaire.idFormulaire}`)}
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                                >
+                                    <span>👁️</span>
+                                    <span>Aperçu</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Card>
+    );
+};
 
 const PatientsTab = () => (
     <Card

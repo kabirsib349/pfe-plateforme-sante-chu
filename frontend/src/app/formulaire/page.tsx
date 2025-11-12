@@ -9,6 +9,7 @@ import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, Clipboar
 import { TYPES_ETUDES } from "@/src/constants/etudes";
 import { MESSAGES } from "@/src/constants/messages";
 import { ToastContainer } from "@/src/components/ToastContainer";
+import ModalEnvoiFormulaire from '@/src/components/ModalEnvoiFormulaire';
 
 // Type mis à jour pour correspondre à la réponse de l'API backend
 interface FormulaireAPI {
@@ -27,8 +28,15 @@ interface FormulaireAPI {
 
 export default function Formulaire() {
     const router = useRouter();
-    const { token } = useAuth();
+    const { token, user, isLoading: isAuthLoading } = useAuth();
     const { showToast, toasts, removeToast } = useToast();
+
+    // Rediriger les médecins vers leur dashboard
+    useEffect(() => {
+        if (!isAuthLoading && user?.role === 'medecin') {
+            router.push('/dashboard-medecin');
+        }
+    }, [user, isAuthLoading, router]);
     const { triggerStatsRefresh } = useStatsRefresh();
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
@@ -37,35 +45,53 @@ export default function Formulaire() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [formulaireToDelete, setFormulaireToDelete] = useState<number | null>(null);
+    const [modalEnvoiOpen, setModalEnvoiOpen] = useState(false);
+    const [formulaireSelectionne, setFormulaireSelectionne] = useState<{ id: number, titre: string } | null>(null);
+
+    const fetchFormulaires = async () => {
+        if (!token) {
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const response = await fetch('http://localhost:8080/api/formulaires', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setFormulaires(data);
+            } else {
+                showToast(MESSAGES.error.chargement, "error");
+            }
+        } catch (error) {
+            console.error("Erreur réseau:", error);
+            showToast(MESSAGES.error.reseau, "error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Fonction pour ouvrir le modal d'envoi
+    const handleOpenModalEnvoi = (formulaire: FormulaireAPI) => {
+        setFormulaireSelectionne({ id: formulaire.idFormulaire, titre: formulaire.titre });
+        setModalEnvoiOpen(true);
+    };
+
+    const handleCloseModalEnvoi = () => {
+        setModalEnvoiOpen(false);
+        setFormulaireSelectionne(null);
+    };
+
+    const handleEnvoiSuccess = () => {
+        fetchFormulaires();
+        triggerStatsRefresh();
+    };
 
     useEffect(() => {
-        const fetchFormulaires = async () => {
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                const response = await fetch('http://localhost:8080/api/formulaires', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setFormulaires(data);
-                } else {
-                    showToast(MESSAGES.error.chargement, "error");
-                }
-            } catch (error) {
-                console.error("Erreur réseau:", error);
-                showToast(MESSAGES.error.reseau, "error");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchFormulaires();
     }, [token]);
 
@@ -121,7 +147,9 @@ export default function Formulaire() {
                 showToast(MESSAGES.success.formulaireSupprime, "success");
                 triggerStatsRefresh(); // Rafraîchir les stats
             } else {
-                showToast(MESSAGES.error.suppression, "error");
+                const errorText = await response.text();
+                console.error("Erreur de suppression:", errorText);
+                showToast(errorText || MESSAGES.error.suppression, "error");
             }
         } catch (error) {
             console.error("Erreur réseau:", error);
@@ -187,7 +215,8 @@ export default function Formulaire() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 relative">
+        <>
+        <div className="min-h-screen bg-gray-100">
             {/* Bannière de confirmation de suppression */}
             {isDeleteModalOpen && (
                 <div className="fixed top-5 left-1/2 -translate-x-1/2 w-full max-w-md z-50">
@@ -357,6 +386,16 @@ export default function Formulaire() {
                                         Modifier
                                     </button>
                                     <button
+                                        onClick={() => handleOpenModalEnvoi(formulaire)}
+                                        className="flex-1 px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
+                                        title="Envoyer à un médecin"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                        Envoyer
+                                    </button>
+                                    <button
                                         onClick={() => openDeleteModal(formulaire.idFormulaire)}
                                         className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 ..."
                                         title="Supprimer le formulaire"
@@ -401,5 +440,19 @@ export default function Formulaire() {
             </div>
             <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         </div>
+
+        {/* Modal d'envoi rendu en dehors de la div principale */}
+        {formulaireSelectionne && (
+            <ModalEnvoiFormulaire
+                isOpen={modalEnvoiOpen}
+                onClose={handleCloseModalEnvoi}
+                formulaireId={formulaireSelectionne.id}
+                formulaireTitre={formulaireSelectionne.titre}
+                onSuccess={handleEnvoiSuccess}
+                showToast={showToast}
+            />
+        )}
+        </>
     );
+    
 }

@@ -28,6 +28,7 @@ public class FormulaireService {
     private final UtilisateurRepository utilisateurRepository;
     private final ActiviteService activiteService;
     private final ListeValeurRepository listeValeurRepository;
+    private final com.pfe.backend.repository.FormulaireMedecinRepository formulaireMedecinRepository;
 
     @Transactional
     public Formulaire createFormulaire(FormulaireRequest request, String userEmail) {
@@ -208,9 +209,14 @@ public class FormulaireService {
         return stats;
     }
 
+    @Transactional
     public void deleteFormulaire(Long id) {
         Formulaire formulaire = formulaireRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
+        
+        // Supprimer d'abord les assignations FormulaireMedecin
+        formulaireMedecinRepository.deleteByFormulaireIdFormulaire(id);
+        
         if (formulaire.getChercheur() != null) {
             activiteService.enregistrerActivite(formulaire.getChercheur().getEmail(), "Suppression de formulaire",
                     "Formulaire", id, "Formulaire '" + formulaire.getTitre() + "' supprimé");
