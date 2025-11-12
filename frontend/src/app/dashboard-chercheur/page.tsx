@@ -9,7 +9,6 @@ import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
 import { Card } from "@/src/components/Card";
-// note: using `useRouter` from next/navigation; no default router import
 
 export default function Dashboard() {
     const router = useRouter();
@@ -317,41 +316,97 @@ const FormsTab = () => {
     );
 };
 
-const DataTab = () => (
-    <Card
-        title="Données agrégées et anonymisées"
-        action={<button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm">Exporter toutes les données</button>}
-    >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {['📊 Export CSV', '📈 Export Excel', '📋 Rapport statistique', '🔒 Export sécurisé'].map(opt => (
-                <div key={opt} className="border border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                    <h4 className="font-medium">{opt}</h4>
+const DataTab = () => {
+    const router = useRouter();
+    const { token } = useAuth();
+    const [formulairesEnvoyes, setFormulairesEnvoyes] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFormulairesEnvoyes = async () => {
+            if (!token) return;
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/formulaires/envoyes', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setFormulairesEnvoyes(data);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchFormulairesEnvoyes();
+    }, [token]);
+
+    const formulairesCompletes = formulairesEnvoyes.filter(f => f.complete);
+
+    return (
+        <Card
+            title="Formulaires complétés par les médecins"
+            subtitle={`${formulairesCompletes.length} formulaire${formulairesCompletes.length !== 1 ? 's' : ''} rempli${formulairesCompletes.length !== 1 ? 's' : ''}`}
+        >
+            {isLoading ? (
+                <div className="text-center py-12">
+                    <div className="animate-pulse">Chargement...</div>
                 </div>
-            ))}
-        </div>
-        <ChartPlaceholder text="Visualisation des données - Répartition par critères" />
-        <div className="mt-6">
-            <Table headers={["ID Anonymisé", "Âge", "Sexe", "Groupe", "Date inclusion", "Score initial"]}>
-                <tr className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">PT-0012</td>
-                    <td className="px-4 py-3 text-sm">45</td>
-                    <td className="px-4 py-3 text-sm">M</td>
-                    <td className="px-4 py-3 text-sm">A</td>
-                    <td className="px-4 py-3 text-sm">10/10/2025</td>
-                    <td className="px-4 py-3 text-sm">24</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">PT-0015</td>
-                    <td className="px-4 py-3 text-sm">52</td>
-                    <td className="px-4 py-3 text-sm">F</td>
-                    <td className="px-4 py-3 text-sm">B</td>
-                    <td className="px-4 py-3 text-sm">12/10/2025</td>
-                    <td className="px-4 py-3 text-sm">30</td>
-                </tr>
-            </Table>
-        </div>
-    </Card>
-);
+            ) : formulairesCompletes.length === 0 ? (
+                <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span className="text-3xl">📊</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune donnée collectée</h3>
+                    <p className="text-gray-600">Les formulaires remplis par les médecins apparaîtront ici.</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {formulairesCompletes.map((formulaireEnvoye) => (
+                        <div key={formulaireEnvoye.id} className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50/30 transition-all">
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            {formulaireEnvoye.formulaire.titre}
+                                        </h3>
+                                        <Badge color="green">Complété</Badge>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                                        <span className="flex items-center gap-1">
+                                            <span>📚</span>
+                                            <span>{formulaireEnvoye.formulaire.etude?.titre || 'N/A'}</span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span>👨‍⚕️</span>
+                                            <span>Rempli par Dr. {formulaireEnvoye.medecin.nom}</span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span>📅</span>
+                                            <span>Complété le {new Date(formulaireEnvoye.dateCompletion).toLocaleDateString('fr-FR')}</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => router.push(`/formulaire/reponses?id=${formulaireEnvoye.id}`)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ml-4"
+                                >
+                                    📊 Voir les réponses
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </Card>
+    );
+};
 
 
 // Aperçu interactif d'un formulaire (preview)
