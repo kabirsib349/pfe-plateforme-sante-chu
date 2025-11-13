@@ -29,6 +29,7 @@ public class FormulaireService {
     private final ActiviteService activiteService;
     private final ListeValeurRepository listeValeurRepository;
     private final com.pfe.backend.repository.FormulaireMedecinRepository formulaireMedecinRepository;
+    private final com.pfe.backend.repository.ReponseFormulaireRepository reponseFormulaireRepository;
 
     @Transactional
     public Formulaire createFormulaire(FormulaireRequest request, String userEmail) {
@@ -210,17 +211,37 @@ public class FormulaireService {
     }
 
     @Transactional
-    public void deleteFormulaire(Long id) {
+    public void deleteFormulaire(Long id, String userEmail) {
         Formulaire formulaire = formulaireRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
         
-        // Supprimer d'abord les assignations FormulaireMedecin
-        formulaireMedecinRepository.deleteByFormulaireIdFormulaire(id);
+        Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé avec l'email: " + userEmail));
         
-        if (formulaire.getChercheur() != null) {
-            activiteService.enregistrerActivite(formulaire.getChercheur().getEmail(), "Suppression de formulaire",
-                    "Formulaire", id, "Formulaire '" + formulaire.getTitre() + "' supprimé");
+        // Vérifier que l'utilisateur est bien le propriétaire du formulaire
+        if (!formulaire.getChercheur().getId().equals(chercheur.getId())) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
         }
+        
+        // Récupérer tous les FormulaireMedecin liés à ce formulaire
+        List<FormulaireMedecin> formulairesMedecins = formulaireMedecinRepository
+                .findAll()
+                .stream()
+                .filter(fm -> fm.getFormulaire().getIdFormulaire().equals(id))
+                .collect(Collectors.toList());
+        
+        // Supprimer les réponses pour chaque FormulaireMedecin, puis les FormulaireMedecin eux-mêmes
+        for (FormulaireMedecin fm : formulairesMedecins) {
+            // Supprimer d'abord les réponses liées à ce FormulaireMedecin
+            reponseFormulaireRepository.deleteByFormulaireMedecinId(fm.getId());
+            // Puis supprimer le FormulaireMedecin
+            formulaireMedecinRepository.delete(fm);
+        }
+        
+        activiteService.enregistrerActivite(userEmail, "Suppression de formulaire",
+                "Formulaire", id, "Formulaire '" + formulaire.getTitre() + "' supprimé");
+        
+        // Enfin, supprimer le formulaire (les champs seront supprimés automatiquement grâce au cascade)
         formulaireRepository.deleteById(id);
     }
 }
