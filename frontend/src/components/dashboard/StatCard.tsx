@@ -1,10 +1,10 @@
-import React, { FC } from 'react';
+import React, { FC, ReactNode } from 'react';
 
 interface StatCardProps {
   label: string;
   value: string | number;
   valueColor?: string;
-  icon?: string;
+  icon?: ReactNode;
   isLoading?: boolean;
   error?: boolean;
 }
@@ -19,8 +19,8 @@ export const StatCard: FC<StatCardProps> = ({
 }) => (
   <div className="glass rounded-2xl shadow-eco p-5 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-eco-lg border border-white/20">
     {icon && (
-      <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
-        <span className="text-xl">{icon}</span>
+      <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center text-emerald-600">
+        {icon}
       </div>
     )}
     <div className="text-gray-800 text-sm font-medium">{label}</div>

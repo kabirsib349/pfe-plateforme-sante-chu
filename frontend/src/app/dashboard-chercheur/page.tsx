@@ -9,7 +9,13 @@ import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
 import { Card } from "@/src/components/Card";
-import { UserCircleIcon, ArrowLeftIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon, XMarkIcon, PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline"; // Import de l'icône UserCircleIcon et autres icônes utilisées
+import { 
+    UserCircleIcon, ArrowLeftIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, 
+    CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, 
+    UserIcon, XMarkIcon, PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon,
+    BeakerIcon, DocumentTextIcon, PencilSquareIcon, PaperAirplaneIcon, BookOpenIcon,
+    ChartBarIcon, InboxIcon
+} from "@heroicons/react/24/outline";
 // note: using `useRouter` from next/navigation; no default router import
 
 export default function Dashboard() {
@@ -40,7 +46,7 @@ export default function Dashboard() {
                     <div className="flex justify-between items-center py-3">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center">
-                                <span className="text-lg">🌱⚕️</span>
+                                <BeakerIcon className="w-6 h-6 text-white" />
                             </div>
                             <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
                                 MedDataCollect
@@ -58,13 +64,6 @@ export default function Dashboard() {
                             >
                                 <UserCircleIcon className="w-6 h-6" />
                             </button>
-                            <button
-                                onClick={logout}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-                            >
-                                Se déconnecter
-                            </button>
-
                         </div>
                     </div>
                 </div>
@@ -73,7 +72,7 @@ export default function Dashboard() {
             <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-eco">
-                        <span className="text-2xl">🔬</span>
+                        <ChartBarIcon className="w-7 h-7 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-700 to-blue-700 bg-clip-text text-transparent">
                         Tableau de Bord - Investigateur Coordinateur
@@ -87,7 +86,7 @@ export default function Dashboard() {
                         value={stats.totalFormulaires} 
                         isLoading={statsLoading}
                         error={!!statsError}
-                        icon="📋"
+                        icon={<DocumentTextIcon className="w-6 h-6" />}
                     />
                     <StatCard 
                         label="Brouillons" 
@@ -95,7 +94,7 @@ export default function Dashboard() {
                         valueColor="text-amber-600"
                         isLoading={statsLoading}
                         error={!!statsError}
-                        icon="📝"
+                        icon={<PencilSquareIcon className="w-6 h-6" />}
                     />
                     <StatCard 
                         label="Formulaires envoyés" 
@@ -103,7 +102,7 @@ export default function Dashboard() {
                         valueColor="text-emerald-600"
                         isLoading={statsLoading}
                         error={!!statsError}
-                        icon="✅"
+                        icon={<PaperAirplaneIcon className="w-6 h-6" />}
                     />
 
                 </div>
@@ -114,7 +113,6 @@ export default function Dashboard() {
                         <TabButton id="forms" activeTab={activeTab} setActiveTab={setActiveTab}>Mes Formulaires</TabButton>
                         <TabButton id="allforms" activeTab={activeTab} setActiveTab={setActiveTab}>Gestion des Formulaires</TabButton>
                         <TabButton id="data" activeTab={activeTab} setActiveTab={setActiveTab}>Données Collectées</TabButton>
-                        <TabButton id="dictionary" activeTab={activeTab} setActiveTab={setActiveTab}>Dictionnaire de Données</TabButton>
                     </nav>
                 </div>
 
@@ -123,7 +121,6 @@ export default function Dashboard() {
                     {activeTab === 'forms' && <FormsTab />}
                     {activeTab === 'allforms' && <AllFormsTab />}
                     {activeTab === 'data' && <DataTab />}
-                    {activeTab === 'dictionary' && <DictionaryTab />}
                 </div>
             </main>
         </div>
@@ -260,7 +257,7 @@ const FormsTab = () => {
                 title="Formulaires crées"
                 action={
                     <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span>📊</span>
+                        <DocumentTextIcon className="w-5 h-5" />
                         <span>{formulaires.length} formulaire{formulaires.length !== 1 ? 's' : ''}</span>
                     </div>
                 }
@@ -369,7 +366,7 @@ const DataTab = () => {
             ) : formulairesCompletes.length === 0 ? (
                 <div className="text-center py-12">
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-3xl">📊</span>
+                        <ChartBarIcon className="w-10 h-10 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune donnée collectée</h3>
                     <p className="text-gray-600">Les formulaires remplis par les médecins apparaîtront ici.</p>
@@ -389,15 +386,15 @@ const DataTab = () => {
                                     
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                                         <span className="flex items-center gap-1">
-                                            <span>📚</span>
+                                            <BookOpenIcon className="w-4 h-4" />
                                             <span>{formulaireEnvoye.formulaire.etude?.titre || 'N/A'}</span>
                                         </span>
                                         <span className="flex items-center gap-1">
-                                            <span>👨‍⚕️</span>
+                                            <UserIcon className="w-4 h-4" />
                                             <span>Rempli par Dr. {formulaireEnvoye.medecin.nom}</span>
                                         </span>
                                         <span className="flex items-center gap-1">
-                                            <span>📅</span>
+                                            <CalendarDaysIcon className="w-4 h-4" />
                                             <span>Complété le {new Date(formulaireEnvoye.dateCompletion).toLocaleDateString('fr-FR')}</span>
                                         </span>
                                     </div>
@@ -405,9 +402,10 @@ const DataTab = () => {
 
                                 <button
                                     onClick={() => router.push(`/formulaire/reponses?id=${formulaireEnvoye.id}`)}
-                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ml-4"
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ml-4 flex items-center gap-2"
                                 >
-                                    📊 Voir les réponses
+                                    <ChartBarIcon className="w-5 h-5" />
+                                    Voir les réponses
                                 </button>
                             </div>
                         </div>
@@ -599,9 +597,18 @@ const AllFormsTab = () => {
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                <span>📚 {formulaire.etude?.titre || 'N/A'}</span>
-                                                <span>📅 {new Date(formulaire.dateCreation).toLocaleDateString('fr-FR')}</span>
-                                                <span>❓ {formulaire.champs?.length || 0} question{(formulaire.champs?.length || 0) !== 1 ? 's' : ''}</span>
+                                                <span className="flex items-center gap-1">
+                                                    <BookOpenIcon className="w-4 h-4" />
+                                                    {formulaire.etude?.titre || 'N/A'}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <CalendarDaysIcon className="w-4 h-4" />
+                                                    {new Date(formulaire.dateCreation).toLocaleDateString('fr-FR')}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <ClipboardDocumentListIcon className="w-4 h-4" />
+                                                    {formulaire.champs?.length || 0} question{(formulaire.champs?.length || 0) !== 1 ? 's' : ''}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -647,26 +654,4 @@ const AllFormsTab = () => {
     );
 };
 
-const DictionaryTab = () => (
-    <Card
-        title="Dictionnaire de données"
-        action={<button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">Ajouter une variable</button>}
-    >
-        <Table headers={["Variable", "Type", "Description", "Contraintes", "Actions"]}>
-            <tr className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-medium">age</td>
-                <td className="px-4 py-3 text-sm">Nombre entier</td>
-                <td className="px-4 py-3 text-sm">Âge du patient en années</td>
-                <td className="px-4 py-3 text-sm">18-120</td>
-                <td className="px-4 py-3"><button className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs">Modifier</button></td>
-            </tr>
-            <tr className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-medium">sexe</td>
-                <td className="px-4 py-3 text-sm">Liste déroulante</td>
-                <td className="px-4 py-3 text-sm">Sexe du patient</td>
-                <td className="px-4 py-3 text-sm">M, F, Autre</td>
-                <td className="px-4 py-3"><button className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs">Modifier</button></td>
-            </tr>
-        </Table>
-    </Card>
-);
+
