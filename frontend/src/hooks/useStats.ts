@@ -1,33 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-
-interface DashboardStats {
-  totalFormulaires: number;
-  brouillons: number;
-  envoyes: number;
-
-  activiteRecente: ActivityItem[];
-}
-
-interface ActivityItem {
-  idActivite: number;
-  action: string;
-  ressourceType: string;
-  ressourceId: number;
-  details: string;
-  dateCreation: string;
-  utilisateur: {
-    nom: string;
-  };
-}
+import { getStats } from '@/src/lib/api';
+import { handleError } from '@/src/lib/errorHandler';
+import type { Stats } from '@/src/types';
 
 export const useStats = () => {
   const { token } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats, setStats] = useState<Stats>({
     totalFormulaires: 0,
     brouillons: 0,
     envoyes: 0,
-
     activiteRecente: []
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -43,42 +25,17 @@ export const useStats = () => {
       setIsLoading(true);
       setError(null);
 
-      // Récupérer les statistiques
-      const statsResponse = await fetch('http://localhost:8080/api/formulaires/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!statsResponse.ok) {
-        throw new Error('Erreur lors de la récupération des statistiques');
-      }
-
-      const statsData = await statsResponse.json();
-
-      // Récupérer l'activité récente
-      const activityResponse = await fetch('http://localhost:8080/api/dashboard/activity?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      let activityData = [];
-      if (activityResponse.ok) {
-        activityData = await activityResponse.json();
-      }
-
+      const statsData = await getStats(token);
+      
       setStats({
         totalFormulaires: statsData.totalFormulaires || 0,
         brouillons: statsData.brouillons || 0,
         envoyes: statsData.envoyes || 0,
-
-        activiteRecente: activityData
+        activiteRecente: statsData.activiteRecente || []
       });
-
     } catch (err) {
-      console.error('Erreur lors du chargement des statistiques:', err);
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      const formattedError = handleError(err, 'useStats');
+      setError(formattedError.userMessage);
     } finally {
       setIsLoading(false);
     }

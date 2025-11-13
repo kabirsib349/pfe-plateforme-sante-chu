@@ -1,28 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-
-interface FormulaireEnvoye {
-  id: number;
-  formulaire: {
-    idFormulaire: number;
-    titre: string;
-    etude: {
-      titre: string;
-    };
-  };
-  medecin: {
-    nom: string;
-    email: string;
-  };
-  dateEnvoi: string;
-  lu: boolean;
-  complete: boolean;
-  dateCompletion?: string;
-}
+import { getFormulairesEnvoyes } from '@/src/lib/api';
+import { handleError } from '@/src/lib/errorHandler';
+import { config } from '@/src/lib/config';
+import type { FormulaireEnvoyeResponse } from '@/src/types';
 
 export const useFormulairesEnvoyes = () => {
   const { token } = useAuth();
-  const [formulairesEnvoyes, setFormulairesEnvoyes] = useState<FormulaireEnvoye[]>([]);
+  const [formulairesEnvoyes, setFormulairesEnvoyes] = useState<FormulaireEnvoyeResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,22 +21,16 @@ export const useFormulairesEnvoyes = () => {
       setIsLoading(true);
       setError(null);
       
-      // TODO: Créer l'endpoint backend pour récupérer les formulaires envoyés par le chercheur
-      const response = await fetch('http://localhost:8080/api/formulaires/envoyes', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFormulairesEnvoyes(data);
-      } else {
-        const errorText = await response.text();
-        setError(`Erreur ${response.status}: ${errorText}`);
+      const data = await getFormulairesEnvoyes(token);
+      
+      if (config.features.enableDebug) {
+        console.log('✅ useFormulairesEnvoyes:', data.length, 'formulaires');
       }
+      
+      setFormulairesEnvoyes(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur réseau');
+      const formattedError = handleError(err, 'useFormulairesEnvoyes');
+      setError(formattedError.userMessage);
     } finally {
       setIsLoading(false);
     }

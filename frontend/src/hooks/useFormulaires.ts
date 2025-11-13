@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
+import { getFormulaires } from '@/src/lib/api';
+import { handleError } from '@/src/lib/errorHandler';
+import { config } from '@/src/lib/config';
 
 export const useFormulaires = () => {
   const { token } = useAuth();
@@ -17,28 +20,20 @@ export const useFormulaires = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log('🔍 Fetching formulaires...');
-      const response = await fetch('http://localhost:8080/api/formulaires', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📋 Formulaires loaded:', data.length, 'formulaires');
-        console.log('📋 Data:', data);
-        setFormulaires(data);
-      } else {
-        const errorText = await response.text();
-        console.error('❌ API Error:', response.status, errorText);
-        setError(`Erreur ${response.status}: ${errorText}`);
+      if (config.features.enableDebug) {
+        console.log('🔍 Fetching formulaires...');
       }
+      
+      const data = await getFormulaires(token);
+      
+      if (config.features.enableDebug) {
+        console.log('📋 Formulaires loaded:', data.length, 'formulaires');
+      }
+      
+      setFormulaires(data);
     } catch (err) {
-      console.error('❌ Network Error:', err);
-      setError(err instanceof Error ? err.message : 'Erreur réseau');
+      const formattedError = handleError(err, 'useFormulaires');
+      setError(formattedError.userMessage);
     } finally {
       setIsLoading(false);
     }

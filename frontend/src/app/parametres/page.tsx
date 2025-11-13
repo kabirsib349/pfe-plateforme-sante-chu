@@ -6,6 +6,8 @@ import { useAuth } from '@/src/hooks/useAuth';
 import { Card } from '@/src/components/Card';
 import { ArrowLeftIcon, UserCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { validatePassword } from '@/src/lib/validation';
+import { updateProfile, changePassword } from '@/src/lib/api';
+import { handleError } from '@/src/lib/errorHandler';
 
 interface Message {
     text: string;
@@ -50,23 +52,11 @@ export default function ParametresPage() {
         setProfileMessage(null);
 
         try {
-            const response = await fetch('http://localhost:8080/api/users/profile', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ nom, email }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Une erreur est survenue.');
-            }
-
+            await updateProfile(token!, { nom, email });
             setProfileMessage({ text: 'Profil mis à jour avec succès !', type: 'success' });
-
-        } catch (error: any) {
-            setProfileMessage({ text: error.message, type: 'error' });
+        } catch (error) {
+            const formattedError = handleError(error, 'UpdateProfile');
+            setProfileMessage({ text: formattedError.userMessage, type: 'error' });
         } finally {
             setIsProfileSaving(false);
         }
@@ -92,26 +82,18 @@ export default function ParametresPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/users/changer-mot-de-passe', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ currentPassword, newPassword, confirmationPassword }),
+            await changePassword(token!, {
+                ancienMotDePasse: currentPassword,
+                nouveauMotDePasse: newPassword,
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Une erreur est survenue.');
-            }
-
+            
             setPasswordMessage({ text: 'Mot de passe mis à jour avec succès !', type: 'success' });
             setCurrentPassword('');
             setNewPassword('');
             setConfirmationPassword('');
-
-        } catch (error: any) {
-            setPasswordMessage({ text: error.message, type: 'error' });
+        } catch (error) {
+            const formattedError = handleError(error, 'ChangePassword');
+            setPasswordMessage({ text: formattedError.userMessage, type: 'error' });
         } finally {
             setIsPasswordSaving(false);
         }

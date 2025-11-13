@@ -1,6 +1,9 @@
-import { useAuthContext } from "../context/AuthContext";
+import { useAuthContext } from '../context/AuthContext';
 
+/**
+ * Hook simplifié pour accéder à l'authentification
+ * Réexporte toutes les propriétés du contexte
+ */
 export const useAuth = () => {
-    const { user, token, login, logout, isAuthenticated, isLoading } = useAuthContext();
-    return { user, token, login, logout, isAuthenticated, isLoading };
+    return useAuthContext();
 };
