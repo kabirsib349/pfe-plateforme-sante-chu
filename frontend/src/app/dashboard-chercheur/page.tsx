@@ -64,6 +64,7 @@ export default function Dashboard() {
                             >
                                 Se déconnecter
                             </button>
+
                         </div>
                     </div>
                 </div>
@@ -334,12 +335,12 @@ const DataTab = () => {
     useEffect(() => {
         const fetchFormulairesEnvoyes = async () => {
             if (!token) return;
-
+            
             try {
                 const response = await fetch('http://localhost:8080/api/formulaires/envoyes', {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
-
+                
                 if (response.ok) {
                     const data = await response.json();
                     setFormulairesEnvoyes(data);
@@ -350,7 +351,7 @@ const DataTab = () => {
                 setIsLoading(false);
             }
         };
-
+        
         fetchFormulairesEnvoyes();
     }, [token]);
 
@@ -385,7 +386,7 @@ const DataTab = () => {
                                         </h3>
                                         <Badge color="green">Complété</Badge>
                                     </div>
-
+                                    
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                                         <span className="flex items-center gap-1">
                                             <span>📚</span>

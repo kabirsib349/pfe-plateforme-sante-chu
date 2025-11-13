@@ -60,6 +60,12 @@ public class ReponseFormulaireService {
         // Marquer le formulaire comme complété
         formulaireMedecin.setComplete(true);
         formulaireMedecin.setDateCompletion(LocalDateTime.now());
+        
+        // Démasquer pour le chercheur si c'était masqué (pour qu'il voie les nouvelles réponses)
+        if (formulaireMedecin.isMasquePourChercheur()) {
+            formulaireMedecin.setMasquePourChercheur(false);
+        }
+        
         formulaireMedecinRepository.save(formulaireMedecin);
 
         // Enregistrer l'activité

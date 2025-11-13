@@ -50,6 +50,12 @@ public class FormulaireMedecin {
     @Column(name="date_completion")
     private LocalDateTime dateCompletion;
 
+    @Column(name="masque_pour_medecin", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean masquePourMedecin = false;
+
+    @Column(name="masque_pour_chercheur", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean masquePourChercheur = false;
+
     @PrePersist
     public void onCreate(){
         dateEnvoi = LocalDateTime.now();

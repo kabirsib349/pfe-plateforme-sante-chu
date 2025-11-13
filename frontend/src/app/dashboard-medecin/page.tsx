@@ -4,6 +4,8 @@ import { useEffect, useState, FC, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useFormulairesRecus } from "@/src/hooks/useFormulairesRecus";
+import { useToast } from "@/src/hooks/useToast";
+import { ToastContainer } from "@/src/components/ToastContainer";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
@@ -12,8 +14,9 @@ import {UserCircleIcon} from "@heroicons/react/24/outline";
 
 export default function DashboardMedecin() {
     const router = useRouter();
-    const { isAuthenticated, user, logout, isLoading } = useAuth();
-    const { formulairesRecus, isLoading: isLoadingFormulaires, error: errorFormulaires } = useFormulairesRecus();
+    const { isAuthenticated, user, logout, isLoading, token } = useAuth();
+    const { formulairesRecus, isLoading: isLoadingFormulaires, error: errorFormulaires, refreshFormulairesRecus } = useFormulairesRecus();
+    const { showToast, toasts, removeToast } = useToast();
     const [activeTab, setActiveTab] = useState("formulaires-recus");
 
     useEffect(() => {
@@ -61,6 +64,7 @@ export default function DashboardMedecin() {
                             >
                                 Se déconnecter
                             </button>
+
                         </div>
                     </div>
                 </div>
@@ -116,12 +120,13 @@ export default function DashboardMedecin() {
 
                 {/* Tab Content */}
                 <div>
-                    {activeTab === 'formulaires-recus' && <FormulairesRecusTab formulairesRecus={formulairesRecus} isLoading={isLoadingFormulaires} error={errorFormulaires} />}
+                    {activeTab === 'formulaires-recus' && <FormulairesRecusTab formulairesRecus={formulairesRecus} isLoading={isLoadingFormulaires} error={errorFormulaires} token={token} showToast={showToast} refreshFormulairesRecus={refreshFormulairesRecus} />}
                     {activeTab === 'patients' && <PatientsTab />}
                     {activeTab === 'forms' && <FormsTab />}
                     {activeTab === 'feedback' && <FeedbackTab />}
                 </div>
             </main>
+            <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         </div>
     );
 }
@@ -132,7 +137,14 @@ export default function DashboardMedecin() {
 
 // --- Composants d'onglets ---
 
-const FormulairesRecusTab: FC<{ formulairesRecus: any[]; isLoading: boolean; error?: string | null }> = ({ formulairesRecus, isLoading, error }) => {
+const FormulairesRecusTab: FC<{
+    formulairesRecus: any[];
+    isLoading: boolean;
+    error?: string | null;
+    token?: string | null;
+    showToast: (message: string, type: 'success' | 'error' | 'info') => void;
+    refreshFormulairesRecus: () => void;
+}> = ({ formulairesRecus, isLoading, error, token, showToast, refreshFormulairesRecus }) => {
     const router = useRouter();
 
     if (isLoading) {
@@ -234,6 +246,32 @@ const FormulairesRecusTab: FC<{ formulairesRecus: any[]; isLoading: boolean; err
                                 >
                                     <span>👁️</span>
                                     <span>Aperçu</span>
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm('Voulez-vous supprimer ce formulaire de votre liste ?')) {
+                                            try {
+                                                const response = await fetch(`http://localhost:8080/api/formulaires/recus/${formulaireRecu.id}`, {
+                                                    method: 'DELETE',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`,
+                                                    },
+                                                });
+                                                if (response.ok) {
+                                                    showToast('Formulaire supprimé de votre liste', 'success');
+                                                    refreshFormulairesRecus();
+                                                } else {
+                                                    showToast('Erreur lors de la suppression', 'error');
+                                                }
+                                            } catch (error) {
+                                                showToast('Erreur réseau', 'error');
+                                            }
+                                        }
+                                    }}
+                                    className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                                >
+                                    <span>🗑️</span>
+                                    <span>Supprimer</span>
                                 </button>
                             </div>
                         </div>

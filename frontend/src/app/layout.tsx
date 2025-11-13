@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./Providers";
+import DashboardHeader from "@/src/components/DashboardHeader";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -29,7 +30,10 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
         >
         {/* ✅ On injecte notre AuthProvider via le wrapper client */}
-        <Providers>{children}</Providers>
+        <Providers>
+            <DashboardHeader />
+            {children}
+        </Providers>
         </body>
         </html>
     );

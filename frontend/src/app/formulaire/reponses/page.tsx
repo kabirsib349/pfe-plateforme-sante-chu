@@ -181,13 +181,7 @@ function ReponsesFormulaireContent() {
                                                     {reponse.valeur || <span className="text-gray-400 italic">Aucune réponse</span>}
                                                 </p>
                                             </div>
-                                            <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                                                <span>Type: {reponse.champ.type}</span>
-                                                {reponse.champ.obligatoire && (
-                                                    <span className="text-red-600">Obligatoire</span>
-                                                )}
-                                                <span>Saisi le {new Date(reponse.dateSaisie).toLocaleDateString('fr-FR')}</span>
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
