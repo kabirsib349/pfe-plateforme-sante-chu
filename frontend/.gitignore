@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Documentation locale (ne pas commiter)
+PHASE1_*.md
+SETUP.md
+src/lib/__tests__/

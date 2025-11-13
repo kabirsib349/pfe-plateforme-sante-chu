@@ -5,7 +5,7 @@ import { validatePassword } from '@/src/lib/validation';
 import { register } from '@/src/lib/api';
 import { useToast } from '@/src/hooks/useToast';
 import { ToastContainer } from '@/src/components';
-
+import { handleError } from '@/src/lib/errorHandler';
 
 export default function Register() {
   const router = useRouter();
@@ -16,16 +16,20 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('chercheur');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    //valider le mot de passe
-    const passwordError = validatePassword(password)
+    
+    // Valider le mot de passe
+    const passwordError = validatePassword(password);
     if (passwordError) {
       setError(passwordError);
       return;
     }
+
+    setIsLoading(true);
 
     try {
       await register({ nom, email, password, role });
@@ -33,9 +37,11 @@ export default function Register() {
       setTimeout(() => {
         router.push('/login');
       }, 1500);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "L'inscription a échoué. Veuillez réessayer.");
+    } catch (err) {
+      const formattedError = handleError(err, 'Register');
+      setError(formattedError.userMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 

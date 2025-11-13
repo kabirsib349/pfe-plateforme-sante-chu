@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login as apiLogin, getUserInfo } from "../../lib/api";
+import { login as apiLogin } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
-
-interface LoginResponse {
-    token: string;
-}
+import { handleError } from "../../lib/errorHandler";
+import { Role } from "@/src/types";
 
 export default function Login() {
     const router = useRouter();
@@ -15,29 +13,28 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setIsLoading(true);
 
         try {
-            const response: LoginResponse = await apiLogin({ email, password });
-            login(response.token);
-            const userInfo = await getUserInfo(response.token);
-            if(userInfo.role === 'medecin'){
-                router.push("/dashboard-medecin")
-            }else{
+            const response = await apiLogin({ email, password });
+            await login(response.token);
+            
+            // Redirection basée sur le rôle
+            if (response.user.role === Role.MEDECIN) {
+                router.push("/dashboard-medecin");
+            } else {
                 router.push("/dashboard-chercheur");
             }
-        } catch (err: any) {
-            console.error(err);
-            if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-                setError("Email ou mot de passe incorrect.");
-            } else if (err.message.includes('Network') || err.message.includes('fetch')) {
-                setError("Erreur de connexion au serveur. Vérifiez que le backend est démarré.");
-            } else {
-                setError(err.message || "Une erreur est survenue lors de la connexion.");
-            }
+        } catch (err) {
+            const formattedError = handleError(err, 'Login');
+            setError(formattedError.userMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -103,11 +100,12 @@ export default function Login() {
                         {/* Bouton amélioré */}
                         <button
                             type="submit"
+                            disabled={isLoading}
                             aria-label="Se connecter"
-                            className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco"
+                            className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span className="flex items-center justify-center gap-2">
-                                🔐 Se connecter
+                                {isLoading ? '⏳ Connexion...' : '🔐 Se connecter'}
                             </span>
                         </button>
 
