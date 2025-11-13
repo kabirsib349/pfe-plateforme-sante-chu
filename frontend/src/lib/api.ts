@@ -1,79 +1,128 @@
-export async function register(data: { nom: string; email: string; password: string; role: string }) {
-    const res = await fetch("http://localhost:8080/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
+import { apiUrl } from './config';
+import type {
+    RegisterRequest,
+    LoginRequest,
+    LoginResponse,
+    User,
+    ApiError,
+} from '@/src/types';
 
-    if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || "Échec de l'inscription");
+/**
+ * Classe d'erreur personnalisée pour les erreurs API
+ */
+export class ApiException extends Error {
+    constructor(
+        message: string,
+        public status?: number,
+        public data?: unknown
+    ) {
+        super(message);
+        this.name = 'ApiException';
     }
-
-    return res.text();
 }
 
-export async function login(data: { email: string; password: string }) {
-    const res = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
-
-    if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || "Échec de la connexion");
-    }
-
-    return res.json();
-}
-
-export async function getUserInfo(token: string){
-    if(!token){
-        return Promise.reject(new Error("No token provided"));
-    }
-    const res = await fetch("http://localhost:8080/api/users/me",{
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-
-    if(!res.ok){
-        throw new Error("Echec de la récupération des informations utilisateur")
-    }
-    return res.json();
-}
-
-export async function getMedecins(token: string) {
-    const res = await fetch("http://localhost:8080/api/users/medecins", {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-    if (!res.ok) {
-        throw new Error("Échec du chargement des médecins");
-    }
-    return res.json();
-}
-
-export async function sendFormulaireToMedecin(token: string, formulaireId: number, emailMedecin: string) {
-    const res = await fetch(`http://localhost:8080/api/formulaires/${formulaireId}/envoyer`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ emailMedecin })
-    });
-    if (!res.ok) {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-            const errorData = await res.json();
-            throw new Error(errorData.message || "Échec de l'envoi du formulaire");
+/**
+ * Helper pour gérer les erreurs de fetch
+ */
+async function handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType?.includes('application/json')) {
+            const errorData = await response.json();
+            throw new ApiException(
+                errorData.message || 'Une erreur est survenue',
+                response.status,
+                errorData
+            );
         } else {
-            const errorText = await res.text();
-            throw new Error(errorText || "Échec de l'envoi du formulaire");
+            const errorText = await response.text();
+            throw new ApiException(
+                errorText || `Erreur HTTP ${response.status}`,
+                response.status
+            );
         }
     }
-    return res;
+
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+        return response.json();
+    }
+    
+    return response.text() as Promise<T>;
+}
+
+/**
+ * Helper pour créer les headers avec authentification
+ */
+function createHeaders(token?: string): HeadersInit {
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+}
+
+// ============= AUTH API =============
+
+export async function register(data: RegisterRequest): Promise<string> {
+    const response = await fetch(apiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: createHeaders(),
+        body: JSON.stringify(data),
+    });
+
+    return handleResponse<string>(response);
+}
+
+export async function login(data: LoginRequest): Promise<LoginResponse> {
+    const response = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: createHeaders(),
+        body: JSON.stringify(data),
+    });
+
+    return handleResponse<LoginResponse>(response);
+}
+
+export async function getUserInfo(token: string): Promise<User> {
+    if (!token) {
+        throw new ApiException('Token manquant', 401);
+    }
+
+    const response = await fetch(apiUrl('/api/users/me'), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<User>(response);
+}
+
+// ============= USERS API =============
+
+export async function getMedecins(token: string): Promise<User[]> {
+    const response = await fetch(apiUrl('/api/users/medecins'), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<User[]>(response);
+}
+
+// ============= FORMULAIRES API =============
+
+export async function sendFormulaireToMedecin(
+    token: string,
+    formulaireId: number,
+    emailMedecin: string
+): Promise<void> {
+    const response = await fetch(apiUrl(`/api/formulaires/${formulaireId}/envoyer`), {
+        method: 'POST',
+        headers: createHeaders(token),
+        body: JSON.stringify({ emailMedecin }),
+    });
+
+    await handleResponse<void>(response);
 }
