@@ -56,6 +56,10 @@ public class UserController {
             Principal principal,
             @RequestBody @Validated ChangePasswordDto dto
     ) {
+        // Si l'utilisateur n'est pas authentifié, renvoyer 401 au lieu d'un NPE qui génère 500
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
+        }
         userService.changePassword(principal.getName(), dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès !");
     }
