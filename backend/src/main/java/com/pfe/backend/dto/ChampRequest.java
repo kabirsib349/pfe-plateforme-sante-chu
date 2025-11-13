@@ -1,5 +1,7 @@
 package com.pfe.backend.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,13 +10,32 @@ import java.util.List;
 @Getter
 @Setter
 public class ChampRequest {
-    private String id; // AJOUT DE L'ID
+    
+    private String id;
+    
+    @NotBlank(message = "Le label est obligatoire")
+    @Size(min = 2, max = 255, message = "Le label doit contenir entre 2 et 255 caractères")
     private String label;
+    
+    @NotBlank(message = "Le type est obligatoire")
+    @Pattern(regexp = "TEXTE|NOMBRE|DATE|CHOIX_MULTIPLE", 
+             message = "Le type doit être TEXTE, NOMBRE, DATE ou CHOIX_MULTIPLE")
     private String type;
+    
+    @Size(max = 50, message = "L'unité ne peut pas dépasser 50 caractères")
     private String unite;
+    
     private boolean obligatoire;
+    
+    @Min(value = 0, message = "La valeur minimale doit être positive")
     private Float valeurMin;
+    
+    @Min(value = 0, message = "La valeur maximale doit être positive")
     private Float valeurMax;
-    private String nomListeValeur; // Ex: "Sexe", "Oui/Non"
-    private List<OptionValeurRequest> options; // Utilisé si la liste n'existe pas encore
+    
+    @Size(max = 100, message = "Le nom de la liste ne peut pas dépasser 100 caractères")
+    private String nomListeValeur;
+    
+    @Valid
+    private List<OptionValeurRequest> options;
 }

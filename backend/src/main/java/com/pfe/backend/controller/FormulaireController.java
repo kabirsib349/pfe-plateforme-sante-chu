@@ -5,6 +5,7 @@ import com.pfe.backend.dto.FormulaireRequest;
 import com.pfe.backend.model.Formulaire;
 import com.pfe.backend.service.FormulaireMedecinService;
 import com.pfe.backend.service.FormulaireService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class FormulaireController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('chercheur')")
-    public Formulaire createFormulaire(@RequestBody FormulaireRequest request, Principal principal) {
+    public Formulaire createFormulaire(@Valid @RequestBody FormulaireRequest request, Principal principal) {
         // Il suffit d'appeler le service. Les exceptions seront gérées par le GlobalExceptionHandler.
         return formulaireService.createFormulaire(request, principal.getName());
     }
@@ -82,7 +83,7 @@ public class FormulaireController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('chercheur')")
-    public ResponseEntity<Formulaire> updateFormulaire(@PathVariable Long id, @RequestBody FormulaireRequest request, Principal principal) {
+    public ResponseEntity<Formulaire> updateFormulaire(@PathVariable Long id, @Valid @RequestBody FormulaireRequest request, Principal principal) {
         Formulaire formulaire = formulaireService.updateFormulaire(id, request, principal.getName());
         return ResponseEntity.ok(formulaire);
     }

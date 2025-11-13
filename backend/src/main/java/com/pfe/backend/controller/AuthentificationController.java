@@ -4,6 +4,7 @@ import com.pfe.backend.dto.LoginRequest;
 import com.pfe.backend.dto.LoginResponse;
 import com.pfe.backend.dto.RegisterRequest;
 import com.pfe.backend.service.AuthentificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class AuthentificationController {
     private final AuthentificationService authentificationService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request){
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request){
         try{
             authentificationService.register(request);
             return new ResponseEntity<>("Utilisateur enregistré avec succès.",HttpStatus.CREATED);

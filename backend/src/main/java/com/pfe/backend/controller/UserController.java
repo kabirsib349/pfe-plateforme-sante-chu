@@ -8,6 +8,7 @@ import com.pfe.backend.repository.UtilisateurRepository;
 import com.pfe.backend.service.FormulaireMedecinService;
 import com.pfe.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -54,12 +56,12 @@ public class UserController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
         }
-        System.out.println("Principal : " + principal);
-        System.out.println("Nom : " + dto.getNom());
-        System.out.println("Email : " + dto.getEmail());
+        
+        log.debug("Updating profile for user: {}", principal.getName());
+        log.debug("New data - Name: {}, Email: {}", dto.getNom(), dto.getEmail());
 
         var updatedUser = userService.updateProfile(principal.getName(), dto);
-        System.out.println("User mis à jour : " + updatedUser);
+        log.info("Profile updated successfully for user: {}", updatedUser.getEmail());
 
         UserResponse response = new UserResponse(
                 updatedUser.getNom(),
@@ -83,10 +85,4 @@ public class UserController {
         return ResponseEntity.ok("Mot de passe mis à jour avec succès !");
     }
 
-    @ExceptionHandler({IllegalStateException.class, UsernameNotFoundException.class})
-    public ResponseEntity<Map<String, String>> handleBusinessException(Exception ex) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("message", ex.getMessage()));
-    }
 }

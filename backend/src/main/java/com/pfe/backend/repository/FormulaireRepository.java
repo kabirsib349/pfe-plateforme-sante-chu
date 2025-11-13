@@ -25,9 +25,6 @@ public interface FormulaireRepository extends JpaRepository<Formulaire, Long> {
            "WHERE f.idFormulaire = :id")
     Optional<Formulaire> findByIdWithChamps(@Param("id") Long id);
 
-    Optional<Formulaire> findByIdFormulaire(Long idFormulaire);
-
-
     @Query("SELECT COUNT(f) FROM Formulaire f WHERE f.chercheur.email = :email")
     long countByUserEmail(@Param("email") String email);
     

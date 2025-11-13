@@ -13,8 +13,10 @@ import java.util.Optional;
 public interface FormulaireMedecinRepository extends JpaRepository<FormulaireMedecin, Long> {
 
     //Récupération des formulaires envoyés à un médecin (non masqués pour lui)
-    @Query("SELECT fm FROM FormulaireMedecin fm " +
+    @Query("SELECT DISTINCT fm FROM FormulaireMedecin fm " +
             "JOIN FETCH fm.formulaire f " +
+            "LEFT JOIN FETCH f.etude " +
+            "LEFT JOIN FETCH f.champs " +
             "JOIN FETCH fm.chercheur " +
             "WHERE fm.medecin.email = :emailMedecin " +
             "AND fm.masquePourMedecin = false " +
@@ -30,13 +32,5 @@ public interface FormulaireMedecinRepository extends JpaRepository<FormulaireMed
     List<FormulaireMedecin> findByChercheurEmail(@Param("emailChercheur") String emailChercheur);
 
     Optional<FormulaireMedecin> findByFormulaireIdFormulaireAndMedecinEmail(Long formulaireId, String medecinEmail);
-
-    //Récupération des médécins disponibles
-    @Query("SELECT u FROM Utilisateur u WHERE u.role.nom = 'medecin'")
-    List<Utilisateur> findMedecins();
-
-    // Suppression des assignations d'un formulaire
-    @Modifying
-    void deleteByFormulaireIdFormulaire(Long formulaireId);
 
 }

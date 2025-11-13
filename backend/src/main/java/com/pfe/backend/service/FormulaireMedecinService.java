@@ -7,15 +7,15 @@ import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.FormulaireMedecinRepository;
 import com.pfe.backend.repository.FormulaireRepository;
 import com.pfe.backend.repository.UtilisateurRepository;
+import com.pfe.backend.repository.ReponseFormulaireRepository;
+import com.pfe.backend.repository.ListeValeurRepository;
+import com.pfe.backend.model.Champ;
+import com.pfe.backend.model.ListeValeur;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
-import com.pfe.backend.repository.ListeValeurRepository;
-import com.pfe.backend.model.Champ;
-import com.pfe.backend.model.ListeValeur;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,7 +26,7 @@ public class FormulaireMedecinService {
     private final FormulaireRepository formulaireRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final ActiviteService activiteService;
-    private final com.pfe.backend.repository.ReponseFormulaireRepository reponseFormulaireRepository;
+    private final ReponseFormulaireRepository reponseFormulaireRepository;
     private final ListeValeurRepository listeValeurRepository;
 
     @Transactional
@@ -68,23 +68,8 @@ public class FormulaireMedecinService {
     }
     @Transactional(readOnly = true)
     public List<FormulaireMedecin> getFormulairesRecus(String emailMedecin) {
-        List<FormulaireMedecin> formulairesRecus = formulaireMedecinRepository.findByMedecinEmail(emailMedecin);
-        
-        // Charger les relations supplémentaires (etude et champs)
-        formulairesRecus.forEach(fm -> {
-            if (fm.getFormulaire() != null) {
-                // Force le chargement de l'étude
-                if (fm.getFormulaire().getEtude() != null) {
-                    fm.getFormulaire().getEtude().getTitre();
-                }
-                // Force le chargement des champs
-                if (fm.getFormulaire().getChamps() != null) {
-                    fm.getFormulaire().getChamps().size();
-                }
-            }
-        });
-        
-        return formulairesRecus;
+        // Plus besoin d'hydratation manuelle grâce au JOIN FETCH dans la requête
+        return formulaireMedecinRepository.findByMedecinEmail(emailMedecin);
     }
 
     @Transactional(readOnly = true)
@@ -114,41 +99,52 @@ public class FormulaireMedecinService {
     }
     @Transactional(readOnly = true)
     public List<Utilisateur> getMedecins() {
-        return formulaireMedecinRepository.findMedecins();
+        return utilisateurRepository.findByRoleName("medecin");
     }
 
     @Transactional
     public void masquerPourMedecin(Long formulaireMedecinId, String emailMedecin) {
-        FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
-
-        if (!fm.getMedecin().getEmail().equals(emailMedecin)) {
-            throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
-        }
-
-        fm.setMasquePourMedecin(true);
-        formulaireMedecinRepository.save(fm);
-
-        // Si masqué des deux côtés, supprimer physiquement
-        if (fm.isMasquePourChercheur()) {
-            supprimerDefinitivement(fm);
-        }
+        FormulaireMedecin fm = getFormulaireMedecinAvecVerification(formulaireMedecinId);
+        verifierAutorisationMedecin(fm, emailMedecin);
+        masquer(fm, true);
     }
 
     @Transactional
     public void masquerPourChercheur(Long formulaireMedecinId, String emailChercheur) {
-        FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+        FormulaireMedecin fm = getFormulaireMedecinAvecVerification(formulaireMedecinId);
+        verifierAutorisationChercheur(fm, emailChercheur);
+        masquer(fm, false);
+    }
 
-        if (!fm.getChercheur().getEmail().equals(emailChercheur)) {
+    // Méthodes privées pour réduire la duplication
+    private FormulaireMedecin getFormulaireMedecinAvecVerification(Long id) {
+        return formulaireMedecinRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+    }
+
+    private void verifierAutorisationMedecin(FormulaireMedecin fm, String email) {
+        if (!fm.getMedecin().getEmail().equals(email)) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
         }
+    }
 
-        fm.setMasquePourChercheur(true);
+    private void verifierAutorisationChercheur(FormulaireMedecin fm, String email) {
+        if (!fm.getChercheur().getEmail().equals(email)) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
+        }
+    }
+
+    private void masquer(FormulaireMedecin fm, boolean pourMedecin) {
+        if (pourMedecin) {
+            fm.setMasquePourMedecin(true);
+        } else {
+            fm.setMasquePourChercheur(true);
+        }
+        
         formulaireMedecinRepository.save(fm);
-
-        // Si masqué des deux côtés, supprimer physiquement
-        if (fm.isMasquePourMedecin()) {
+        
+        // Supprimer définitivement si masqué des deux côtés
+        if (fm.isMasquePourMedecin() && fm.isMasquePourChercheur()) {
             supprimerDefinitivement(fm);
         }
     }
