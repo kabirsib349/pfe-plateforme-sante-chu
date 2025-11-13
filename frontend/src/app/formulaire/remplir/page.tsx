@@ -36,7 +36,8 @@ function RemplirFormulaireContent() {
             }
 
             try {
-                const response = await fetch(`http://localhost:8080/api/formulaires/recus`, {
+                // Appel au nouvel endpoint pour récupérer les détails complets d'un seul formulaire
+                const response = await fetch(`http://localhost:8080/api/formulaires/recus/${formulaireRecuId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -44,25 +45,16 @@ function RemplirFormulaireContent() {
 
                 if (response.ok) {
                     const data = await response.json();
-                    const formulaire = data.find((f: any) => f.id === parseInt(formulaireRecuId));
-                    
-                    if (formulaire) {
-                        setFormulaireRecu(formulaire);
-                        
-                        // Marquer comme lu si pas encore lu
-                        if (!formulaire.lu) {
-                            fetch(`http://localhost:8080/api/reponses/marquer-lu/${formulaireRecuId}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                },
-                            }).catch(err => console.error('Erreur marquage lu:', err));
-                        }
-                    } else {
-                        setError('Formulaire non trouvé');
-                    }
+                    setFormulaireRecu({ formulaire: data }); // Aligner la structure de données
+
+                    // Logique pour marquer comme lu (peut être conservée ou adaptée si nécessaire)
+                    fetch(`http://localhost:8080/api/reponses/marquer-lu/${formulaireRecuId}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                    }).catch(err => console.error('Erreur marquage lu:', err));
+
                 } else {
-                    setError('Erreur lors du chargement du formulaire');
+                    setError('Formulaire non trouvé ou accès non autorisé');
                 }
             } catch (err) {
                 setError('Erreur réseau');
@@ -73,6 +65,10 @@ function RemplirFormulaireContent() {
 
         fetchFormulaireRecu();
     }, [formulaireRecuId, token]);
+
+    const handleReponseChange = (champId: string, valeur: any) => {
+        setReponses(prev => ({ ...prev, [champId]: valeur }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -164,8 +160,8 @@ function RemplirFormulaireContent() {
                         )}
                         <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                             <span>📚 {formulaireRecu.formulaire.etude?.titre || 'N/A'}</span>
-                            <span>👤 Envoyé par {formulaireRecu.chercheur.nom}</span>
-                            <span>📅 {new Date(formulaireRecu.dateEnvoi).toLocaleDateString('fr-FR')}</span>
+                            <span>👤 Envoyé par {formulaireRecu.formulaire.chercheur?.nom || 'N/A'}</span>
+                            <span>📅 {new Date(formulaireRecu.formulaire.dateCreation).toLocaleDateString('fr-FR')}</span>
                         </div>
                     </div>
                 </div>
@@ -183,45 +179,68 @@ function RemplirFormulaireContent() {
                                         {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
                                     </label>
                                     
-                                    {champ.type === 'TEXTE' && (
-                                        <input
-                                            type="text"
-                                            required={champ.obligatoire}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Votre réponse"
-                                            onChange={(e) => setReponses({...reponses, [champ.idChamp]: e.target.value})}
-                                        />
-                                    )}
-                                    
-                                    {champ.type === 'NOMBRE' && (
-                                        <input
-                                            type="number"
-                                            required={champ.obligatoire}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Votre réponse"
-                                            onChange={(e) => setReponses({...reponses, [champ.idChamp]: e.target.value})}
-                                        />
-                                    )}
-                                    
-                                    {champ.type === 'DATE' && (
-                                        <input
-                                            type="date"
-                                            required={champ.obligatoire}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            onChange={(e) => setReponses({...reponses, [champ.idChamp]: e.target.value})}
-                                        />
-                                    )}
-                                    
-                                    {champ.type === 'CHOIX_MULTIPLE' && (
-                                        <textarea
-                                            required={champ.obligatoire}
-                                            rows={3}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Votre réponse"
-                                            onChange={(e) => setReponses({...reponses, [champ.idChamp]: e.target.value})}
-                                        />
-                                    )}
-                                </div>
+                                                                        {champ.type?.toUpperCase() === 'TEXTE' && (
+                                                                            <input
+                                                                                type="text"
+                                                                                required={champ.obligatoire}
+                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                                placeholder="Votre réponse"
+                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                                            />
+                                                                        )}
+                                                                        
+                                                                        {champ.type?.toUpperCase() === 'NOMBRE' && (
+                                                                            <input
+                                                                                type="number"
+                                                                                required={champ.obligatoire}
+                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                                placeholder="Votre réponse"
+                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                                            />
+                                                                        )}
+                                                                        
+                                                                        {champ.type?.toUpperCase() === 'DATE' && (
+                                                                            <input
+                                                                                type="date"
+                                                                                required={champ.obligatoire}
+                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                                            />
+                                                                        )}
+                                                                        
+                                                                                                             {champ.type?.toUpperCase() === 'CHOIX_MULTIPLE' && (
+                                                                        
+                                                                                                                <div className="space-y-2 mt-2">
+                                                                        
+                                                                                                                    {champ.listeValeur?.options?.map((option: any, index: number) => (
+                                                                        
+                                                                                                                        <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                                                        
+                                                                                                                            <input
+                                                                        
+                                                                                                                                type="radio"
+                                                                        
+                                                                                                                                name={`champ_${champ.idChamp}`}
+                                                                        
+                                                                                                                                value={option.valeur}
+                                                                        
+                                                                                                                                required={champ.obligatoire}
+                                                                        
+                                                                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                                        
+                                                                                                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                                        
+                                                                                                                            />
+                                                                        
+                                                                                                                            <span className="text-gray-800">{option.libelle}</span>
+                                                                        
+                                                                                                                        </label>
+                                                                        
+                                                                                                                    ))}
+                                                                        
+                                                                                                                </div>
+                                                                        
+                                                                                                            )}                                </div>
                             ))
                         ) : (
                             <p className="text-gray-500 text-center py-8">Aucune question dans ce formulaire</p>

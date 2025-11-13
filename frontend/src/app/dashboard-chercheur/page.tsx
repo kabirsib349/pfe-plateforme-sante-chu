@@ -48,13 +48,7 @@ export default function Dashboard() {
                             <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                                 Investigateur Coordinateur
                             </span>
-                            <span className="text-gray-900 font-medium">{user?.nom ?? "Dr. Emmanuel KWEGUENG"}</span>
-                            <button
-                                onClick={logout}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-                            >
-                                Se déconnecter
-                            </button>
+
                         </div>
                     </div>
                 </div>
