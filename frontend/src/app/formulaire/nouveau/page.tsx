@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
+import { createFormulaire } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -583,30 +585,15 @@ export default function NouveauFormulaire() {
           };
       
           try {
-            const response = await fetch('http://localhost:8080/api/formulaires', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify(payload),
-            });
-      
-            if (response.ok) {
-              const message = 'Formulaire sauvegardé avec succès !';
-              showToast(message, 'success');
-              triggerStatsRefresh();
-              setTimeout(() => {
-                router.push('/formulaire');
-              }, 1500); 
-            } else {
-              const errorData = await response.json().catch(() => ({ message: 'Réponse invalide du serveur' }));
-              console.error('Erreur de l\'API:', errorData);
-              showToast(`${MESSAGES.error.sauvegarde}: ${errorData.message || 'Erreur inconnue du serveur.'}`, 'error');
-            }
+            await createFormulaire(token!, payload);
+            showToast('Formulaire sauvegardé avec succès !', 'success');
+            triggerStatsRefresh();
+            setTimeout(() => {
+              router.push('/formulaire');
+            }, 1500);
           } catch (error) {
-            console.error('Erreur réseau:', error);
-            showToast(MESSAGES.error.reseau, 'error');
+            const formattedError = handleError(error, 'CreateFormulaire');
+            showToast(`${MESSAGES.error.sauvegarde}: ${formattedError.userMessage}`, 'error');
           } finally {
             setIsLoading(false);
           }

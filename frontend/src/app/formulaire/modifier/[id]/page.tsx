@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
+import { getFormulaireById, updateFormulaire } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 import { 
   ArrowLeftIcon, 
   CheckIcon, 
@@ -56,42 +58,31 @@ export default function ModifierFormulaire() {
       if (!token || !formulaireId) return;
 
       try {
-        const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data: FormulaireAPI = await response.json();
-          setNomFormulaire(data.titre);
-          setDescription(data.description || '');
-          setTitreEtude(data.etude.titre);
-          
-          // Convertir les champs de l'API vers le format du composant
-          const champsConverts: ChampFormulaire[] = data.champs.map((champ, index) => ({
-            id: champ.idChamp?.toString() || index.toString(),
-            type: champ.type.toLowerCase() as TypeChamp,
-            nomVariable: champ.label.toUpperCase().replace(/\s+/g, '_'),
-            question: champ.label,
-            obligatoire: champ.obligatoire,
-            options: champ.listeValeur?.options?.map((opt: any) => ({
-              libelle: opt.libelle,
-              valeur: opt.valeur
-            })),
-            valeurMin: champ.valeurMin,
-            valeurMax: champ.valeurMax,
-            unite: champ.unite || '', // Assurer que unite est toujours une chaîne
-          }));
-          
-          setChamps(champsConverts);
-        } else {
-          showToast(MESSAGES.error.chargement, 'error');
-          router.push('/formulaire');
-        }
+        const data: FormulaireAPI = await getFormulaireById(token, parseInt(formulaireId));
+        setNomFormulaire(data.titre);
+        setDescription(data.description || '');
+        setTitreEtude(data.etude.titre);
+        
+        // Convertir les champs de l'API vers le format du composant
+        const champsConverts: ChampFormulaire[] = data.champs.map((champ, index) => ({
+          id: champ.idChamp?.toString() || index.toString(),
+          type: champ.type.toLowerCase() as TypeChamp,
+          nomVariable: champ.label.toUpperCase().replace(/\s+/g, '_'),
+          question: champ.label,
+          obligatoire: champ.obligatoire,
+          options: champ.listeValeur?.options?.map((opt: any) => ({
+            libelle: opt.libelle,
+            valeur: opt.valeur
+          })),
+          valeurMin: champ.valeurMin,
+          valeurMax: champ.valeurMax,
+          unite: champ.unite || '',
+        }));
+        
+        setChamps(champsConverts);
       } catch (error) {
-        console.error('Erreur réseau:', error);
-        showToast(MESSAGES.error.reseau, 'error');
+        const formattedError = handleError(error, 'FetchFormulaire');
+        showToast(formattedError.userMessage, 'error');
         router.push('/formulaire');
       } finally {
         setIsLoadingData(false);
@@ -193,32 +184,19 @@ export default function ModifierFormulaire() {
     };
 
     try {
-      const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const message = statut === 'BROUILLON'
-          ? 'Formulaire modifié et sauvegardé comme brouillon !'
-          : 'Formulaire modifié et publié avec succès !';
-        showToast(message, 'success');
-        triggerStatsRefresh();
-        setTimeout(() => {
-          router.push('/formulaire');
-        }, 1500); // Redirection après 1.5 secondes
-      } else {
-        const errorData = await response.json().catch(() => ({ message: 'Réponse invalide du serveur' }));
-        console.error('Erreur de l\'API:', errorData);
-        showToast(`${MESSAGES.error.sauvegarde}: ${errorData.message || 'Erreur inconnue du serveur.'}`, 'error');
-      }
+      await updateFormulaire(token!, parseInt(formulaireId), payload);
+      
+      const message = statut === 'BROUILLON'
+        ? 'Formulaire modifié et sauvegardé comme brouillon !'
+        : 'Formulaire modifié et publié avec succès !';
+      showToast(message, 'success');
+      triggerStatsRefresh();
+      setTimeout(() => {
+        router.push('/formulaire');
+      }, 1500);
     } catch (error) {
-      console.error('Erreur réseau:', error);
-      showToast(MESSAGES.error.reseau, 'error');
+      const formattedError = handleError(error, 'UpdateFormulaire');
+      showToast(`${MESSAGES.error.sauvegarde}: ${formattedError.userMessage}`, 'error');
     } finally {
       setIsLoading(false);
     }
