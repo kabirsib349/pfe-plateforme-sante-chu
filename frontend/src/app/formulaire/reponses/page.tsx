@@ -3,7 +3,7 @@
 import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
-import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon, BookOpenIcon, PrinterIcon, ArrowDownTrayIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 
 function ReponsesFormulaireContent() {
     const router = useRouter();
@@ -41,10 +41,26 @@ function ReponsesFormulaireContent() {
 
                 if (formulairesResponse.ok) {
                     const formulaires = await formulairesResponse.json();
-                    const formulaire = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
+                    const formulaireEnvoye = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
                     
-                    if (formulaire) {
-                        setFormulaireData(formulaire);
+                    if (formulaireEnvoye) {
+                        // Récupérer le formulaire complet avec tous les champs
+                        const formulaireCompletResponse = await fetch(`http://localhost:8080/api/formulaires/${formulaireEnvoye.formulaire.idFormulaire}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                            },
+                        });
+
+                        if (formulaireCompletResponse.ok) {
+                            const formulaireComplet = await formulaireCompletResponse.json();
+                            // Combiner les données
+                            setFormulaireData({
+                                ...formulaireEnvoye,
+                                formulaire: formulaireComplet
+                            });
+                        } else {
+                            setFormulaireData(formulaireEnvoye);
+                        }
                     }
                 }
 
@@ -71,6 +87,17 @@ function ReponsesFormulaireContent() {
 
         fetchReponses();
     }, [formulaireMedecinId, token]);
+
+    // Créer un map des réponses par champId pour un accès rapide
+    const reponsesMap = reponses.reduce((acc: any, reponse: any) => {
+        acc[reponse.champ.idChamp] = reponse.valeur;
+        return acc;
+    }, {});
+
+    // Debug: afficher les réponses dans la console
+    console.log('Réponses reçues:', reponses);
+    console.log('Map des réponses:', reponsesMap);
+    console.log('Champs du formulaire:', formulaireData?.formulaire?.champs);
 
     if (isLoading) {
         return (
@@ -126,7 +153,7 @@ function ReponsesFormulaireContent() {
                         </div>
                         <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
-                                <span>📚</span>
+                                <BookOpenIcon className="w-4 h-4" />
                                 <span>{formulaireData.formulaire.etude?.titre || 'N/A'}</span>
                             </span>
                             <span className="flex items-center gap-1">
@@ -148,44 +175,111 @@ function ReponsesFormulaireContent() {
                 </div>
             </div>
 
-            {/* Réponses */}
+            {/* Formulaire avec réponses */}
             <div className="max-w-4xl mx-auto px-6 py-8">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                        <span>📋</span>
-                        <span>Réponses du médecin</span>
-                        <span className="text-sm font-normal text-gray-500">({reponses.length} réponse{reponses.length !== 1 ? 's' : ''})</span>
+                        <ClipboardDocumentListIcon className="w-6 h-6 text-emerald-600" />
+                        <span>Formulaire complété</span>
                     </h2>
 
-                    {reponses.length === 0 ? (
+                    {formulaireData.formulaire.description && (
+                        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-sm text-blue-800">{formulaireData.formulaire.description}</p>
+                        </div>
+                    )}
+
+                    {!formulaireData.formulaire.champs || formulaireData.formulaire.champs.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <span className="text-2xl">📝</span>
                             </div>
-                            <p className="text-gray-600">Aucune réponse enregistrée</p>
+                            <p className="text-gray-600">Aucune question dans ce formulaire</p>
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            {reponses.map((reponse, index) => (
-                                <div key={reponse.idReponse} className="border-b border-gray-100 pb-6 last:border-0">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                                            {index + 1}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-base font-medium text-gray-900 mb-2">
-                                                {reponse.champ.label}
-                                            </h3>
-                                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                                <p className="text-gray-900 whitespace-pre-wrap">
-                                                    {reponse.valeur || <span className="text-gray-400 italic">Aucune réponse</span>}
+                            {formulaireData.formulaire.champs.map((champ: any, index: number) => {
+                                const reponseValue = reponsesMap[champ.idChamp];
+                                const champType = champ.type?.toUpperCase();
+                                
+                                return (
+                                    <div key={champ.idChamp} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                        <label className="block text-sm font-medium text-gray-900 mb-3">
+                                            {index + 1}. {champ.label}
+                                            {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
+                                        </label>
+
+                                        {champType === 'TEXTE' && (
+                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
+                                                <p className="text-gray-900 font-medium">
+                                                    {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
                                                 </p>
                                             </div>
+                                        )}
 
-                                        </div>
+                                        {champType === 'NOMBRE' && (
+                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
+                                                <p className="text-gray-900 font-medium">
+                                                    {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
+                                                    {champ.unite && reponseValue && <span className="text-gray-600 ml-2">{champ.unite}</span>}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {champType === 'DATE' && (
+                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
+                                                <p className="text-gray-900 font-medium">
+                                                    {reponseValue ? new Date(reponseValue).toLocaleDateString('fr-FR', {
+                                                        day: '2-digit',
+                                                        month: 'long',
+                                                        year: 'numeric'
+                                                    }) : <span className="text-gray-400 italic">Non rempli</span>}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {champType === 'CHOIX_MULTIPLE' && (
+                                            <div className="space-y-2">
+                                                {champ.listeValeur?.options?.map((option: any, optIndex: number) => {
+                                                    const isSelected = reponseValue === option.libelle;
+                                                    // Debug pour ce champ
+                                                    if (optIndex === 0) {
+                                                        console.log(`Champ ${champ.idChamp} - Réponse:`, reponseValue, 'Options:', champ.listeValeur?.options?.map((o: any) => o.libelle));
+                                                    }
+                                                    return (
+                                                        <div 
+                                                            key={optIndex} 
+                                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg ${
+                                                                isSelected 
+                                                                    ? 'bg-green-50 border-green-500' 
+                                                                    : 'bg-white border-gray-200'
+                                                            }`}
+                                                        >
+                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                                isSelected 
+                                                                    ? 'border-green-600 bg-green-600' 
+                                                                    : 'border-gray-300'
+                                                            }`}>
+                                                                {isSelected && (
+                                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <span className={`${isSelected ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                                                                {option.libelle}
+                                                            </span>
+                                                            {isSelected && (
+                                                                <span className="ml-auto text-green-600 text-sm font-medium">✓ Sélectionné</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -201,14 +295,16 @@ function ReponsesFormulaireContent() {
                     <div className="flex gap-3">
                         <button
                             onClick={() => window.print()}
-                            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
                         >
-                            🖨️ Imprimer
+                            <PrinterIcon className="w-5 h-5" />
+                            Imprimer
                         </button>
                         <button
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                         >
-                            📊 Exporter CSV
+                            <ArrowDownTrayIcon className="w-5 h-5" />
+                            Exporter CSV
                         </button>
                     </div>
                 </div>

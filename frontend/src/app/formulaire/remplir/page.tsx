@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { ToastContainer } from "@/src/components/ToastContainer";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 
 function RemplirFormulaireContent() {
     const router = useRouter();
@@ -159,9 +159,18 @@ function RemplirFormulaireContent() {
                             <p className="text-gray-600">{formulaireRecu.formulaire.description}</p>
                         )}
                         <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                            <span>📚 {formulaireRecu.formulaire.etude?.titre || 'N/A'}</span>
-                            <span>👤 Envoyé par {formulaireRecu.formulaire.chercheur?.nom || 'N/A'}</span>
-                            <span>📅 {new Date(formulaireRecu.formulaire.dateCreation).toLocaleDateString('fr-FR')}</span>
+                            <span className="flex items-center gap-1">
+                                <BookOpenIcon className="w-4 h-4" />
+                                {formulaireRecu.formulaire.etude?.titre || 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <UserIcon className="w-4 h-4" />
+                                Envoyé par {formulaireRecu.formulaire.chercheur?.nom || 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <CalendarDaysIcon className="w-4 h-4" />
+                                {new Date(formulaireRecu.formulaire.dateCreation).toLocaleDateString('fr-FR')}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -208,39 +217,23 @@ function RemplirFormulaireContent() {
                                                                             />
                                                                         )}
                                                                         
-                                                                                                             {champ.type?.toUpperCase() === 'CHOIX_MULTIPLE' && (
-                                                                        
-                                                                                                                <div className="space-y-2 mt-2">
-                                                                        
-                                                                                                                    {champ.listeValeur?.options?.map((option: any, index: number) => (
-                                                                        
-                                                                                                                        <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                                                                        
-                                                                                                                            <input
-                                                                        
-                                                                                                                                type="radio"
-                                                                        
-                                                                                                                                name={`champ_${champ.idChamp}`}
-                                                                        
-                                                                                                                                value={option.valeur}
-                                                                        
-                                                                                                                                required={champ.obligatoire}
-                                                                        
-                                                                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
-                                                                        
-                                                                                                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                                                        
-                                                                                                                            />
-                                                                        
-                                                                                                                            <span className="text-gray-800">{option.libelle}</span>
-                                                                        
-                                                                                                                        </label>
-                                                                        
-                                                                                                                    ))}
-                                                                        
-                                                                                                                </div>
-                                                                        
-                                                                                                            )}                                </div>
+                                        {champ.type?.toUpperCase() === 'CHOIX_MULTIPLE' && (
+                                            <div className="space-y-2 mt-2">
+                                                {champ.listeValeur?.options?.map((option: any, index: number) => (
+                                                    <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name={`champ_${champ.idChamp}`}
+                                                            value={option.libelle}
+                                                            required={champ.obligatoire}
+                                                            onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                        />
+                                                        <span className="text-gray-800">{option.libelle}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}                                </div>
                             ))
                         ) : (
                             <p className="text-gray-500 text-center py-8">Aucune question dans ce formulaire</p>
