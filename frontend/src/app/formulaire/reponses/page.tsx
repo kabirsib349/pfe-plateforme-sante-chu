@@ -6,6 +6,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon, BookOpenIcon, PrinterIcon, ArrowDownTrayIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
 import { getFormulairesEnvoyes, getFormulaireById, getReponses } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
+import { config } from "@/src/lib/config";
 
 function ReponsesFormulaireContent() {
     const router = useRouter();
@@ -71,10 +72,12 @@ function ReponsesFormulaireContent() {
         return acc;
     }, {});
 
-    // Debug: afficher les réponses dans la console
-    console.log('Réponses reçues:', reponses);
-    console.log('Map des réponses:', reponsesMap);
-    console.log('Champs du formulaire:', formulaireData?.formulaire?.champs);
+    // Debug: afficher les réponses dans la console (uniquement en mode debug)
+    useEffect(() => {
+        if (config.features.enableDebug && reponses.length > 0) {
+            console.log('📊 Réponses:', { reponses, reponsesMap, champs: formulaireData?.formulaire?.champs });
+        }
+    }, [reponses, reponsesMap, formulaireData]);
 
     if (isLoading) {
         return (
@@ -219,10 +222,6 @@ function ReponsesFormulaireContent() {
                                             <div className="space-y-2">
                                                 {champ.listeValeur?.options?.map((option: any, optIndex: number) => {
                                                     const isSelected = reponseValue === option.libelle;
-                                                    // Debug pour ce champ
-                                                    if (optIndex === 0) {
-                                                        console.log(`Champ ${champ.idChamp} - Réponse:`, reponseValue, 'Options:', champ.listeValeur?.options?.map((o: any) => o.libelle));
-                                                    }
                                                     return (
                                                         <div 
                                                             key={optIndex} 
