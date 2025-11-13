@@ -14,6 +14,8 @@ import {
     BookOpenIcon, PencilSquareIcon, EyeIcon, TrashIcon, ExclamationCircleIcon,
     CalendarDaysIcon, ClipboardDocumentListIcon, UserIcon
 } from "@heroicons/react/24/outline";
+import { deleteFormulaireRecu } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 
 export default function DashboardMedecin() {
     const router = useRouter();
@@ -223,20 +225,12 @@ const FormulairesRecusTab: FC<{
                                     onClick={async () => {
                                         if (confirm('Voulez-vous supprimer ce formulaire de votre liste ?')) {
                                             try {
-                                                const response = await fetch(`http://localhost:8080/api/formulaires/recus/${formulaireRecu.id}`, {
-                                                    method: 'DELETE',
-                                                    headers: {
-                                                        'Authorization': `Bearer ${token}`,
-                                                    },
-                                                });
-                                                if (response.ok) {
-                                                    showToast('Formulaire supprimé de votre liste', 'success');
-                                                    refreshFormulairesRecus();
-                                                } else {
-                                                    showToast('Erreur lors de la suppression', 'error');
-                                                }
+                                                await deleteFormulaireRecu(token!, formulaireRecu.id);
+                                                showToast('Formulaire supprimé de votre liste', 'success');
+                                                refreshFormulairesRecus();
                                             } catch (error) {
-                                                showToast('Erreur réseau', 'error');
+                                                const formattedError = handleError(error, 'DeleteFormulaireRecu');
+                                                showToast(formattedError.userMessage, 'error');
                                             }
                                         }
                                     }}

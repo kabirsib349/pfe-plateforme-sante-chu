@@ -16,6 +16,8 @@ import {
     BeakerIcon, DocumentTextIcon, PencilSquareIcon, PaperAirplaneIcon, BookOpenIcon,
     ChartBarIcon, InboxIcon
 } from "@heroicons/react/24/outline";
+import { getFormulairesEnvoyes } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 // note: using `useRouter` from next/navigation; no default router import
 
 export default function Dashboard() {
@@ -334,16 +336,10 @@ const DataTab = () => {
             if (!token) return;
             
             try {
-                const response = await fetch('http://localhost:8080/api/formulaires/envoyes', {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    setFormulairesEnvoyes(data);
-                }
+                const data = await getFormulairesEnvoyes(token);
+                setFormulairesEnvoyes(data);
             } catch (error) {
-                console.error('Erreur:', error);
+                handleError(error, 'FetchFormulairesEnvoyes');
             } finally {
                 setIsLoading(false);
             }
