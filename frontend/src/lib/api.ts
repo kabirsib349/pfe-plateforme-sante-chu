@@ -45,7 +45,7 @@ export async function getUserInfo(token: string){
 }
 
 export async function getMedecins(token: string) {
-    const res = await fetch("http://localhost:8080/api/medecins", {
+    const res = await fetch("http://localhost:8080/api/users/medecins", {
         headers: {
             "Authorization": `Bearer ${token}`
         }
