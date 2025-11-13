@@ -6,6 +6,8 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { ToastContainer } from "@/src/components/ToastContainer";
 import { ArrowLeftIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { getFormulaireRecu, submitReponses, marquerCommeLu } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 
 function RemplirFormulaireContent() {
     const router = useRouter();
@@ -36,28 +38,16 @@ function RemplirFormulaireContent() {
             }
 
             try {
-                // Appel au nouvel endpoint pour récupérer les détails complets d'un seul formulaire
-                const response = await fetch(`http://localhost:8080/api/formulaires/recus/${formulaireRecuId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                const data = await getFormulaireRecu(token, parseInt(formulaireRecuId));
+                setFormulaireRecu({ formulaire: data });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setFormulaireRecu({ formulaire: data }); // Aligner la structure de données
-
-                    // Logique pour marquer comme lu (peut être conservée ou adaptée si nécessaire)
-                    fetch(`http://localhost:8080/api/reponses/marquer-lu/${formulaireRecuId}`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                    }).catch(err => console.error('Erreur marquage lu:', err));
-
-                } else {
-                    setError('Formulaire non trouvé ou accès non autorisé');
-                }
+                // Marquer comme lu
+                marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => 
+                    console.error('Erreur marquage lu:', err)
+                );
             } catch (err) {
-                setError('Erreur réseau');
+                const formattedError = handleError(err, 'RemplirFormulaire');
+                setError(formattedError.userMessage);
             } finally {
                 setIsLoading(false);
             }
@@ -80,30 +70,18 @@ function RemplirFormulaireContent() {
 
         setIsSending(true);
         try {
-            const response = await fetch('http://localhost:8080/api/reponses', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    formulaireMedecinId: parseInt(formulaireRecuId),
-                    reponses: reponses
-                }),
+            await submitReponses(token, {
+                formulaireMedecinId: parseInt(formulaireRecuId),
+                reponses: reponses
             });
 
-            if (response.ok) {
-                showToast('✅ Formulaire envoyé avec succès au chercheur !', 'success');
-                setTimeout(() => {
-                    router.push('/dashboard-medecin');
-                }, 1500);
-            } else {
-                const errorText = await response.text();
-                showToast(`Erreur lors de l'envoi: ${errorText}`, 'error');
-            }
+            showToast('✅ Formulaire envoyé avec succès au chercheur !', 'success');
+            setTimeout(() => {
+                router.push('/dashboard-medecin');
+            }, 1500);
         } catch (error) {
-            console.error('Erreur:', error);
-            showToast('Erreur réseau lors de l\'envoi', 'error');
+            const formattedError = handleError(error, 'SubmitReponses');
+            showToast(formattedError.userMessage, 'error');
         } finally {
             setIsSending(false);
         }

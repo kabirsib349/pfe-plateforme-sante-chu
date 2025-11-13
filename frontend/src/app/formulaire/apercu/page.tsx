@@ -3,6 +3,8 @@
 import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, EyeIcon, ClipboardDocumentListIcon, CalendarDaysIcon, HashtagIcon, DocumentTextIcon, CheckCircleIcon, UserIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { getUserInfo, getFormulaireById } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 
 // Types correspondant au backend
 interface ChampFormulaire {
@@ -55,32 +57,18 @@ function ApercuFormulaireContent() {
       }
 
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         if (!token) {
           router.push('/login');
           return;
         }
 
         // Récupérer le rôle de l'utilisateur
-        const userResponse = await fetch('http://localhost:8080/api/users/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          setUserRole(userData.role);
-        }
+        const userData = await getUserInfo(token);
+        setUserRole(userData.role);
 
-        const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        // Récupérer le formulaire
+        const data = await getFormulaireById(token, parseInt(formulaireId));
           setFormulaire({
             idFormulaire: data.idFormulaire,
             titre: data.titre,
@@ -105,8 +93,8 @@ function ApercuFormulaireContent() {
           setError('Formulaire non trouvé');
         }
       } catch (err) {
-        setError('Erreur lors du chargement du formulaire');
-        console.error('Erreur:', err);
+        const formattedError = handleError(err, 'ApercuFormulaire');
+        setError(formattedError.userMessage);
       } finally {
         setIsLoading(false);
       }

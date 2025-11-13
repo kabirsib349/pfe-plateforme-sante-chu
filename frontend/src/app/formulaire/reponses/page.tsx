@@ -4,6 +4,8 @@ import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon, BookOpenIcon, PrinterIcon, ArrowDownTrayIcon, ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
+import { getFormulairesEnvoyes, getFormulaireById, getReponses } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 
 function ReponsesFormulaireContent() {
     const router = useRouter();
@@ -33,53 +35,28 @@ function ReponsesFormulaireContent() {
 
             try {
                 // Récupérer les infos du formulaire envoyé
-                const formulairesResponse = await fetch('http://localhost:8080/api/formulaires/envoyes', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                if (formulairesResponse.ok) {
-                    const formulaires = await formulairesResponse.json();
-                    const formulaireEnvoye = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
-                    
-                    if (formulaireEnvoye) {
-                        // Récupérer le formulaire complet avec tous les champs
-                        const formulaireCompletResponse = await fetch(`http://localhost:8080/api/formulaires/${formulaireEnvoye.formulaire.idFormulaire}`, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                            },
+                const formulaires = await getFormulairesEnvoyes(token);
+                const formulaireEnvoye = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
+                
+                if (formulaireEnvoye) {
+                    // Récupérer le formulaire complet avec tous les champs
+                    try {
+                        const formulaireComplet = await getFormulaireById(token, formulaireEnvoye.formulaire.idFormulaire);
+                        setFormulaireData({
+                            ...formulaireEnvoye,
+                            formulaire: formulaireComplet
                         });
-
-                        if (formulaireCompletResponse.ok) {
-                            const formulaireComplet = await formulaireCompletResponse.json();
-                            // Combiner les données
-                            setFormulaireData({
-                                ...formulaireEnvoye,
-                                formulaire: formulaireComplet
-                            });
-                        } else {
-                            setFormulaireData(formulaireEnvoye);
-                        }
+                    } catch {
+                        setFormulaireData(formulaireEnvoye);
                     }
                 }
 
                 // Récupérer les réponses
-                const reponsesResponse = await fetch(`http://localhost:8080/api/reponses/${formulaireMedecinId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                if (reponsesResponse.ok) {
-                    const reponsesData = await reponsesResponse.json();
-                    setReponses(reponsesData);
-                } else {
-                    setError('Erreur lors du chargement des réponses');
-                }
+                const reponsesData = await getReponses(token, parseInt(formulaireMedecinId));
+                setReponses(reponsesData);
             } catch (err) {
-                setError('Erreur réseau');
-                console.error('Erreur:', err);
+                const formattedError = handleError(err, 'ReponsesFormulaire');
+                setError(formattedError.userMessage);
             } finally {
                 setIsLoading(false);
             }

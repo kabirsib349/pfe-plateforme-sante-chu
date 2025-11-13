@@ -10,6 +10,8 @@ import { TYPES_ETUDES } from "@/src/constants/etudes";
 import { MESSAGES } from "@/src/constants/messages";
 import { ToastContainer } from "@/src/components/ToastContainer";
 import ModalEnvoiFormulaire from '@/src/components/ModalEnvoiFormulaire';
+import { getFormulaires, deleteFormulaire } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 
 // Type mis à jour pour correspondre à la réponse de l'API backend
 interface FormulaireAPI {
@@ -55,21 +57,11 @@ export default function Formulaire() {
         }
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/api/formulaires', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setFormulaires(data);
-            } else {
-                showToast(MESSAGES.error.chargement, "error");
-            }
+            const data = await getFormulaires(token);
+            setFormulaires(data);
         } catch (error) {
-            console.error("Erreur réseau:", error);
-            showToast(MESSAGES.error.reseau, "error");
+            const formattedError = handleError(error, 'FetchFormulaires');
+            showToast(formattedError.userMessage, "error");
         } finally {
             setIsLoading(false);
         }
@@ -135,25 +127,13 @@ export default function Formulaire() {
             return;
         }
         try {
-            const response = await fetch(`http://localhost:8080/api/formulaires/${formulaireToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (response.ok) {
-                setFormulaires(formulaires.filter(f => f.idFormulaire !== formulaireToDelete));
-                showToast(MESSAGES.success.formulaireSupprime, "success");
-                triggerStatsRefresh(); // Rafraîchir les stats
-            } else {
-                const errorText = await response.text();
-                console.error("Erreur de suppression:", errorText);
-                showToast(errorText || MESSAGES.error.suppression, "error");
-            }
+            await deleteFormulaire(token!, formulaireToDelete);
+            setFormulaires(formulaires.filter(f => f.idFormulaire !== formulaireToDelete));
+            showToast(MESSAGES.success.formulaireSupprime, "success");
+            triggerStatsRefresh();
         } catch (error) {
-            console.error("Erreur réseau:", error);
-            showToast(MESSAGES.error.reseau, "error");
+            const formattedError = handleError(error, 'DeleteFormulaire');
+            showToast(formattedError.userMessage, "error");
         } finally {
             closeDeleteModal();
         }
