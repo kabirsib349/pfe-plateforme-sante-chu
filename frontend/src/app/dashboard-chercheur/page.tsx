@@ -9,6 +9,8 @@ import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
 import { Card } from "@/src/components/Card";
+import { UserCircleIcon, ArrowLeftIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon, XMarkIcon, PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline"; // Import de l'icône UserCircleIcon et autres icônes utilisées
+// note: using `useRouter` from next/navigation; no default router import
 
 export default function Dashboard() {
     const router = useRouter();
@@ -49,6 +51,13 @@ export default function Dashboard() {
                                 Investigateur Coordinateur
                             </span>
                             <span className="text-gray-900 font-medium">{user?.nom ?? "Dr. Emmanuel KWEGUENG"}</span>
+                            <button
+                                onClick={() => router.push('/parametres')}
+                                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                                title="Profil"
+                            >
+                                <UserCircleIcon className="w-6 h-6" />
+                            </button>
                             <button
                                 onClick={logout}
                                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
@@ -245,7 +254,7 @@ const FormsTab = () => {
     };
 
     return (
-        <div>
+        <div className="space-y-6">
             <Card
                 title="Formulaires crées"
                 action={
@@ -325,12 +334,12 @@ const DataTab = () => {
     useEffect(() => {
         const fetchFormulairesEnvoyes = async () => {
             if (!token) return;
-            
+
             try {
                 const response = await fetch('http://localhost:8080/api/formulaires/envoyes', {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     setFormulairesEnvoyes(data);
@@ -341,7 +350,7 @@ const DataTab = () => {
                 setIsLoading(false);
             }
         };
-        
+
         fetchFormulairesEnvoyes();
     }, [token]);
 
@@ -376,7 +385,7 @@ const DataTab = () => {
                                         </h3>
                                         <Badge color="green">Complété</Badge>
                                     </div>
-                                    
+
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                                         <span className="flex items-center gap-1">
                                             <span>📚</span>

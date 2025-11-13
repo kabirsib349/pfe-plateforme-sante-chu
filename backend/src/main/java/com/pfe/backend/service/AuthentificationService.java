@@ -17,7 +17,6 @@ import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.UtilisateurRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
@@ -32,7 +31,7 @@ public class AuthentificationService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
 
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional
     public void register(RegisterRequest request) {
         if (utilisateurRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalStateException("Un utilisateur avec cet email existe déja.");
@@ -69,4 +68,5 @@ public class AuthentificationService {
 
         return new LoginResponse(jwtToken);
     }
+
 }
