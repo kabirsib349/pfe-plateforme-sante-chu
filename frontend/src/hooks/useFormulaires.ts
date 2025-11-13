@@ -6,7 +6,7 @@ import { config } from '@/src/lib/config';
 
 export const useFormulaires = () => {
   const { token } = useAuth();
-  const [formulaires, setFormulaires] = useState([]);
+  const [formulaires, setFormulaires] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

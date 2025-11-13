@@ -69,29 +69,26 @@ function ApercuFormulaireContent() {
 
         // Récupérer le formulaire
         const data = await getFormulaireById(token, parseInt(formulaireId));
-          setFormulaire({
-            idFormulaire: data.idFormulaire,
-            titre: data.titre,
-            description: data.description || '',
-            etude: data.etude?.titre || 'N/A',
-            createurNom: data.chercheur?.nom || 'N/A',
-            statut: data.statut,
-            dateCreation: data.dateCreation,
-            champs: data.champs?.map((champ: any) => ({
-              nomVariable: champ.label?.toUpperCase().replace(/\s+/g, '_') || 'VARIABLE',
-              question: champ.label,
-              type: champ.type?.toUpperCase() || 'TEXTE',
-              obligatoire: champ.obligatoire || false,
-              options: champ.listeValeur?.options?.map((opt: any) => opt.libelle) || [],
-              codesModalites: champ.listeValeur?.options?.map((opt: any) => opt.valeur) || [],
-              unite: champ.unite,
-              valeurMin: champ.valeurMin,
-              valeurMax: champ.valeurMax
-            })) || []
-          });
-        } else {
-          setError('Formulaire non trouvé');
-        }
+        setFormulaire({
+          idFormulaire: data.idFormulaire,
+          titre: data.titre,
+          description: data.description || '',
+          etude: data.etude?.titre || 'N/A',
+          createurNom: data.chercheur?.nom || 'N/A',
+          statut: data.statut,
+          dateCreation: data.dateCreation,
+          champs: data.champs?.map((champ: any) => ({
+            nomVariable: champ.label?.toUpperCase().replace(/\s+/g, '_') || 'VARIABLE',
+            question: champ.label,
+            type: champ.type?.toUpperCase() || 'TEXTE',
+            obligatoire: champ.obligatoire || false,
+            options: champ.listeValeur?.options?.map((opt: any) => opt.libelle) || [],
+            codesModalites: champ.listeValeur?.options?.map((opt: any) => opt.valeur) || [],
+            unite: champ.unite,
+            valeurMin: champ.valeurMin,
+            valeurMax: champ.valeurMax
+          })) || []
+        });
       } catch (err) {
         const formattedError = handleError(err, 'ApercuFormulaire');
         setError(formattedError.userMessage);
