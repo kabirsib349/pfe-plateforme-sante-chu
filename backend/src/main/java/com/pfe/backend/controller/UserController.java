@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -28,7 +28,7 @@ public class UserController {
     private final FormulaireMedecinService formulaireMedecinService;
     private final UserService userService;
 
-    @GetMapping("/users/me")
+    @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(Principal principal){
         String username = principal.getName();
         Utilisateur user = utilisateurRepository.findByEmail(username)
@@ -51,6 +51,9 @@ public class UserController {
             Principal principal,
             @RequestBody @Validated UserDto dto
     ) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
+        }
         System.out.println("Principal : " + principal);
         System.out.println("Nom : " + dto.getNom());
         System.out.println("Email : " + dto.getEmail());
