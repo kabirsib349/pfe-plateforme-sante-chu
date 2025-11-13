@@ -96,8 +96,8 @@ public class FormulaireController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAuthority('chercheur')")
-    public void deleteFormulaire(@PathVariable Long id) {
-        formulaireService.deleteFormulaire(id);
+    public void deleteFormulaire(@PathVariable Long id, Principal principal) {
+        formulaireService.deleteFormulaire(id, principal.getName());
     }
 
     @DeleteMapping("/recus/{formulaireMedecinId}")
