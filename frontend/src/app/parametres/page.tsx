@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Card } from '@/src/components/Card';
 import { ArrowLeftIcon, UserCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { validatePassword } from '@/src/lib/validation';
 
 interface Message {
     text: string;
@@ -76,6 +77,14 @@ export default function ParametresPage() {
         setIsPasswordSaving(true);
         setPasswordMessage(null);
 
+        // Vérification de la force du nouveau mot de passe côté client (UX)
+        const pwdError = validatePassword(newPassword);
+        if (pwdError) {
+            setPasswordMessage({ text: pwdError, type: 'error' });
+            setIsPasswordSaving(false);
+            return;
+        }
+
         if (newPassword !== confirmationPassword) {
             setPasswordMessage({ text: 'Le nouveau mot de passe et sa confirmation ne correspondent pas.', type: 'error' });
             setIsPasswordSaving(false);
@@ -107,6 +116,8 @@ export default function ParametresPage() {
             setIsPasswordSaving(false);
         }
     };
+
+    // Effacer le message d'erreur lorsque l'utilisateur modifie les champs de mot de passe
 
     if (isLoading || !isAuthenticated) {
         return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
@@ -178,7 +189,7 @@ export default function ParametresPage() {
                                     type={showCurrentPassword ? 'text' : 'password'}
                                     id="currentPassword"
                                     value={currentPassword}
-                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    onChange={(e) => { setCurrentPassword(e.target.value); setPasswordMessage(null); }}
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <button
@@ -195,7 +206,7 @@ export default function ParametresPage() {
                                     type={showNewPassword ? 'text' : 'password'}
                                     id="newPassword"
                                     value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    onChange={(e) => { setNewPassword(e.target.value); setPasswordMessage(null); }}
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <button
@@ -212,7 +223,7 @@ export default function ParametresPage() {
                                     type={showConfirmationPassword ? 'text' : 'password'}
                                     id="confirmationPassword"
                                     value={confirmationPassword}
-                                    onChange={(e) => setConfirmationPassword(e.target.value)}
+                                    onChange={(e) => { setConfirmationPassword(e.target.value); setPasswordMessage(null); }}
                                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <button
