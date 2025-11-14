@@ -8,6 +8,7 @@ import { ToastContainer } from "@/src/components/ToastContainer";
 import { ArrowLeftIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 import { getFormulaireRecu, submitReponses, marquerCommeLu } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
+import { config } from "@/src/lib/config";
 
 function RemplirFormulaireContent() {
     const router = useRouter();
@@ -42,9 +43,11 @@ function RemplirFormulaireContent() {
                 setFormulaireRecu({ formulaire: data });
 
                 // Marquer comme lu
-                marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => 
-                    console.error('Erreur marquage lu:', err)
-                );
+                marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
+                    if (config.features.enableDebug) {
+                        console.error('🔴 Erreur marquage lu:', err);
+                    }
+                });
             } catch (err) {
                 const formattedError = handleError(err, 'RemplirFormulaire');
                 setError(formattedError.userMessage);

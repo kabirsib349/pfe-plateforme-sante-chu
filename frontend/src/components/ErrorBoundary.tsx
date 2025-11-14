@@ -22,7 +22,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log l'erreur pour le monitoring (toujours actif car c'est critique)
+    console.error('🔴 ErrorBoundary caught an error:', error, errorInfo);
+    
+    // TODO: Envoyer à un service de monitoring (Sentry, LogRocket, etc.)
+    // if (config.features.enableAnalytics) {
+    //   sendToMonitoring({ error, errorInfo });
+    // }
   }
 
   render() {

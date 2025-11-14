@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { getUserInfo, ApiException } from '../lib/api';
 import { config } from '../lib/config';
+import { handleError } from '../lib/errorHandler';
 import type { User } from '@/src/types';
 
 interface AuthContextType {
@@ -42,7 +43,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUser(userInfo);
             setIsAuthenticated(true);
         } catch (err) {
-            console.error('Erreur lors de la récupération des infos utilisateur:', err);
+            if (config.features.enableDebug) {
+                console.error('🔴 Erreur lors de la récupération des infos utilisateur:', err);
+            }
             
             if (err instanceof ApiException) {
                 setError(err.message);

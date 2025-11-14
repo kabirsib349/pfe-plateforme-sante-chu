@@ -37,8 +37,8 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
                     const data = await getMedecins(token);
                     setMedecins(data);
                 } catch (error) {
-                    console.error(error);
-                    showToast('Erreur lors du chargement des médecins', 'error');
+                    const formattedError = handleError(error, 'LoadMedecins');
+                    showToast(formattedError.userMessage, 'error');
                 } finally {
                     setIsChargementMedecins(false);
                 }
@@ -64,9 +64,9 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
             onSuccess(); // <-- APPEL DE LA FONCTION DE RAPPEL
             onClose();
             setMedecinSelectionne('');
-        } catch (error: any) {
-            console.error('Erreur réseau:', error);
-            showToast(error.message || 'Erreur lors de l\'envoi du formulaire', 'error');
+        } catch (error) {
+            const formattedError = handleError(error, 'SendFormulaire');
+            showToast(formattedError.userMessage, 'error');
         } finally {
             setIsLoading(false);
         }
