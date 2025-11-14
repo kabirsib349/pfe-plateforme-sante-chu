@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login as apiLogin } from "../../lib/api";
+import { login as apiLogin, getUserInfo } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { handleError } from "../../lib/errorHandler";
 import { Role } from "@/src/types";
@@ -24,8 +24,11 @@ export default function Login() {
             const response = await apiLogin({ email, password });
             await login(response.token);
             
+            // Récupérer les infos utilisateur après le login
+            const userInfo = await getUserInfo(response.token);
+            
             // Redirection basée sur le rôle
-            if (response.user.role === Role.MEDECIN) {
+            if (userInfo.role === Role.MEDECIN) {
                 router.push("/dashboard-medecin");
             } else {
                 router.push("/dashboard-chercheur");
