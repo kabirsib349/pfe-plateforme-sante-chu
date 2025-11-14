@@ -1,4 +1,4 @@
-package com.pfe.backend.model.converter;
+package com.pfe.backend.config.converter;
 
 import com.pfe.backend.model.StatutFormulaire;
 import jakarta.persistence.AttributeConverter;

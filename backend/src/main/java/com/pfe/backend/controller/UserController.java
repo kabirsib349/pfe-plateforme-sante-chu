@@ -1,7 +1,7 @@
 package com.pfe.backend.controller;
 
-import com.pfe.backend.dto.ChangePasswordDto;
-import com.pfe.backend.dto.UserDto;
+import com.pfe.backend.dto.ChangePasswordRequest;
+import com.pfe.backend.dto.UserUpdateRequest;
 import com.pfe.backend.dto.UserResponse;
 import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.UtilisateurRepository;
@@ -51,7 +51,7 @@ public class UserController {
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(
             Principal principal,
-            @RequestBody @Validated UserDto dto
+            @RequestBody @Validated UserUpdateRequest dto
     ) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
@@ -75,7 +75,7 @@ public class UserController {
     @PutMapping("/changer-mot-de-passe")
     public ResponseEntity<?> changePassword(
             Principal principal,
-            @RequestBody @Validated ChangePasswordDto dto
+            @RequestBody @Validated ChangePasswordRequest dto
     ) {
         // Si l'utilisateur n'est pas authentifié, renvoyer 401 au lieu d'un NPE qui génère 500
         if (principal == null) {

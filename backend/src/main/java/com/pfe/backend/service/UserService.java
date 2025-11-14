@@ -1,7 +1,7 @@
 package com.pfe.backend.service;
 
-import com.pfe.backend.dto.ChangePasswordDto;
-import com.pfe.backend.dto.UserDto;
+import com.pfe.backend.dto.ChangePasswordRequest;
+import com.pfe.backend.dto.UserUpdateRequest;
 import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class UserService {
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + username));
     }
 
-    public Utilisateur updateProfile(String username, UserDto dto) {
+    public Utilisateur updateProfile(String username, UserUpdateRequest dto) {
         Utilisateur user = repository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
 
@@ -43,7 +43,7 @@ public class UserService {
         return repository.save(user);
     }
 
-    public void changePassword(String username, ChangePasswordDto dto) {
+    public void changePassword(String username, ChangePasswordRequest dto) {
         Utilisateur user = repository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
 
