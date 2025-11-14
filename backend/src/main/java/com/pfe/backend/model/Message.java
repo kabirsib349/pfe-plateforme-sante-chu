@@ -27,12 +27,12 @@ public class Message {
 
     @Setter
     @ManyToOne
-    @JoinColumn(name = "id_expediteur", nullable = false)
+    @JoinColumn(name = "expediteur_id", nullable = false)
     private Utilisateur emetteur;
 
     @Setter
     @ManyToOne
-    @JoinColumn(name = "id_destinataire", nullable = false)
+    @JoinColumn(name = "destinataire_id", nullable = false)
     private Utilisateur destinataire;
 
     @Setter
