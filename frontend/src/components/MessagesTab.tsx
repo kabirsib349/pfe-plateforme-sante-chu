@@ -80,7 +80,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
         return groups;
     };
 
-    if (!user || !token) {
+    if (!user || !token || !user.id) {
         return (
             <div className="flex items-center justify-center h-40 text-gray-500">
                 Chargement...

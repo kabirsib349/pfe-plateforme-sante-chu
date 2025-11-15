@@ -36,14 +36,14 @@ public class UserController {
         Utilisateur user = utilisateurRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
 
-        UserResponse response = new UserResponse(user.getNom(), user.getEmail(), user.getRole().getNom());
+        UserResponse response = new UserResponse(user.getId(), user.getNom(), user.getEmail(), user.getRole().getNom());
         return ResponseEntity.ok(response);
     }
     @GetMapping("/medecins")
     public ResponseEntity<List<UserResponse>> getMedecins(){
         List<Utilisateur> medecins = formulaireMedecinService.getMedecins();
         List<UserResponse> response = medecins.stream()
-                .map(medecin -> new UserResponse(medecin.getNom(), medecin.getEmail(), medecin.getRole().getNom()))
+                .map(medecin -> new UserResponse(medecin.getId(), medecin.getNom(), medecin.getEmail(), medecin.getRole().getNom()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
@@ -64,6 +64,7 @@ public class UserController {
         log.info("Profile updated successfully for user: {}", updatedUser.getEmail());
 
         UserResponse response = new UserResponse(
+                updatedUser.getId(),
                 updatedUser.getNom(),
                 updatedUser.getEmail(),
                 updatedUser.getRole() != null ? updatedUser.getRole().getNom() : null
