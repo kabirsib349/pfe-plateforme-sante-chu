@@ -268,3 +268,73 @@ export async function getStats(token: string): Promise<any> {
 
     return handleResponse<any>(response);
 }
+
+// ============= MESSAGES API =============
+
+export async function getChercheurs(token: string): Promise<User[]> {
+    const response = await fetch(apiUrl('/api/users/chercheurs'), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<User[]>(response);
+}
+
+export async function getConversation(token: string, chercheurId: number, medecinId: number): Promise<any[]> {
+    const response = await fetch(apiUrl(`/api/messages/conversation/${chercheurId}/${medecinId}`), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<any[]>(response);
+}
+
+export async function sendMessage(token: string, data: { emetteurId: string; destinataireId: string; contenu: string }): Promise<any> {
+    const response = await fetch(apiUrl('/api/messages/envoyer'), {
+        method: 'POST',
+        headers: createHeaders(token),
+        body: JSON.stringify(data),
+    });
+
+    return handleResponse<any>(response);
+}
+
+export async function marquerMessagesLusChercheur(token: string, chercheurId: number, medecinId: number): Promise<void> {
+    const response = await fetch(apiUrl(`/api/messages/conversation/lire/chercheur/${chercheurId}/${medecinId}`), {
+        method: 'PUT',
+        headers: createHeaders(token),
+    });
+
+    await handleResponse<void>(response);
+}
+
+export async function marquerMessagesLusMedecin(token: string, chercheurId: number, medecinId: number): Promise<void> {
+    const response = await fetch(apiUrl(`/api/messages/conversation/lire/medecin/${chercheurId}/${medecinId}`), {
+        method: 'PUT',
+        headers: createHeaders(token),
+    });
+
+    await handleResponse<void>(response);
+}
+
+export async function countMessagesNonLus(token: string, chercheurId: number, medecinId: number): Promise<number> {
+    const response = await fetch(apiUrl(`/api/messages/nonlus/${chercheurId}/${medecinId}`), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<number>(response);
+}
+
+export async function countMessagesNonLusChercheur(token: string, chercheurId: number): Promise<number> {
+    const response = await fetch(apiUrl(`/api/messages/non-lus/chercheur/${chercheurId}`), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<number>(response);
+}
+
+export async function countMessagesNonLusMedecin(token: string, medecinId: number): Promise<number> {
+    const response = await fetch(apiUrl(`/api/messages/non-lus/medecin/${medecinId}`), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<number>(response);
+}
