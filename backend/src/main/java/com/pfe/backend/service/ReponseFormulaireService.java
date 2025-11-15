@@ -36,10 +36,21 @@ public class ReponseFormulaireService {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
         }
 
-        // Supprimer les anciennes réponses si elles existent
-        reponseFormulaireRepository.deleteByFormulaireMedecinId(request.getFormulaireMedecinId());
+        // Vérifier si ce patient a déjà été enregistré pour ce formulaire
+        List<ReponseFormulaire> reponsesExistantes = reponseFormulaireRepository
+                .findByFormulaireMedecinIdAndPatientIdentifier(
+                        request.getFormulaireMedecinId(), 
+                        request.getPatientIdentifier()
+                );
 
-        // Sauvegarder les nouvelles réponses
+        if (!reponsesExistantes.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Le patient '" + request.getPatientIdentifier() + 
+                    "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
+            );
+        }
+
+        // Sauvegarder les nouvelles réponses avec l'identifiant patient
         for (Map.Entry<Long, String> entry : request.getReponses().entrySet()) {
             Long champId = entry.getKey();
             String valeur = entry.getValue();
@@ -52,6 +63,7 @@ public class ReponseFormulaireService {
                 reponse.setFormulaireMedecin(formulaireMedecin);
                 reponse.setChamp(champ);
                 reponse.setValeur(valeur);
+                reponse.setPatientIdentifier(request.getPatientIdentifier());
 
                 reponseFormulaireRepository.save(reponse);
             }
@@ -74,7 +86,8 @@ public class ReponseFormulaireService {
                 "Formulaire rempli",
                 "Formulaire",
                 formulaireMedecin.getFormulaire().getIdFormulaire(),
-                "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() + "' rempli et envoyé"
+                "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() + 
+                "' rempli pour le patient: " + request.getPatientIdentifier()
         );
     }
 
@@ -98,5 +111,34 @@ public class ReponseFormulaireService {
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponses(Long formulaireMedecinId) {
         return reponseFormulaireRepository.findByFormulaireMedecinId(formulaireMedecinId);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<ReponseFormulaire> getReponsesByPatient(Long formulaireMedecinId, String patientIdentifier) {
+        return reponseFormulaireRepository.findByFormulaireMedecinIdAndPatientIdentifier(
+                formulaireMedecinId, 
+                patientIdentifier
+        );
+    }
+    
+    @Transactional(readOnly = true)
+    public List<String> getPatientIdentifiers(Long formulaireMedecinId) {
+        return reponseFormulaireRepository.findDistinctPatientIdentifiersByFormulaireMedecinId(formulaireMedecinId);
+    }
+    
+    @Transactional
+    public void supprimerReponsesPatient(Long formulaireMedecinId, String patientIdentifier, String emailMedecin) {
+        FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+
+        // Vérifier que c'est bien le médecin assigné
+        if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ces réponses");
+        }
+
+        reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifier(
+                formulaireMedecinId, 
+                patientIdentifier
+        );
     }
 }

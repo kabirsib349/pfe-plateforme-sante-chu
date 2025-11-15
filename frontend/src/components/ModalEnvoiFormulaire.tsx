@@ -5,6 +5,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { XMarkIcon, UserIcon } from "@heroicons/react/24/outline";
 import { getMedecins, sendFormulaireToMedecin } from "@/src/lib/api";
+import { handleError } from "@/src/lib/errorHandler";
 
 interface Utilisateur {
     nom: string;
@@ -25,7 +26,7 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
     const { showToast: showToastLocal } = useToast();
     const showToast = showToastProp || showToastLocal;
     const [medecins, setMedecins] = useState<Utilisateur[]>([]);
-    const [medecinSelectionne, setMedecinSelectionne] = useState<string>('');
+    const [medecinsSelectionnes, setMedecinsSelectionnes] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isChargementMedecins, setIsChargementMedecins] = useState(false);
 
@@ -47,9 +48,25 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
         }
     }, [isOpen, token, showToast]);
 
+    const toggleMedecin = (email: string) => {
+        setMedecinsSelectionnes(prev => 
+            prev.includes(email) 
+                ? prev.filter(e => e !== email)
+                : [...prev, email]
+        );
+    };
+
+    const selectAll = () => {
+        if (medecinsSelectionnes.length === medecins.length) {
+            setMedecinsSelectionnes([]);
+        } else {
+            setMedecinsSelectionnes(medecins.map(m => m.email));
+        }
+    };
+
     const handleEnvoyer = async () => {
-        if (!medecinSelectionne) {
-            showToast('Veuillez sélectionner un médecin', 'error');
+        if (medecinsSelectionnes.length === 0) {
+            showToast('Veuillez sélectionner au moins un médecin', 'error');
             return;
         }
         if (!token) {
@@ -58,17 +75,41 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
         }
 
         setIsLoading(true);
-        try {
-            await sendFormulaireToMedecin(token, formulaireId, medecinSelectionne);
-            showToast('Formulaire envoyé avec succès', 'success');
-            onSuccess(); // <-- APPEL DE LA FONCTION DE RAPPEL
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        for (const emailMedecin of medecinsSelectionnes) {
+            try {
+                await sendFormulaireToMedecin(token, formulaireId, emailMedecin);
+                successCount++;
+            } catch (error) {
+                errorCount++;
+                const formattedError = handleError(error, 'SendFormulaire');
+                errors.push(formattedError.userMessage);
+            }
+        }
+
+        setIsLoading(false);
+
+        if (successCount > 0) {
+            showToast(
+                `Formulaire envoyé à ${successCount} médecin${successCount > 1 ? 's' : ''}`, 
+                'success'
+            );
+            onSuccess();
+        }
+
+        if (errorCount > 0) {
+            showToast(
+                `${errorCount} erreur${errorCount > 1 ? 's' : ''}: ${errors[0]}`, 
+                'error'
+            );
+        }
+
+        if (successCount > 0) {
             onClose();
-            setMedecinSelectionne('');
-        } catch (error) {
-            const formattedError = handleError(error, 'SendFormulaire');
-            showToast(formattedError.userMessage, 'error');
-        } finally {
-            setIsLoading(false);
+            setMedecinsSelectionnes([]);
         }
     };
 
@@ -86,41 +127,62 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
                 </div>
 
                 {/* Corps */}
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-4">
                     <div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">{formulaireTitre}</h3>
-                        <p className="text-sm text-gray-600">Sélectionnez un médecin à qui envoyer ce formulaire.</p>
+                        <p className="text-sm text-gray-600">Sélectionnez un ou plusieurs médecins destinataires.</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Médecin destinataire
-                        </label>
-                        <div className="relative">
-                            <select
-                                value={medecinSelectionne}
-                                onChange={(e) => setMedecinSelectionne(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white"
-                                disabled={isChargementMedecins}
-                            >
-                                <option value="">Sélectionnez un médecin</option>
-                                {medecins.map((medecin) => (
-                                    <option key={medecin.email} value={medecin.email}>
-                                        {medecin.nom}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <UserIcon className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </div>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Médecins ({medecinsSelectionnes.length} sélectionné{medecinsSelectionnes.length > 1 ? 's' : ''})
+                            </label>
+                            {medecins.length > 0 && (
+                                <button
+                                    onClick={selectAll}
+                                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                    {medecinsSelectionnes.length === medecins.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                                </button>
+                            )}
                         </div>
-                        {isChargementMedecins && (
-                            <p className="text-sm text-gray-500 mt-2">Chargement des médecins...</p>
+
+                        {isChargementMedecins ? (
+                            <div className="text-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                <p className="text-sm text-gray-500 mt-2">Chargement des médecins...</p>
+                            </div>
+                        ) : medecins.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                <UserIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                                <p className="text-sm">Aucun médecin disponible</p>
+                            </div>
+                        ) : (
+                            <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+                                {medecins.map((medecin) => (
+                                    <label
+                                        key={medecin.email}
+                                        className="flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={medecinsSelectionnes.includes(medecin.email)}
+                                            onChange={() => toggleMedecin(medecin.email)}
+                                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                                <UserIcon className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-900">{medecin.nom}</p>
+                                                <p className="text-xs text-gray-500">{medecin.email}</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -135,10 +197,13 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
                     </button>
                     <button
                         onClick={handleEnvoyer}
-                        disabled={isLoading || !medecinSelectionne}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || medecinsSelectionnes.length === 0}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                     >
-                        {isLoading ? 'Envoi en cours...' : 'Envoyer'}
+                        {isLoading 
+                            ? 'Envoi en cours...' 
+                            : `Envoyer${medecinsSelectionnes.length > 0 ? ` (${medecinsSelectionnes.length})` : ''}`
+                        }
                     </button>
                 </div>
             </div>

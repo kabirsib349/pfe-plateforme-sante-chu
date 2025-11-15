@@ -6,4 +6,3 @@ export { ToastContainer } from './ToastContainer';
 // Composants Dashboard
 export { StatCard } from './dashboard/StatCard';
 export { TabButton } from './dashboard/TabButton';
-export { DashboardLayout } from './dashboard/DashboardLayout';

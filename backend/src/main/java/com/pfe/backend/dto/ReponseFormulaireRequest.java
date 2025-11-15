@@ -1,5 +1,7 @@
 package com.pfe.backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +10,12 @@ import java.util.Map;
 @Getter
 @Setter
 public class ReponseFormulaireRequest {
+    @NotNull(message = "L'ID du formulaire médecin est obligatoire")
     private Long formulaireMedecinId;
+    
+    @NotBlank(message = "L'identifiant du patient est obligatoire")
+    private String patientIdentifier;
+    
+    @NotNull(message = "Les réponses sont obligatoires")
     private Map<Long, String> reponses; // Map<idChamp, valeur>
 }

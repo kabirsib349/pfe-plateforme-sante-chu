@@ -19,7 +19,7 @@ export const StatCard: FC<StatCardProps> = ({
 }) => (
   <div className="glass rounded-2xl shadow-eco p-5 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-eco-lg border border-white/20">
     {icon && (
-      <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center text-emerald-600">
+      <div className="w-10 h-10 mx-auto mb-3 flex items-center justify-center text-emerald-600">
         {icon}
       </div>
     )}

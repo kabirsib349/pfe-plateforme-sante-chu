@@ -166,31 +166,42 @@ function ApercuFormulaireContent() {
         {/* Prévisualisation du champ selon le type */}
         <div className="ml-7">
           {champ.type === 'TEXTE' && (
-            <input 
-              type="text" 
-              placeholder="Saisie de texte..."
-              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-              disabled
-            />
+            <div className="space-y-1">
+              <textarea 
+                placeholder="Saisie de texte (max 500 caractères)..."
+                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-gray-50 resize-none"
+                rows={3}
+                maxLength={500}
+                disabled
+              />
+              <p className="text-xs text-gray-500">Maximum 500 caractères</p>
+            </div>
           )}
 
           {champ.type === 'NOMBRE' && (
-            <div className="flex items-center gap-2">
-              <input 
-                type="number" 
-                placeholder="0"
-                min={champ.valeurMin}
-                max={champ.valeurMax}
-                className="w-32 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                disabled
-              />
-              {champ.unite && (
-                <span className="text-gray-600 font-medium">{champ.unite}</span>
-              )}
-              {champ.valeurMin !== undefined && champ.valeurMax !== undefined && (
-                <span className="text-sm text-gray-500">
-                  (entre {champ.valeurMin} et {champ.valeurMax})
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  placeholder="0"
+                  min={champ.valeurMin}
+                  max={champ.valeurMax}
+                  step="any"
+                  className="w-40 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  disabled
+                />
+                {champ.unite && (
+                  <span className="text-gray-600 font-medium">{champ.unite}</span>
+                )}
+              </div>
+              {((champ.valeurMin !== null && champ.valeurMin !== undefined) || (champ.valeurMax !== null && champ.valeurMax !== undefined)) && (
+                <p className="text-xs text-gray-500">
+                  {champ.valeurMin !== null && champ.valeurMin !== undefined && champ.valeurMax !== null && champ.valeurMax !== undefined
+                    ? `Valeur entre ${champ.valeurMin} et ${champ.valeurMax}`
+                    : champ.valeurMin !== null && champ.valeurMin !== undefined
+                    ? `Valeur minimum: ${champ.valeurMin}`
+                    : `Valeur maximum: ${champ.valeurMax}`}
+                </p>
               )}
             </div>
           )}

@@ -22,6 +22,7 @@ function RemplirFormulaireContent() {
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [reponses, setReponses] = useState<Record<string, any>>({});
+    const [patientIdentifier, setPatientIdentifier] = useState<string>('');
 
     // Rediriger si pas médecin
     useEffect(() => {
@@ -71,14 +72,20 @@ function RemplirFormulaireContent() {
             return;
         }
 
+        if (!patientIdentifier.trim()) {
+            showToast('Veuillez saisir un identifiant patient', 'error');
+            return;
+        }
+
         setIsSending(true);
         try {
             await submitReponses(token, {
                 formulaireMedecinId: parseInt(formulaireRecuId),
+                patientIdentifier: patientIdentifier.trim(),
                 reponses: reponses
             });
 
-            showToast('✅ Formulaire envoyé avec succès au chercheur !', 'success');
+            showToast('Formulaire enregistré avec succès pour le patient ' + patientIdentifier, 'success');
             setTimeout(() => {
                 router.push('/dashboard-medecin');
             }, 1500);
@@ -160,7 +167,25 @@ function RemplirFormulaireContent() {
             {/* Formulaire */}
             <div className="max-w-4xl mx-auto px-6 py-8">
                 <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div className="space-y-6">
+                    {/* Champ Identifiant Patient */}
+                    <div className="mb-8 pb-6 border-b-2 border-blue-100 bg-blue-50/30 -m-6 p-6 rounded-t-lg">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            🏥 Identifiant Patient <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={patientIdentifier}
+                            onChange={(e) => setPatientIdentifier(e.target.value)}
+                            placeholder="Ex: P-2024-001, Dossier-12345, Patient-A..."
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        />
+                        <p className="mt-2 text-sm text-gray-600">
+                            Saisissez un identifiant unique pour ce patient. Vous pourrez remplir ce formulaire plusieurs fois avec des identifiants différents.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6 mt-6">
                         {formulaireRecu.formulaire.champs && formulaireRecu.formulaire.champs.length > 0 ? (
                             formulaireRecu.formulaire.champs.map((champ: any, index: number) => (
                                 <div key={champ.idChamp} className="border-b border-gray-100 pb-6 last:border-0">
@@ -170,23 +195,41 @@ function RemplirFormulaireContent() {
                                     </label>
                                     
                                                                         {champ.type?.toUpperCase() === 'TEXTE' && (
-                                                                            <input
-                                                                                type="text"
+                                                                            <textarea
                                                                                 required={champ.obligatoire}
-                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                                                placeholder="Votre réponse"
+                                                                                maxLength={500}
+                                                                                rows={3}
+                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                                                placeholder="Votre réponse (max 500 caractères)"
                                                                                 onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
                                                                             />
                                                                         )}
                                                                         
                                                                         {champ.type?.toUpperCase() === 'NOMBRE' && (
-                                                                            <input
-                                                                                type="number"
-                                                                                required={champ.obligatoire}
-                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                                                placeholder="Votre réponse"
-                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
-                                                                            />
+                                                                            <div>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    required={champ.obligatoire}
+                                                                                    min={champ.valeurMin ?? undefined}
+                                                                                    max={champ.valeurMax ?? undefined}
+                                                                                    step="any"
+                                                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                                    placeholder="Votre réponse"
+                                                                                    onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                                                />
+                                                                                {(champ.valeurMin !== null && champ.valeurMin !== undefined) || (champ.valeurMax !== null && champ.valeurMax !== undefined) ? (
+                                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                                        {champ.valeurMin !== null && champ.valeurMin !== undefined && champ.valeurMax !== null && champ.valeurMax !== undefined
+                                                                                            ? `Valeur entre ${champ.valeurMin} et ${champ.valeurMax}`
+                                                                                            : champ.valeurMin !== null && champ.valeurMin !== undefined
+                                                                                            ? `Valeur minimum: ${champ.valeurMin}`
+                                                                                            : `Valeur maximum: ${champ.valeurMax}`}
+                                                                                        {champ.unite && ` ${champ.unite}`}
+                                                                                    </p>
+                                                                                ) : champ.unite ? (
+                                                                                    <p className="text-xs text-gray-500 mt-1">Unité: {champ.unite}</p>
+                                                                                ) : null}
+                                                                            </div>
                                                                         )}
                                                                         
                                                                         {champ.type?.toUpperCase() === 'DATE' && (

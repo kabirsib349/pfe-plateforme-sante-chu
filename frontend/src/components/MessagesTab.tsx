@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getMedecins, getChercheurs, getConversation, sendMessage, marquerMessagesLusChercheur, marquerMessagesLusMedecin, countMessagesNonLus } from "@/src/lib/api";
+import { 
+    PaperAirplaneIcon, 
+    UserCircleIcon, 
+    ChatBubbleLeftRightIcon,
+    MagnifyingGlassIcon 
+} from "@heroicons/react/24/outline";
 
 interface MessagesTabProps {
     onMessagesRead?: () => void;
@@ -191,110 +197,165 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
     const contactLabel = userType === "chercheur" ? "Médecins" : "Chercheurs";
 
     return (
-        <div className="flex h-[70vh] border border-gray-200 rounded-lg overflow-hidden">
+        <div className="flex h-[75vh] bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
             {/* LISTE DES CONTACTS */}
-            <div className="w-1/3 bg-white border-r overflow-y-auto">
-                <h3 className="p-4 font-semibold text-gray-700 border-b">{contactLabel}</h3>
-
-                {contacts.length === 0 && (
-                    <p className="p-4 text-gray-500">Aucun contact trouvé.</p>
-                )}
-
-                {contacts.map((contact) => (
-                    <div
-                        key={contact.id}
-                        onClick={() => setSelectedContact(contact)}
-                        className={`relative p-4 cursor-pointer border-b hover:bg-blue-50 ${
-                            selectedContact?.id === contact.id ? "bg-blue-100" : ""
-                        }`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                                {getInitials(contact.nom)}
-                            </div>
-                            <div>
-                                <p className="font-medium">{contact.nom}</p>
-                            </div>
-                        </div>
-
-                        {unreadCounts[contact.id] > 0 && (
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">
-                                {unreadCounts[contact.id]}
-                            </span>
-                        )}
+            <div className="w-1/3 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 flex flex-col">
+                {/* Header contacts */}
+                <div className="p-4 bg-white border-b border-gray-200">
+                    <div className="flex items-center gap-2 mb-3">
+                        <ChatBubbleLeftRightIcon className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-semibold text-gray-800">{contactLabel}</h3>
+                        <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                            {contacts.length}
+                        </span>
                     </div>
-                ))}
+                    {/* Search bar */}
+                    <div className="relative">
+                        <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Rechercher..."
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+                </div>
+
+                {/* Liste des contacts */}
+                <div className="flex-1 overflow-y-auto">
+                    {contacts.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6">
+                            <UserCircleIcon className="w-16 h-16 mb-3" />
+                            <p className="text-sm text-center">Aucun contact disponible</p>
+                        </div>
+                    )}
+
+                    {contacts.map((contact) => (
+                        <div
+                            key={contact.id}
+                            onClick={() => setSelectedContact(contact)}
+                            className={`relative p-4 cursor-pointer border-b border-gray-100 transition-all duration-200 ${
+                                selectedContact?.id === contact.id 
+                                    ? "bg-blue-50 border-l-4 border-l-blue-600" 
+                                    : "hover:bg-gray-50"
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${
+                                    selectedContact?.id === contact.id
+                                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                                        : "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
+                                }`}>
+                                    {getInitials(contact.nom)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-800 truncate">{contact.nom}</p>
+                                    <p className="text-xs text-gray-500">{contact.email}</p>
+                                </div>
+                            </div>
+
+                            {unreadCounts[contact.id] > 0 && (
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-md animate-pulse">
+                                    {unreadCounts[contact.id]}
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* DISCUSSION */}
-            <div className="flex-1 flex flex-col bg-gray-50">
+            <div className="flex-1 flex flex-col bg-gradient-to-b from-blue-50/30 to-gray-50">
                 {!selectedContact ? (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                        Sélectionnez un contact
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                        <ChatBubbleLeftRightIcon className="w-20 h-20 mb-4 text-gray-300" />
+                        <p className="text-lg font-medium">Sélectionnez un contact</p>
+                        <p className="text-sm mt-1">pour commencer une conversation</p>
                     </div>
                 ) : (
                     <>
-                        <div className="p-4 border-b bg-white flex items-center gap-3 font-semibold">
-                            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-                                {getInitials(selectedContact.nom)}
+                        {/* Header conversation */}
+                        <div className="p-4 bg-white border-b border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-md">
+                                    {getInitials(selectedContact.nom)}
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-gray-800">{selectedContact.nom}</p>
+                                    <p className="text-xs text-gray-500">{selectedContact.email}</p>
+                                </div>
                             </div>
-                            <span>Discussion avec {selectedContact.nom}</span>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {grouped.map((group) => (
-                                <div key={group.dateKey} className="space-y-2">
-                                    <div className="text-center text-xs text-gray-500 my-2">
-                                        {group.label}
-                                    </div>
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {messages.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                    <ChatBubbleLeftRightIcon className="w-16 h-16 mb-3 text-gray-300" />
+                                    <p className="text-sm">Aucun message pour le moment</p>
+                                    <p className="text-xs mt-1">Envoyez le premier message !</p>
+                                </div>
+                            ) : (
+                                grouped.map((group) => (
+                                    <div key={group.dateKey} className="space-y-3">
+                                        {/* Séparateur de date */}
+                                        <div className="flex items-center gap-3 my-4">
+                                            <div className="flex-1 h-px bg-gray-200"></div>
+                                            <span className="text-xs font-medium text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
+                                                {group.label}
+                                            </span>
+                                            <div className="flex-1 h-px bg-gray-200"></div>
+                                        </div>
 
-                                    {group.items.map((msg) => {
-                                        const isMe = msg.emetteur.id === user.id;
-                                        return (
-                                            <div
-                                                key={msg.id}
-                                                className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                                            >
+                                        {group.items.map((msg) => {
+                                            const isMe = msg.emetteur.id === user.id;
+                                            return (
                                                 <div
-                                                    className={`max-w-[70%] px-4 py-2 rounded-lg ${
-                                                        isMe
-                                                            ? "bg-blue-600 text-white"
-                                                            : "bg-white border border-gray-200"
-                                                    }`}
+                                                    key={msg.id}
+                                                    className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fadeIn`}
                                                 >
-                                                    <p className="text-sm">{msg.contenu}</p>
-                                                    <p
-                                                        className={`text-xs mt-1 ${
-                                                            isMe ? "text-blue-100" : "text-gray-500"
+                                                    <div
+                                                        className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${
+                                                            isMe
+                                                                ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-sm"
+                                                                : "bg-white border border-gray-200 rounded-bl-sm"
                                                         }`}
                                                     >
-                                                        {formatTime(msg.dateEnvoi)}
-                                                    </p>
+                                                        <p className="text-sm leading-relaxed">{msg.contenu}</p>
+                                                        <p
+                                                            className={`text-xs mt-1.5 ${
+                                                                isMe ? "text-blue-100" : "text-gray-400"
+                                                            }`}
+                                                        >
+                                                            {formatTime(msg.dateEnvoi)}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ))}
+                                            );
+                                        })}
+                                    </div>
+                                ))
+                            )}
                         </div>
 
-                        <div className="p-4 bg-white border-t">
-                            <div className="flex gap-2">
+                        {/* Input message */}
+                        <div className="p-4 bg-white border-t border-gray-200 shadow-lg">
+                            <div className="flex gap-3">
                                 <input
                                     type="text"
                                     placeholder="Écrivez votre message..."
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
-                                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                                    className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     disabled={loading}
                                 />
                                 <button
                                     onClick={handleSendMessage}
                                     disabled={loading || !newMessage.trim()}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-medium"
                                 >
-                                    Envoyer
+                                    <PaperAirplaneIcon className="w-5 h-5" />
+                                    <span>Envoyer</span>
                                 </button>
                             </div>
                         </div>

@@ -43,4 +43,35 @@ public class ReponseFormulaireController {
         List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
         return ResponseEntity.ok(reponses);
     }
+    
+    @GetMapping("/{formulaireMedecinId}/patient/{patientIdentifier}")
+    public ResponseEntity<List<ReponseFormulaire>> getReponsesByPatient(
+            @PathVariable Long formulaireMedecinId,
+            @PathVariable String patientIdentifier) {
+        List<ReponseFormulaire> reponses = reponseFormulaireService.getReponsesByPatient(
+                formulaireMedecinId, 
+                patientIdentifier
+        );
+        return ResponseEntity.ok(reponses);
+    }
+    
+    @GetMapping("/{formulaireMedecinId}/patients")
+    public ResponseEntity<List<String>> getPatientIdentifiers(@PathVariable Long formulaireMedecinId) {
+        List<String> patients = reponseFormulaireService.getPatientIdentifiers(formulaireMedecinId);
+        return ResponseEntity.ok(patients);
+    }
+    
+    @DeleteMapping("/{formulaireMedecinId}/patient/{patientIdentifier}")
+    @PreAuthorize("hasAuthority('medecin')")
+    public ResponseEntity<Void> supprimerReponsesPatient(
+            @PathVariable Long formulaireMedecinId,
+            @PathVariable String patientIdentifier,
+            Principal principal) {
+        reponseFormulaireService.supprimerReponsesPatient(
+                formulaireMedecinId, 
+                patientIdentifier, 
+                principal.getName()
+        );
+        return ResponseEntity.ok().build();
+    }
 }

@@ -31,6 +31,9 @@ public class ReponseFormulaire {
     @Column(name = "valeur", columnDefinition = "TEXT")
     private String valeur;
 
+    @Column(name = "patient_identifier")
+    private String patientIdentifier;
+
     @Column(name = "date_saisie")
     private LocalDateTime dateSaisie;
 

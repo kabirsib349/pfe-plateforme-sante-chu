@@ -90,7 +90,7 @@ export default function Formulaire() {
 
     // Filtrage des formulaires
     const filteredFormulaires = formulaires.filter((formulaire) => {
-        const statutNormalized = formulaire.statut.toLowerCase();
+        const statutNormalized = formulaire.statut.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const matchesSearch = search === "" ||
             formulaire.titre.toLowerCase().includes(search.toLowerCase()) ||
             formulaire.etude.titre.toLowerCase().includes(search.toLowerCase());

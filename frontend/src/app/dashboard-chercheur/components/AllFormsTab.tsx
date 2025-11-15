@@ -119,7 +119,7 @@ export const AllFormsTab: React.FC = React.memo(() => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push('/formulaire');
+                          router.push(`/formulaire/modifier/${formulaire.idFormulaire}`);
                         }}
                         className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs"
                       >

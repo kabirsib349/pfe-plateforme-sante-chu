@@ -7,6 +7,7 @@ import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
 import { createFormulaire } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
+import { config } from "@/src/lib/config";
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -41,7 +42,11 @@ export default function NouveauFormulaire() {
   const [champs, setChamps] = useState<ChampFormulaire[]>([]);
   const [modeAjout, setModeAjout] = useState(false);
   const [activeChampId, setActiveChampId] = useState<string | null>(null);
-    const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [historique, setHistorique] = useState<ChampFormulaire[][]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [rechercheTheme, setRechercheTheme] = useState('');
+  const [nouveauxChampsIds, setNouveauxChampsIds] = useState<string[]>([]);
   
       const themesMedicaux = [
         {
@@ -465,11 +470,47 @@ export default function NouveauFormulaire() {
         },
       ];  
     const ajouterTheme = (theme: any) => {
+      // Sauvegarder l'état actuel dans l'historique
+      setHistorique([...historique, champs]);
+      
       const nouveauxChamps = theme.champs.map((champ: any) => ({
         ...champ,
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }));
+      
+      // Marquer les nouveaux champs pour l'animation
+      const nouveauxIds = nouveauxChamps.map((c: ChampFormulaire) => c.id);
+      setNouveauxChampsIds(nouveauxIds);
+      
       setChamps([...champs, ...nouveauxChamps]);
+      showToast(`Thème "${theme.nom}" ajouté avec ${nouveauxChamps.length} questions`, 'success');
+      
+      // Retirer l'animation après 1 seconde
+      setTimeout(() => {
+        setNouveauxChampsIds([]);
+      }, 1000);
+    };
+
+    const annulerDernierAjout = () => {
+      if (historique.length > 0) {
+        const dernierEtat = historique[historique.length - 1];
+        setChamps(dernierEtat);
+        setHistorique(historique.slice(0, -1));
+        showToast('Dernier ajout annulé', 'info');
+      }
+    };
+
+    const toutSupprimer = () => {
+      if (champs.length > 0) {
+        setShowDeleteModal(true);
+      }
+    };
+
+    const confirmerSuppression = () => {
+      setHistorique([...historique, champs]);
+      setChamps([]);
+      setShowDeleteModal(false);
+      showToast('Toutes les questions ont été supprimées', 'info');
     };
   
     const ajouterChamp = (type: TypeChamp) => {
@@ -543,6 +584,13 @@ export default function NouveauFormulaire() {
             showToast('Authentification requise. Veuillez vous reconnecter.', 'error');
             return;
           }
+
+          // Validation des champs
+          const champsInvalides = champs.filter(c => !c.question.trim() || !c.nomVariable.trim());
+          if (champsInvalides.length > 0) {
+            showToast(`${champsInvalides.length} question(s) ont des champs vides (question ou nom de variable). Veuillez les compléter.`, 'error');
+            return;
+          }
       
           setIsLoading(true);
       
@@ -571,19 +619,41 @@ export default function NouveauFormulaire() {
                   options: champ.options,
                 };
               }
-              return {
+              const champData: any = {
                 label: champ.question,
                 type: champ.type.toUpperCase(),
                 obligatoire: champ.obligatoire,
-                valeurMin: champ.valeurMin,
-                valeurMax: champ.valeurMax,
-                nomListeValeur: champ.type === 'choix_multiple' && champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
-                options: champ.options, 
-                unite: champ.unite,
+              };
+
+              // Ajouter valeurMin seulement si défini et >= 0
+              if (champ.valeurMin !== undefined && champ.valeurMin !== null && champ.valeurMin >= 0) {
+                champData.valeurMin = champ.valeurMin;
               }
+
+              // Ajouter valeurMax seulement si défini et >= 0
+              if (champ.valeurMax !== undefined && champ.valeurMax !== null && champ.valeurMax >= 0) {
+                champData.valeurMax = champ.valeurMax;
+              }
+
+              // Ajouter unite seulement si défini
+              if (champ.unite) {
+                champData.unite = champ.unite;
+              }
+
+              // Ajouter nomListeValeur et options pour choix_multiple
+              if (champ.type === 'choix_multiple' && champ.nomVariable) {
+                champData.nomListeValeur = `LISTE_${champ.nomVariable}`;
+                champData.options = champ.options;
+              }
+
+              return champData;
             }), 
           };
       
+          if (config.features.enableDebug) {
+            console.log('📤 Payload envoyé au backend:', JSON.stringify(payload, null, 2));
+          }
+          
           try {
             await createFormulaire(token!, payload);
             showToast('Formulaire sauvegardé avec succès !', 'success');
@@ -591,13 +661,43 @@ export default function NouveauFormulaire() {
             setTimeout(() => {
               router.push('/formulaire');
             }, 1500);
-          } catch (error) {
-            const formattedError = handleError(error, 'CreateFormulaire');
-            showToast(`${MESSAGES.error.sauvegarde}: ${formattedError.userMessage}`, 'error');
+          } catch (error: any) {
+            if (config.features.enableDebug) {
+              console.error('🔴 Erreurs de validation:', error?.data?.errors);
+            }
+            
+            // Afficher les erreurs de validation détaillées
+            if (error?.data?.errors) {
+              const errorDetails = Object.entries(error.data.errors)
+                .map(([field, msg]) => `${field}: ${msg}`)
+                .join(', ');
+              
+              if (config.features.enableDebug) {
+                console.error('📋 Détails:', errorDetails);
+              }
+              
+              showToast(`Validation: ${errorDetails}`, 'error');
+            } else {
+              const formattedError = handleError(error, 'CreateFormulaire');
+              showToast(`${MESSAGES.error.sauvegarde}: ${formattedError.userMessage}`, 'error');
+            }
           } finally {
             setIsLoading(false);
           }
         };        return (
+      <>
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
       <div className="min-h-screen bg-gray-100">
         <div className="bg-white shadow-sm border-b border-gray-200 py-4">
           <div className="max-w-7xl mx-auto px-6">
@@ -630,14 +730,54 @@ export default function NouveauFormulaire() {
               <RocketLaunchIcon className="w-6 h-6 text-blue-600" />
               <h2 className="text-xl font-semibold text-gray-900">Ajouter des thèmes médicaux</h2>
             </div>
-            <p className="text-sm text-gray-800 mb-4">
-              Cliquez sur les thèmes pour ajouter progressivement les questions à votre formulaire. 
-              Chaque clic <strong>ajoute</strong> les questions du thème à celles déjà présentes.
-            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="text-sm text-blue-900 flex items-start gap-2">
+                <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                </svg>
+                <span>
+                  <strong>Astuce :</strong> Cliquez sur les thèmes pour ajouter progressivement les questions à votre formulaire. 
+                  Si vous ajoutez un mauvais thème, utilisez le bouton <strong>&quot;Annuler&quot;</strong> pour revenir en arrière, 
+                  ou <strong>&quot;Tout supprimer&quot;</strong> pour recommencer.
+                </span>
+              </div>
+            </div>
+            
+            {/* Barre de recherche */}
+            <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={rechercheTheme}
+                  onChange={(e) => setRechercheTheme(e.target.value)}
+                  placeholder="Rechercher un thème médical..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {rechercheTheme && (
+                  <button
+                    onClick={() => setRechercheTheme('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {themesMedicaux.map((theme, index) => (
+              {themesMedicaux
+                .filter(theme => 
+                  theme.nom.toLowerCase().includes(rechercheTheme.toLowerCase()) ||
+                  theme.description.toLowerCase().includes(rechercheTheme.toLowerCase())
+                )
+                .map((theme, index) => (
                 <div key={index} 
-                     className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer transform hover:scale-105"
+                     className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer transform hover:scale-105 active:scale-95"
                      onClick={() => ajouterTheme(theme)}>
                   <div className="text-center">
                     <div className="flex justify-center mb-2">
@@ -653,6 +793,25 @@ export default function NouveauFormulaire() {
                 </div>
               ))}
             </div>
+
+            {/* Message si aucun résultat */}
+            {rechercheTheme && themesMedicaux.filter(theme => 
+              theme.nom.toLowerCase().includes(rechercheTheme.toLowerCase()) ||
+              theme.description.toLowerCase().includes(rechercheTheme.toLowerCase())
+            ).length === 0 && (
+              <div className="text-center py-8">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-gray-500 text-sm">Aucun thème ne correspond à "{rechercheTheme}"</p>
+                <button
+                  onClick={() => setRechercheTheme('')}
+                  className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
+                >
+                  Effacer la recherche
+                </button>
+              </div>
+            )}
             
             {champs.length > 0 && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -691,16 +850,42 @@ export default function NouveauFormulaire() {
                 <QuestionMarkCircleIcon className="w-6 h-6 text-blue-600" />
                 <h2 className="text-xl font-semibold text-gray-900">Questions ({champs.length})</h2>
               </div>
-              <button onClick={() => setModeAjout(!modeAjout)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                <PlusIcon className="w-4 h-4" />
-                Ajouter une question
-              </button>
+              <div className="flex items-center gap-2">
+                {historique.length > 0 && (
+                  <button 
+                    onClick={annulerDernierAjout} 
+                    className="px-3 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors flex items-center gap-2 text-sm"
+                    title="Annuler le dernier ajout de thème"
+                  >
+                    <ArrowLeftIcon className="w-4 h-4" />
+                    Annuler
+                  </button>
+                )}
+                {champs.length > 0 && (
+                  <button 
+                    onClick={toutSupprimer} 
+                    className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2 text-sm"
+                    title="Supprimer toutes les questions"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Tout supprimer
+                  </button>
+                )}
+                <button onClick={() => setModeAjout(!modeAjout)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                  <PlusIcon className="w-4 h-4" />
+                  Ajouter une question
+                </button>
+              </div>
             </div>
   
             {modeAjout && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-6 border border-blue-200">
                 <h3 className="font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                  <span className="text-lg">✨</span>
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                   Choisissez le type de question :
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -789,23 +974,41 @@ export default function NouveauFormulaire() {
             )}
   
             <div className="space-y-4">
-              {champs.map((champ, index) => (
-                <div key={champ.id} onClick={(e) => { e.stopPropagation(); setActiveChampId(champ.id); }}>
-                  <Question
-                    champ={champ}
-                    index={index}
-                    onDelete={supprimerChamp}
-                    onUpdate={modifierChamp}
-                    isActive={champ.id === activeChampId}
-                    existingVariables={champs.map(c => c.nomVariable).filter(Boolean)}
-                    isDragging={draggedItemId === champ.id}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  />
-                </div>
-              ))}
+              {champs.map((champ, index) => {
+                const isNew = nouveauxChampsIds.includes(champ.id);
+                return (
+                  <div 
+                    key={champ.id} 
+                    onClick={(e) => { e.stopPropagation(); setActiveChampId(champ.id); }}
+                    className={`transition-all duration-500 ${
+                      isNew 
+                        ? 'opacity-0' 
+                        : 'opacity-100'
+                    }`}
+                    style={isNew ? {
+                      animationName: 'slideIn',
+                      animationDuration: '0.5s',
+                      animationTimingFunction: 'ease-out',
+                      animationFillMode: 'forwards',
+                      animationDelay: `${index * 0.05}s`
+                    } : undefined}
+                  >
+                    <Question
+                      champ={champ}
+                      index={index}
+                      onDelete={supprimerChamp}
+                      onUpdate={modifierChamp}
+                      isActive={champ.id === activeChampId}
+                      existingVariables={champs.map(c => c.nomVariable).filter(Boolean)}
+                      isDragging={draggedItemId === champ.id}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    />
+                  </div>
+                );
+              })}
               {champs.length === 0 && (
                 <div className="text-center py-12 text-gray-800">
                   <p>Aucune question pour le moment.</p>
@@ -817,6 +1020,58 @@ export default function NouveauFormulaire() {
         </div>
         <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       </div>
+
+      {/* Modal de confirmation de suppression - en dehors de la div principale */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Confirmer la suppression</h3>
+                <p className="text-sm text-gray-500">Cette action peut être annulée</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                Êtes-vous sûr de vouloir supprimer <strong className="text-red-600">toutes les {champs.length} questions</strong> du formulaire ?
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800 flex items-center gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <span>Vous pourrez annuler cette action avec le bouton "Annuler"</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmerSuppression}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Tout supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
   
