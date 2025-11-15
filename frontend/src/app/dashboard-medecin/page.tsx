@@ -3,10 +3,10 @@
 import { useEffect, useState, FC, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { TabButton } from "@/components/dashboard/TabButton";
-import { Badge } from "@/components/Badge";
-import { Card } from "@/components/Card";
+import { StatCard } from "@/src/components/dashboard/StatCard";
+import { TabButton } from "@/src/components/dashboard/TabButton";
+import { Badge } from "@/src/components/Badge";
+import { Card } from "@/src/components/Card";
 
 export default function DashboardMedecin() {
     const router = useRouter();
