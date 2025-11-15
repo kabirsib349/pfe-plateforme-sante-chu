@@ -6,6 +6,7 @@ import { register } from '@/src/lib/api';
 import { useToast } from '@/src/hooks/useToast';
 import { ToastContainer } from '@/src/components';
 import { handleError } from '@/src/lib/errorHandler';
+import { BeakerIcon, AcademicCapIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 
 export default function Register() {
   const router = useRouter();
@@ -58,7 +59,7 @@ export default function Register() {
             <div className="text-center mb-8">
               {/* Logo eco-friendly */}
               <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-eco">
-                <span className="text-2xl">🌱⚕️</span>
+                <BeakerIcon className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
                 Créer un compte
@@ -126,7 +127,9 @@ export default function Register() {
                       </div>
                     )}
                     <div className="text-center">
-                      <div className="text-3xl mb-2">🔬</div>
+                      <div className="flex justify-center mb-2">
+                        <BeakerIcon className="w-10 h-10 text-blue-600" />
+                      </div>
                       <div className="font-semibold text-sm">Chercheur</div>
                       <div className="text-xs mt-1 opacity-75">Recherche médicale</div>
                     </div>
@@ -152,7 +155,9 @@ export default function Register() {
                       </div>
                     )}
                     <div className="text-center">
-                      <div className="text-3xl mb-2">👨‍⚕️</div>
+                      <div className="flex justify-center mb-2">
+                        <AcademicCapIcon className="w-10 h-10 text-emerald-600" />
+                      </div>
                       <div className="font-semibold text-sm">Médecin</div>
                       <div className="text-xs mt-1 opacity-75">Investigateur coordinateur</div>
                     </div>
@@ -172,7 +177,8 @@ export default function Register() {
                 className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco"
               >
                 <span className="flex items-center justify-center gap-2">
-                  🌱 Créer le compte
+                  <UserPlusIcon className="w-5 h-5" />
+                  Créer le compte
                 </span>
               </button>
 

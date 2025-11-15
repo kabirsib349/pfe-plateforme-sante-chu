@@ -9,6 +9,7 @@ import { ArrowLeftIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from "@heroic
 import { getFormulaireRecu, submitReponses, marquerCommeLu } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
 import { config } from "@/src/lib/config";
+import { parseCalculatedField, calculateFieldValue, formatCalculatedValue } from "@/src/lib/formulaCalculator";
 
 function RemplirFormulaireContent() {
     const router = useRouter();
@@ -23,6 +24,7 @@ function RemplirFormulaireContent() {
     const [error, setError] = useState<string | null>(null);
     const [reponses, setReponses] = useState<Record<string, any>>({});
     const [patientIdentifier, setPatientIdentifier] = useState<string>('');
+    const [champsMap, setChampsMap] = useState<Map<string, string>>(new Map());
 
     // Rediriger si pas médecin
     useEffect(() => {
@@ -43,6 +45,15 @@ function RemplirFormulaireContent() {
                 const data = await getFormulaireRecu(token, parseInt(formulaireRecuId));
                 setFormulaireRecu({ formulaire: data });
 
+                // Construire la map champId -> nomVariable pour les calculs
+                const map = new Map<string, string>();
+                data.champs?.forEach((champ: any) => {
+                    // Extraire le nomVariable du label (format attendu)
+                    const nomVariable = champ.label?.toUpperCase().replace(/\s+/g, '_') || '';
+                    map.set(champ.idChamp.toString(), nomVariable);
+                });
+                setChampsMap(map);
+
                 // Marquer comme lu
                 marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
                     if (config.features.enableDebug) {
@@ -61,7 +72,22 @@ function RemplirFormulaireContent() {
     }, [formulaireRecuId, token]);
 
     const handleReponseChange = (champId: string, valeur: any) => {
-        setReponses(prev => ({ ...prev, [champId]: valeur }));
+        setReponses(prev => {
+            const newReponses = { ...prev, [champId]: valeur };
+            
+            // Recalculer tous les champs calculés
+            formulaireRecu?.formulaire?.champs?.forEach((champ: any) => {
+                const calculatedField = parseCalculatedField(champ.unite);
+                if (calculatedField) {
+                    const calculatedValue = calculateFieldValue(champ.unite, newReponses, champsMap);
+                    if (calculatedValue !== null) {
+                        newReponses[champ.idChamp] = formatCalculatedValue(calculatedValue);
+                    }
+                }
+            });
+            
+            return newReponses;
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -194,16 +220,49 @@ function RemplirFormulaireContent() {
                                         {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
                                     </label>
                                     
-                                                                        {champ.type?.toUpperCase() === 'TEXTE' && (
-                                                                            <textarea
-                                                                                required={champ.obligatoire}
-                                                                                maxLength={500}
-                                                                                rows={3}
-                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                                                placeholder="Votre réponse (max 500 caractères)"
-                                                                                onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
-                                                                            />
-                                                                        )}
+                                                                        {champ.type?.toUpperCase() === 'TEXTE' && (() => {
+                                                                            const isCalculated = parseCalculatedField(champ.unite);
+                                                                            
+                                                                            if (isCalculated) {
+                                                                                // Champ calculé - lecture seule
+                                                                                return (
+                                                                                    <div>
+                                                                                        <div className="relative">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                value={reponses[champ.idChamp] || ''}
+                                                                                                readOnly
+                                                                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                                                                                                placeholder="Calculé automatiquement"
+                                                                                            />
+                                                                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                                                                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                                                                </svg>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                                                            </svg>
+                                                                                            Calculé automatiquement : {isCalculated.formula}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            
+                                                                            // Champ texte normal
+                                                                            return (
+                                                                                <textarea
+                                                                                    required={champ.obligatoire}
+                                                                                    maxLength={500}
+                                                                                    rows={3}
+                                                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                                                    placeholder="Votre réponse (max 500 caractères)"
+                                                                                    onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                                                />
+                                                                            );
+                                                                        })()}
                                                                         
                                                                         {champ.type?.toUpperCase() === 'NOMBRE' && (
                                                                             <div>
