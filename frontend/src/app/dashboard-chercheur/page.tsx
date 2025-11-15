@@ -2,9 +2,9 @@
 
 import { useEffect, useState, FC, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
-import { useStats } from "@/hooks/useStats";
-import { useFormulaires } from "@/hooks/useFormulaires";
+import { useAuth } from "@/src/hooks/useAuth";
+import { useStats } from "@/src/hooks/useStats";
+import { useFormulaires } from "@/src/hooks/useFormulaires";
 import { StatCard } from "@/src/components/dashboard/StatCard";
 import { TabButton } from "@/src/components/dashboard/TabButton";
 import { Badge } from "@/src/components/Badge";
