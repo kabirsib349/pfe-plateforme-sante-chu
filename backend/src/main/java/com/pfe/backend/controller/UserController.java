@@ -29,6 +29,7 @@ public class UserController {
     private final UtilisateurRepository utilisateurRepository;
     private final FormulaireMedecinService formulaireMedecinService;
     private final UserService userService;
+    private final com.pfe.backend.service.UtilisateurService utilisateurService;
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(Principal principal){
@@ -44,6 +45,15 @@ public class UserController {
         List<Utilisateur> medecins = formulaireMedecinService.getMedecins();
         List<UserResponse> response = medecins.stream()
                 .map(medecin -> new UserResponse(medecin.getId(), medecin.getNom(), medecin.getEmail(), medecin.getRole().getNom()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/chercheurs")
+    public ResponseEntity<List<UserResponse>> getChercheurs(){
+        List<com.pfe.backend.dto.UtilisateurDto> chercheurs = utilisateurService.getChercheurs();
+        List<UserResponse> response = chercheurs.stream()
+                .map(c -> new UserResponse(c.id, c.nom, c.email, c.role))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
