@@ -22,13 +22,10 @@ export default function ExportCsvButton({
 
         try {
             const response = await fetch(
-                `http://localhost:8080/api/export/formulaire-medecin/${formulaireMedecinId}/csv`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
+                `http://localhost:8080/api/reponses/export/${formulaireMedecinId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
             );
+
 
             if (!response.ok) {
                 throw new Error("Erreur lors de l’export");
