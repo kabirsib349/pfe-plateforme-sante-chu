@@ -96,7 +96,7 @@ export const DataTab: React.FC = React.memo(() => {
                       { /* Bouton Export CSV */}
                       <ExportCsvButton
                           formulaireMedecinId={formulaireEnvoye.id}
-                          variant="icon"
+                          variant="button"
                       />
                   </div>
 
