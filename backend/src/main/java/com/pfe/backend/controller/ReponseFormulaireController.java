@@ -4,11 +4,14 @@ import com.pfe.backend.dto.ReponseFormulaireRequest;
 import com.pfe.backend.model.ReponseFormulaire;
 import com.pfe.backend.service.ReponseFormulaireService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
 import java.security.Principal;
 import java.util.List;
 
@@ -74,4 +77,28 @@ public class ReponseFormulaireController {
         );
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/export/{formulaireMedecinId}")
+    public ResponseEntity<InputStreamResource> exportCSV(@PathVariable Long formulaireMedecinId) {
+
+        List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Champ;Valeur\n");
+
+        for (ReponseFormulaire r : reponses) {
+            csv.append(r.getChamp().getLabel())
+                    .append(";")
+                    .append(r.getValeur())
+                    .append("\n");
+        }
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(csv.toString().getBytes());
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=reponses.csv")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(new InputStreamResource(inputStream));
+    }
+
 }
