@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/src/hooks/useAuth";
 
 interface ExportCsvButtonProps {
     formulaireMedecinId: number;
@@ -11,11 +12,48 @@ export default function ExportCsvButton({
                                             formulaireMedecinId,
                                             variant = "button",
                                         }: ExportCsvButtonProps) {
+    const { token } = useAuth();
 
-    const handleExport = () => {
-        window.location.href = `http://localhost:8080/api/export/formulaire-medecin/${formulaireMedecinId}/csv`;
+    const handleExport = async () => {
+        if (!token) {
+            alert("Vous devez être connecté pour exporter.");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `http://localhost:8080/api/export/formulaire-medecin/${formulaireMedecinId}/csv`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Erreur lors de l’export");
+            }
+
+            // Récupération du blob
+            const blob = await response.blob();
+
+            // Création du lien de téléchargement
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+
+            a.href = url;
+            a.download = `formulaire_${formulaireMedecinId}.csv`;
+            document.body.appendChild(a);
+            a.click();
+
+            // Nettoyage
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error(error);
+            alert("Erreur lors de l’export CSV.");
+        }
     };
-
 
     if (variant === "button") {
         return (
@@ -24,7 +62,7 @@ export default function ExportCsvButton({
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
                 <ArrowDownTrayIcon className="w-5 h-5 text-white" />
-                Exporter
+                Exporter CSV
             </button>
         );
     }
