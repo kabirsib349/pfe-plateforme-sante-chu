@@ -42,4 +42,8 @@ public class Champ {
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "id_liste_valeur", foreignKey = @ForeignKey(name = "fk_liste_valeur"))
     private ListeValeur listeValeur;
+
+    @Column(name = "categorie", length = 100)
+    private String categorie;
+
 }

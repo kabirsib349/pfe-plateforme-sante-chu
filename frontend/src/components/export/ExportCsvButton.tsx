@@ -28,6 +28,8 @@ export default function ExportCsvButton({
 
 
             if (!response.ok) {
+                const txt = await response.text();
+                console.error("Réponse backend : ", txt);
                 throw new Error("Erreur lors de l’export");
             }
 

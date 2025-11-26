@@ -475,6 +475,7 @@ export default function NouveauFormulaire() {
       
       const nouveauxChamps = theme.champs.map((champ: any) => ({
         ...champ,
+          categorie: theme.nom,
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }));
       

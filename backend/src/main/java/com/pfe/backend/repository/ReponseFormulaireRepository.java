@@ -33,4 +33,16 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
             Long formulaireMedecinId, 
             String patientIdentifier
     );
+
+    @Query("""
+       SELECT DISTINCT r
+       FROM ReponseFormulaire r
+       LEFT JOIN FETCH r.champ c
+       LEFT JOIN FETCH c.listeValeur lv
+       LEFT JOIN FETCH lv.options o
+       WHERE r.formulaireMedecin.id = :id
+       """)
+    List<ReponseFormulaire> findAllWithOptions(@Param("id") Long formulaireMedecinId);
+
+
 }

@@ -1,6 +1,7 @@
 package com.pfe.backend.controller;
 
 import com.pfe.backend.dto.ReponseFormulaireRequest;
+import com.pfe.backend.model.OptionValeur;
 import com.pfe.backend.model.ReponseFormulaire;
 import com.pfe.backend.service.ReponseFormulaireService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,8 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/reponses")
@@ -85,16 +88,60 @@ public class ReponseFormulaireController {
         List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
 
         StringBuilder csv = new StringBuilder();
-        csv.append("Champ;Valeur\n");
 
-        for (ReponseFormulaire r : reponses) {
-            csv.append(r.getChamp().getLabel())
-                    .append(";")
-                    .append(r.getValeur())
-                    .append("\n");
+        // Ordre fixe des catégories
+        List<String> ordreCategories = List.of(
+                "IDENTITE PATIENT",
+                "ANTECEDENTS",
+                "SEJOUR HOPITAL",
+                "CONSULTATION",
+                "BILAN PRE OPERATOIRE",
+                "PER OPERATOIRE",
+                "POST OPERATOIRE",
+                "TRANSFUSION",
+                "RECUPERATION",
+                "COMPLICATIONS",
+                "AUTRE"
+        );
+
+        // Groupement par catégorie
+        Map<String, List<ReponseFormulaire>> groupes = reponses.stream()
+                .collect(Collectors.groupingBy(r -> {
+                    String cat = r.getChamp().getCategorie();
+                    return (cat == null || cat.isBlank()) ? "AUTRE" : cat.toUpperCase();
+                }));
+
+        for (String categorie : ordreCategories) {
+            if (!groupes.containsKey(categorie)) continue;
+
+            // Ligne de titre catégorie
+            csv.append("\n").append(categorie).append("\n");
+            csv.append("Champ;Valeur\n");
+
+            for (ReponseFormulaire r : groupes.get(categorie)) {
+
+                String valeur = r.getValeur();
+
+                // Si choix multiples → montrer le texte ("Femme", "PTG", "non")
+                if (r.getChamp().getListeValeur() != null &&
+                        r.getChamp().getListeValeur().getOptions() != null) {
+
+                    valeur = r.getChamp().getListeValeur().getOptions().stream()
+                            .filter(o -> o.getValeur() != null &&
+                                    o.getValeur().equals(r.getValeur()))
+                            .map(OptionValeur::getLibelle)
+                            .findFirst()
+                            .orElse(valeur);
+                }
+
+                csv.append(r.getChamp().getLabel())
+                        .append(";")
+                        .append(valeur != null ? valeur : "")
+                        .append("\n");
+            }
         }
 
-        byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
+        byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
         byte[] data = csv.toString().getBytes(StandardCharsets.UTF_8);
         byte[] csvBytes = new byte[bom.length + data.length];
 
@@ -102,10 +149,13 @@ public class ReponseFormulaireController {
         System.arraycopy(data, 0, csvBytes, bom.length, data.length);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(csvBytes);
+
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=formulaire_" + formulaireMedecinId + ".csv")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(new InputStreamResource(inputStream));
     }
+
+
 
 }

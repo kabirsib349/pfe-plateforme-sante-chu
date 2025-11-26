@@ -165,6 +165,7 @@ public class FormulaireService {
         champ.setObligatoire(request.isObligatoire());
         champ.setValeurMin(request.getValeurMin());
         champ.setValeurMax(request.getValeurMax());
+        champ.setCategorie(request.getCategorie());
         champ.setType(TypeChamp.valueOf(request.getType().toUpperCase()));
 
         if (TypeChamp.CHOIX_MULTIPLE.name().equalsIgnoreCase(request.getType())) {
@@ -194,6 +195,7 @@ public class FormulaireService {
     private Champ convertChampRequestToChamp(ChampRequest champRequest, Formulaire formulaire) {
         Champ champ = new Champ();
         champ.setFormulaire(formulaire);
+        champ.setCategorie(champRequest.getCategorie());
         updateChampFromRequest(champ, champRequest);
         return champ;
     }

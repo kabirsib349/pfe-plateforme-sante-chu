@@ -12,6 +12,7 @@ import java.util.List;
 public class ChampRequest {
     
     private String id;
+    private String categorie;
     
     @NotBlank(message = "Le label est obligatoire")
     @Size(min = 2, max = 255, message = "Le label doit contenir entre 2 et 255 caractères")

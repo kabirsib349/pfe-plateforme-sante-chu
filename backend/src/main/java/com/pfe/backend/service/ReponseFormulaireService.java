@@ -110,9 +110,10 @@ public class ReponseFormulaireService {
 
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponses(Long formulaireMedecinId) {
-        return reponseFormulaireRepository.findByFormulaireMedecinId(formulaireMedecinId);
+        return reponseFormulaireRepository.findAllWithOptions(formulaireMedecinId);
     }
-    
+
+
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponsesByPatient(Long formulaireMedecinId, String patientIdentifier) {
         return reponseFormulaireRepository.findByFormulaireMedecinIdAndPatientIdentifier(
