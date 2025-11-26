@@ -96,8 +96,8 @@ public class ReponseFormulaireController {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(csv.toString().getBytes());
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=reponses.csv")
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .header("Content-Disposition", "attachment; filename=formulaire_" + formulaireMedecinId + ".csv")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(new InputStreamResource(inputStream));
     }
 
