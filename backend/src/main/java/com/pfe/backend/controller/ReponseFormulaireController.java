@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 
@@ -93,8 +94,14 @@ public class ReponseFormulaireController {
                     .append("\n");
         }
 
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(csv.toString().getBytes());
+        byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
+        byte[] data = csv.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] csvBytes = new byte[bom.length + data.length];
 
+        System.arraycopy(bom, 0, csvBytes, 0, bom.length);
+        System.arraycopy(data, 0, csvBytes, bom.length, data.length);
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(csvBytes);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=formulaire_" + formulaireMedecinId + ".csv")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
