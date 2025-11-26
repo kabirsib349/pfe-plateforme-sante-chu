@@ -279,10 +279,12 @@ function ReponsesFormulaireContent() {
                         </button>
                         {formulaireMedecinId && (
                             <ExportCsvButton
-                                formulaireMedecinId={formulaireMedecinId}
-                                variant="full"
+                                formulaireMedecinId={Number(formulaireMedecinId)}
+                                variant="button"
                             />
+
                         )}
+
                     </div>
                 </div>
             </div>
