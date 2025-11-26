@@ -87,7 +87,61 @@ public class ReponseFormulaireController {
 
         List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
 
-        // 🔹 Ordre des catégories
+        // Mapping des labels → catégories (basé sur ton front)
+        Map<String, String> mappingCategories = Map.ofEntries(
+                Map.entry("Sexe", "IDENTITE PATIENT"),
+                Map.entry("Age", "IDENTITE PATIENT"),
+                Map.entry("Taille", "IDENTITE PATIENT"),
+                Map.entry("Poids", "IDENTITE PATIENT"),
+                Map.entry("IMC", "IDENTITE PATIENT"),
+                Map.entry("ASA", "IDENTITE PATIENT"),
+                Map.entry("Type de chirurgie prevue", "IDENTITE PATIENT"),
+
+                Map.entry("Traitement antiplaquettaire", "ANTECEDENTS"),
+                Map.entry("Nom du traitement antiplaquettaire le cas échéant", "ANTECEDENTS"),
+                Map.entry("Traitement Beta-bloquant", "ANTECEDENTS"),
+                Map.entry("Nom du traitement beta-bloquant le cas échéant", "ANTECEDENTS"),
+                Map.entry("Chimiothérapie", "ANTECEDENTS"),
+                Map.entry("Nom de la chimiothérapie le cas échéant", "ANTECEDENTS"),
+                Map.entry("Autres traitements habituels", "ANTECEDENTS"),
+                Map.entry("Nom des autres traitements le cas échéant", "ANTECEDENTS"),
+                Map.entry("Antécédents cardiovasculaires", "ANTECEDENTS"),
+
+                Map.entry("Lieu avant le séjour à l'hôpital", "SEJOUR HOPITAL"),
+                Map.entry("Date d'entrée à l'hôpital", "SEJOUR HOPITAL"),
+                Map.entry("Lieu après le séjour à l'hôpital", "SEJOUR HOPITAL"),
+                Map.entry("Parcours RAAC", "SEJOUR HOPITAL"),
+
+                Map.entry("Consultation de chirurgie", "CONSULTATION"),
+                Map.entry("Consultation d'anesthésie", "CONSULTATION"),
+
+                Map.entry("Bilan", "BILAN PRE OPERATOIRE"),
+                Map.entry("Ferritine", "BILAN PRE OPERATOIRE"),
+                Map.entry("Fréquence cardiaque", "BILAN PRE OPERATOIRE"),
+                Map.entry("Température corporelle", "BILAN PRE OPERATOIRE"),
+                Map.entry("Échelle de douleur", "BILAN PRE OPERATOIRE"),
+
+                Map.entry("Type d'anesthésie", "PER OPERATOIRE"),
+                Map.entry("Durée de l'intervention", "PER OPERATOIRE"),
+                Map.entry("Complications per-opératoires", "PER OPERATOIRE"),
+
+                Map.entry("Date de sortie de salle de réveil", "POST OPERATOIRE"),
+                Map.entry("Score de douleur à la sortie", "POST OPERATOIRE"),
+                Map.entry("Antalgiques administrés", "POST OPERATOIRE"),
+
+                Map.entry("Transfusion per-opératoire", "TRANSFUSION"),
+                Map.entry("Nombre de culots globulaires", "TRANSFUSION"),
+                Map.entry("Transfusion post-opératoire", "TRANSFUSION"),
+
+                Map.entry("Date correspondant au J1 de la chirurgie", "RECUPERATION"),
+                Map.entry("Date de fin du traitement antiplaquettaire", "RECUPERATION"),
+                Map.entry("Distance marchée au J3", "RECUPERATION"),
+
+                Map.entry("Complications infectieuses", "COMPLICATIONS"),
+                Map.entry("Complications thromboemboliques", "COMPLICATIONS"),
+                Map.entry("Réadmission sous 30 jours", "COMPLICATIONS")
+        );
+        //  Ordre des catégories
         List<String> ordreCategories = List.of(
                 "IDENTITE PATIENT",
                 "ANTECEDENTS",
@@ -102,16 +156,19 @@ public class ReponseFormulaireController {
                 "AUTRE"
         );
 
-        // 🔹 Regrouper par catégorie
+
+        // Regrouper par catégorie
         Map<String, List<ReponseFormulaire>> groupes = reponses.stream()
                 .collect(Collectors.groupingBy(r -> {
-                    String cat = r.getChamp().getCategorie();
-                    return (cat == null || cat.isBlank()) ? "AUTRE" : cat.toUpperCase();
+                    String label = r.getChamp().getLabel();
+                    String cat = mappingCategories.get(label);
+                    return (cat != null) ? cat : "AUTRE";
                 }));
+
 
         StringBuilder csv = new StringBuilder();
 
-        // 🔹 Première ligne : blocs de catégories
+        //  Première ligne : blocs de catégories
         for (String categorie : ordreCategories) {
             if (groupes.containsKey(categorie)) {
                 int nbChamps = groupes.get(categorie).size();
@@ -120,7 +177,7 @@ public class ReponseFormulaireController {
         }
         csv.append("\n");
 
-        // 🔹 Deuxième ligne : labels
+        // Deuxième ligne : labels
         for (String categorie : ordreCategories) {
             if (groupes.containsKey(categorie)) {
                 for (ReponseFormulaire r : groupes.get(categorie)) {
@@ -130,7 +187,7 @@ public class ReponseFormulaireController {
         }
         csv.append("\n");
 
-        // 🔹 Troisième ligne : valeurs
+        // Troisième ligne : valeurs
         for (String categorie : ordreCategories) {
             if (groupes.containsKey(categorie)) {
                 for (ReponseFormulaire r : groupes.get(categorie)) {
@@ -154,7 +211,7 @@ public class ReponseFormulaireController {
             }
         }
 
-        // 🔹 BOM UTF-8
+
         byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
         byte[] data = csv.toString().getBytes(StandardCharsets.UTF_8);
         byte[] csvBytes = new byte[bom.length + data.length];
