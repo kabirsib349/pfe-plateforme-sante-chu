@@ -7,6 +7,7 @@ import { ChartBarIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from '@heroico
 import { EmptyState, LoadingState } from '@/src/components/ui';
 import { getFormulairesEnvoyes } from '@/src/lib/api';
 import { handleError } from '@/src/lib/errorHandler';
+import ExportCsvButton from "@/src/components/export/ExportCsvButton";
 
 export const DataTab: React.FC = React.memo(() => {
   const router = useRouter();
@@ -83,13 +84,22 @@ export const DataTab: React.FC = React.memo(() => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => router.push(`/formulaire/reponses?id=${formulaireEnvoye.id}`)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ml-4 flex items-center gap-2"
-                >
-                  <ChartBarIcon className="w-5 h-5" />
-                  Voir les réponses
-                </button>
+                  <div className="flex items-center gap-3 ml-4">
+                      <button
+                          onClick={() => router.push(`/formulaire/reponses?id=${formulaireEnvoye.id}`)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                      >
+                          <ChartBarIcon className="w-5 h-5" />
+                          Voir les réponses
+                      </button>
+
+                      { /* Bouton Export CSV */}
+                      <ExportCsvButton
+                          formulaireMedecinId={formulaireEnvoye.id}
+                          variant="icon"
+                      />
+                  </div>
+
               </div>
             </div>
           ))}
