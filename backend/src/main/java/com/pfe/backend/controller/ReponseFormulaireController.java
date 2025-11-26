@@ -87,9 +87,7 @@ public class ReponseFormulaireController {
 
         List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
 
-        StringBuilder csv = new StringBuilder();
-
-        // Ordre fixe des catégories
+        // 🔹 Ordre des catégories
         List<String> ordreCategories = List.of(
                 "IDENTITE PATIENT",
                 "ANTECEDENTS",
@@ -104,43 +102,59 @@ public class ReponseFormulaireController {
                 "AUTRE"
         );
 
-        // Groupement par catégorie
+        // 🔹 Regrouper par catégorie
         Map<String, List<ReponseFormulaire>> groupes = reponses.stream()
                 .collect(Collectors.groupingBy(r -> {
                     String cat = r.getChamp().getCategorie();
                     return (cat == null || cat.isBlank()) ? "AUTRE" : cat.toUpperCase();
                 }));
 
+        StringBuilder csv = new StringBuilder();
+
+        // 🔹 Première ligne : blocs de catégories
         for (String categorie : ordreCategories) {
-            if (!groupes.containsKey(categorie)) continue;
+            if (groupes.containsKey(categorie)) {
+                int nbChamps = groupes.get(categorie).size();
+                csv.append(categorie).append(";".repeat(Math.max(0, nbChamps)));
+            }
+        }
+        csv.append("\n");
 
-            // Ligne de titre catégorie
-            csv.append("\n").append(categorie).append("\n");
-            csv.append("Champ;Valeur\n");
-
-            for (ReponseFormulaire r : groupes.get(categorie)) {
-
-                String valeur = r.getValeur();
-
-                // Si choix multiples → montrer le texte ("Femme", "PTG", "non")
-                if (r.getChamp().getListeValeur() != null &&
-                        r.getChamp().getListeValeur().getOptions() != null) {
-
-                    valeur = r.getChamp().getListeValeur().getOptions().stream()
-                            .filter(o -> o.getValeur() != null &&
-                                    o.getValeur().equals(r.getValeur()))
-                            .map(OptionValeur::getLibelle)
-                            .findFirst()
-                            .orElse(valeur);
+        // 🔹 Deuxième ligne : labels
+        for (String categorie : ordreCategories) {
+            if (groupes.containsKey(categorie)) {
+                for (ReponseFormulaire r : groupes.get(categorie)) {
+                    csv.append(r.getChamp().getLabel()).append(";");
                 }
+            }
+        }
+        csv.append("\n");
 
-                csv.append(r.getChamp().getLabel())
-                        .append(";")
-                        .append(valeur != null ? valeur : "")
-                        .append("\n");
+        // 🔹 Troisième ligne : valeurs
+        for (String categorie : ordreCategories) {
+            if (groupes.containsKey(categorie)) {
+                for (ReponseFormulaire r : groupes.get(categorie)) {
+
+                    String valeur = r.getValeur();
+
+                    // Choix multiples → libellé visible
+                    if (r.getChamp().getListeValeur() != null &&
+                            r.getChamp().getListeValeur().getOptions() != null) {
+
+                        valeur = r.getChamp().getListeValeur().getOptions().stream()
+                                .filter(o -> o.getValeur() != null &&
+                                        o.getValeur().equals(r.getValeur()))
+                                .map(OptionValeur::getLibelle)
+                                .findFirst()
+                                .orElse(valeur);
+                    }
+
+                    csv.append(valeur != null ? valeur : "").append(";");
+                }
             }
         }
 
+        // 🔹 BOM UTF-8
         byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
         byte[] data = csv.toString().getBytes(StandardCharsets.UTF_8);
         byte[] csvBytes = new byte[bom.length + data.length];
@@ -155,7 +169,6 @@ public class ReponseFormulaireController {
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(new InputStreamResource(inputStream));
     }
-
 
 
 }
