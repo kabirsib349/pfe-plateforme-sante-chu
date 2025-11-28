@@ -227,5 +227,4 @@ public class ReponseFormulaireController {
                 .body(new InputStreamResource(inputStream));
     }
 
-
 }
