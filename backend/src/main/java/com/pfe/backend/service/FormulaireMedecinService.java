@@ -46,8 +46,9 @@ public class FormulaireMedecinService {
         // Vérifier si le formulaire a déjà été envoyé à ce médecin
         formulaireMedecinRepository.findByFormulaireIdFormulaireAndMedecinEmail(formulaireId, emailMedecin)
                 .ifPresent(fm -> {
-                    throw new IllegalArgumentException("Ce formulaire a déjà été envoyé au Dr. " + medecin.getNom() + ". Veuillez sélectionner un autre médecin.");
+                    throw new IllegalArgumentException("Ce formulaire a déjà été envoyé au Dr. " + medecin.getNom() + ". Le médecin peut le remplir plusieurs fois pour différents patients.");
                 });
+
         // Mettre à jour le statut du formulaire à PUBLIE lors du premier envoi
         if (formulaire.getStatut() == com.pfe.backend.model.StatutFormulaire.BROUILLON) {
             formulaire.setStatut(com.pfe.backend.model.StatutFormulaire.PUBLIE);

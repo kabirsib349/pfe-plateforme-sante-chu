@@ -67,18 +67,25 @@ function ReponsesFormulaireContent() {
         fetchReponses();
     }, [formulaireMedecinId, token]);
 
-    // Créer un map des réponses par champId pour un accès rapide
-    const reponsesMap = reponses.reduce((acc: any, reponse: any) => {
-        acc[reponse.champ.idChamp] = reponse.valeur;
+    // Grouper les réponses par patient
+    const reponsesParPatient = reponses.reduce((acc: any, reponse: any) => {
+        const patientId = reponse.patientIdentifier || 'Non spécifié';
+        if (!acc[patientId]) {
+            acc[patientId] = [];
+        }
+        acc[patientId].push(reponse);
         return acc;
     }, {});
+
+    // Obtenir la liste des patients
+    const patients = Object.keys(reponsesParPatient);
 
     // Debug: afficher les réponses dans la console (uniquement en mode debug)
     useEffect(() => {
         if (config.features.enableDebug && reponses.length > 0) {
-            console.log('📊 Réponses:', { reponses, reponsesMap, champs: formulaireData?.formulaire?.champs });
+            console.log('📊 Réponses:', { reponses, reponsesParPatient, patients, champs: formulaireData?.formulaire?.champs });
         }
-    }, [reponses, reponsesMap, formulaireData]);
+    }, [reponses, reponsesParPatient, patients, formulaireData]);
 
     if (isLoading) {
         return (
@@ -177,83 +184,124 @@ function ReponsesFormulaireContent() {
                             </div>
                             <p className="text-gray-600">Aucune question dans ce formulaire</p>
                         </div>
+                    ) : patients.length === 0 ? (
+                        <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl">❌</span>
+                            </div>
+                            <p className="text-gray-600">Aucune réponse enregistrée</p>
+                        </div>
                     ) : (
-                        <div className="space-y-6">
-                            {formulaireData.formulaire.champs.map((champ: any, index: number) => {
-                                const reponseValue = reponsesMap[champ.idChamp];
-                                const champType = champ.type?.toUpperCase();
-                                
+                        <div className="space-y-8">
+                            {/* Afficher le nombre total de patients */}
+                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                                <p className="text-green-900 font-semibold">
+                                    📊 {patients.length} patient{patients.length > 1 ? 's' : ''} enregistré{patients.length > 1 ? 's' : ''}
+                                </p>
+                            </div>
+
+                            {/* Afficher les réponses groupées par patient */}
+                            {patients.map((patientId, patientIndex) => {
+                                // Créer un map des réponses pour ce patient
+                                const reponsesPatient = reponsesParPatient[patientId];
+                                const reponsesMap = reponsesPatient.reduce((acc: any, reponse: any) => {
+                                    acc[reponse.champ.idChamp] = reponse.valeur;
+                                    return acc;
+                                }, {});
+
                                 return (
-                                    <div key={champ.idChamp} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                        <label className="block text-sm font-medium text-gray-900 mb-3">
-                                            {index + 1}. {champ.label}
-                                            {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
-                                        </label>
+                                    <div key={patientId} className="border-2 border-green-200 rounded-lg overflow-hidden">
+                                        {/* En-tête du patient */}
+                                        <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                                            <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                                                <span className="bg-white text-green-600 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                                                    {patientIndex + 1}
+                                                </span>
+                                                Patient : {patientId}
+                                            </h3>
+                                        </div>
 
-                                        {champType === 'TEXTE' && (
-                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
-                                                <p className="text-gray-900 font-medium">
-                                                    {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
-                                                </p>
-                                            </div>
-                                        )}
+                                        {/* Questions et réponses pour ce patient */}
+                                        <div className="p-6 space-y-6 bg-white">
+                                            {formulaireData.formulaire.champs.map((champ: any, index: number) => {
+                                                const reponseValue = reponsesMap[champ.idChamp];
+                                                const champType = champ.type?.toUpperCase();
 
-                                        {champType === 'NOMBRE' && (
-                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
-                                                <p className="text-gray-900 font-medium">
-                                                    {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
-                                                    {champ.unite && reponseValue && <span className="text-gray-600 ml-2">{champ.unite}</span>}
-                                                </p>
-                                            </div>
-                                        )}
+                                                return (
+                                                    <div key={champ.idChamp} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                        <label className="block text-sm font-medium text-gray-900 mb-3">
+                                                            {index + 1}. {champ.label}
+                                                            {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
+                                                        </label>
 
-                                        {champType === 'DATE' && (
-                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
-                                                <p className="text-gray-900 font-medium">
-                                                    {reponseValue ? new Date(reponseValue).toLocaleDateString('fr-FR', {
-                                                        day: '2-digit',
-                                                        month: 'long',
-                                                        year: 'numeric'
-                                                    }) : <span className="text-gray-400 italic">Non rempli</span>}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {champType === 'CHOIX_MULTIPLE' && (
-                                            <div className="space-y-2">
-                                                {champ.listeValeur?.options?.map((option: any, optIndex: number) => {
-                                                    const isSelected = reponseValue === option.libelle;
-                                                    return (
-                                                        <div 
-                                                            key={optIndex} 
-                                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg ${
-                                                                isSelected 
-                                                                    ? 'bg-green-50 border-green-500' 
-                                                                    : 'bg-white border-gray-200'
-                                                            }`}
-                                                        >
-                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                                                isSelected 
-                                                                    ? 'border-green-600 bg-green-600' 
-                                                                    : 'border-gray-300'
-                                                            }`}>
-                                                                {isSelected && (
-                                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                    </svg>
-                                                                )}
+                                                        {champType === 'TEXTE' && (
+                                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
+                                                                <p className="text-gray-900 font-medium">
+                                                                    {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
+                                                                </p>
                                                             </div>
-                                                            <span className={`${isSelected ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                                                                {option.libelle}
-                                                            </span>
-                                                            {isSelected && (
-                                                                <span className="ml-auto text-green-600 text-sm font-medium">✓ Sélectionné</span>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+                                                        )}
+
+                                                        {champType === 'NOMBRE' && (
+                                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
+                                                                <p className="text-gray-900 font-medium">
+                                                                    {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
+                                                                    {champ.unite && reponseValue && <span className="text-gray-600 ml-2">{champ.unite}</span>}
+                                                                </p>
+                                                            </div>
+                                                        )}
+
+                                                        {champType === 'DATE' && (
+                                                            <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
+                                                                <p className="text-gray-900 font-medium">
+                                                                    {reponseValue ? new Date(reponseValue).toLocaleDateString('fr-FR', {
+                                                                        day: '2-digit',
+                                                                        month: 'long',
+                                                                        year: 'numeric'
+                                                                    }) : <span className="text-gray-400 italic">Non rempli</span>}
+                                                                </p>
+                                                            </div>
+                                                        )}
+
+                                                        {champType === 'CHOIX_MULTIPLE' && (
+                                                            <div className="space-y-2">
+                                                                {champ.listeValeur?.options?.map((option: any, optIndex: number) => {
+                                                                    const isSelected = reponseValue === option.libelle;
+                                                                    return (
+                                                                        <div
+                                                                            key={optIndex}
+                                                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg ${
+                                                                                isSelected
+                                                                                    ? 'bg-green-50 border-green-500'
+                                                                                    : 'bg-white border-gray-200'
+                                                                            }`}
+                                                                        >
+                                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                                                isSelected
+                                                                                    ? 'border-green-600 bg-green-600'
+                                                                                    : 'border-gray-300'
+                                                                            }`}>
+                                                                                {isSelected && (
+                                                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                                    </svg>
+                                                                                )}
+                                                                            </div>
+                                                                            <span className={`${isSelected ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                                                                                {option.libelle}
+                                                                            </span>
+                                                                            {isSelected && (
+                                                                                <span className="ml-auto text-green-600 text-sm font-medium">✓ Sélectionné</span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 );
                             })}
