@@ -35,3 +35,6 @@ build/
 .env
 .env.local
 .env.*.local
+
+# Application properties with sensitive data
+src/main/resources/application.properties
