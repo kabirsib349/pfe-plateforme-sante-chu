@@ -4,15 +4,12 @@
 
 Projet de fin d'étude (PFE) visant à développer une plateforme web simple, sécurisée et conforme au RGPD pour permettre aux chercheurs et médecins de créer des formulaires, de collecter et de gérer des données de santé. 
 
-**Statut actuel :** Phase de planification et de mise en place de l'environnement de développement.
-
----
 
 ## 2. Objectifs Principaux
 
 - **Simplicité :** Permettre à un utilisateur non technique de créer un formulaire en moins de 10 minutes. 
-- **Sécurité :** Garantir le chiffrement des données (en transit et au repos) et un contrôle d'accès strict. 
-- **Conformité RGPD :** Assurer le consentement explicite des patients et le respect du droit à l'oubli. 
+- **Sécurité :** Garantir le chiffrement des données (en transit et au repos). 
+- **Conformité RGPD 
 - **Interopérabilité :** Permettre l'export des données aux formats standards (CSV/XLS) pour analyse. 
 
 ---
@@ -21,8 +18,7 @@ Projet de fin d'étude (PFE) visant à développer une plateforme web simple, s�
 
 - **Backend :** Spring Boot (Java) 
 - **Frontend :** Next.js avec Tailwind CSS (TypeScript) 
-- **Base de données :** MySQL 
-- **Gestion des formulaires :** SurveyJS 
+- **Base de données :** postgreSQL
 
 ---
 
@@ -30,10 +26,9 @@ Projet de fin d'étude (PFE) visant à développer une plateforme web simple, s�
 
 - **Scrum Master :** KWEGUENG Mandela 
 - **Product Owner :** Hélène PETNKEU 
-- **Équipe de développement :**
-  - YIMGA Samuelle 
-  - KABIR SALEH Ibrahim 
-
+- **Quality Manager:** KABIR SALEH Ibrahim
+- **Test Manager:** YIMGA Samuelle 
+  
 ---
 
 ## 5. Pour commencer (Getting Started)

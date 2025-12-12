@@ -119,13 +119,19 @@ public class MessageController {
         return ResponseEntity.ok(count);
     }
 
-    @GetMapping("/nonlus/{chercheurId}/{medecinId}")
+    /**
+     * @brief Compte les messages non lus envoyés par emetteurId vers destinataireId
+     * @param destinataireId : ID de l'utilisateur qui reçoit les messages
+     * @param emetteurId : ID de l'utilisateur qui envoie les messages
+     * @return Le nombre de messages non lus
+     */
+    @GetMapping("/nonlus/{destinataireId}/{emetteurId}")
     public ResponseEntity<Integer> countUnread(
-            @PathVariable Long chercheurId,
-            @PathVariable Long medecinId
+            @PathVariable Long destinataireId,
+            @PathVariable Long emetteurId
     ) {
         return ResponseEntity.ok(
-                messageService.countUnreadForConversation(chercheurId, medecinId)
+                messageService.countUnreadForConversation(destinataireId, emetteurId)
         );
     }
 

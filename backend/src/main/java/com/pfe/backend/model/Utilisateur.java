@@ -1,5 +1,7 @@
 package com.pfe.backend.model;
 
+import com.pfe.backend.config.converter.StringCryptoConverter;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -24,9 +26,11 @@ public class Utilisateur {
     @Column(name="id_utilisateur")
     private Long id;
 
+    @Convert(converter = StringCryptoConverter.class)
     @Column(name="nom",nullable=false)
     private String nom;
 
+    // L'email ne doit PAS être chiffré car il est utilisé pour la connexion et les recherches
     @Column(name="email",nullable=false,unique=true)
     private String email;
 

@@ -82,8 +82,9 @@ public class MessageService {
 
 
 
-    public int countUnreadForConversation(Long chercheurId, Long medecinId) {
-        return messageRepository.countUnreadMessages(chercheurId, medecinId);
+    // Compte les messages non lus envoyés par emetteurId vers destinataireId
+    public int countUnreadForConversation(Long destinataireId, Long emetteurId) {
+        return messageRepository.countUnreadMessages(destinataireId, emetteurId);
     }
 
     public long countMessagesNonLusPourMedecin(Long idMedecin) {
