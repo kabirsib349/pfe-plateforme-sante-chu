@@ -23,6 +23,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
+    const [searchTerm, setSearchTerm] = useState("");
 
     const formatTime = (dateStr: string) => {
         const d = new Date(dateStr);
@@ -112,7 +113,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
 
     // Charger le nombre de messages non lus pour chaque contact
     useEffect(() => {
-        if (!user || !token || contacts.length === 0) return;
+        if (!user || !user.id || !token || contacts.length === 0) return;
 
         const loadUnreadCounts = async () => {
             const counts: Record<number, number> = {};
@@ -121,7 +122,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                 try {
                     // L'API countMessagesNonLus attend (destinataireId, emetteurId)
                     // On compte les messages que le contact a envoyés à l'utilisateur actuel
-                    const count = await countMessagesNonLus(token, user.id, contact.id);
+                    const count = await countMessagesNonLus(token, user.id!, contact.id);
                     counts[contact.id] = count;
                 } catch (e) {
                     console.error("Erreur récupération non lus", contact.id, e);
@@ -136,20 +137,20 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
 
     // Charger la conversation
     useEffect(() => {
-        if (!selectedContact || !user || !token) return;
+        if (!selectedContact || !user || !user.id || !token) return;
 
         const loadMessages = async () => {
             try {
                 const data = userType === "chercheur"
-                    ? await getConversation(token, user.id, selectedContact.id)
-                    : await getConversation(token, selectedContact.id, user.id);
+                    ? await getConversation(token, user.id!, selectedContact.id)
+                    : await getConversation(token, selectedContact.id, user.id!);
                 setMessages(data);
 
                 // Marquer comme lus
                 if (userType === "chercheur") {
-                    await marquerMessagesLusChercheur(token, user.id, selectedContact.id);
+                    await marquerMessagesLusChercheur(token, user.id!, selectedContact.id);
                 } else {
-                    await marquerMessagesLusMedecin(token, selectedContact.id, user.id);
+                    await marquerMessagesLusMedecin(token, selectedContact.id, user.id!);
                 }
 
                 setUnreadCounts((prev) => ({
@@ -170,7 +171,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
 
     // Envoyer un message
     const handleSendMessage = async () => {
-        if (!newMessage.trim() || !user || !selectedContact || !token) return;
+        if (!newMessage.trim() || !user || !user.id || !selectedContact || !token) return;
         setLoading(true);
 
         try {
@@ -196,6 +197,16 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
     const grouped = groupMessagesByDay(messages);
     const contactLabel = userType === "chercheur" ? "Médecins" : "Chercheurs";
 
+    // Filtrer les contacts selon le terme de recherche
+    const filteredContacts = contacts.filter((contact) => {
+        if (!searchTerm.trim()) return true;
+        const search = searchTerm.toLowerCase();
+        return (
+            contact.nom?.toLowerCase().includes(search) ||
+            contact.email?.toLowerCase().includes(search)
+        );
+    });
+
     return (
         <div className="flex h-[75vh] bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
             {/* LISTE DES CONTACTS */}
@@ -206,7 +217,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                         <ChatBubbleLeftRightIcon className="w-5 h-5 text-blue-600" />
                         <h3 className="font-semibold text-gray-800">{contactLabel}</h3>
                         <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                            {contacts.length}
+                            {filteredContacts.length}/{contacts.length}
                         </span>
                     </div>
                     {/* Search bar */}
@@ -215,6 +226,8 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                         <input
                             type="text"
                             placeholder="Rechercher..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
@@ -229,7 +242,15 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                         </div>
                     )}
 
-                    {contacts.map((contact) => (
+                    {filteredContacts.length === 0 && contacts.length > 0 && (
+                        <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6">
+                            <MagnifyingGlassIcon className="w-16 h-16 mb-3" />
+                            <p className="text-sm text-center">Aucun contact trouvé</p>
+                            <p className="text-xs mt-1">Essayez un autre terme de recherche</p>
+                        </div>
+                    )}
+
+                    {filteredContacts.map((contact) => (
                         <div
                             key={contact.id}
                             onClick={() => setSelectedContact(contact)}
@@ -307,7 +328,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                                         </div>
 
                                         {group.items.map((msg) => {
-                                            const isMe = msg.emetteur.id === user.id;
+                                            const isMe = msg.emetteur.id === user?.id;
                                             return (
                                                 <div
                                                     key={msg.id}
@@ -345,7 +366,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                                     placeholder="Écrivez votre message..."
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
-                                    onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                                     className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     disabled={loading}
                                 />
