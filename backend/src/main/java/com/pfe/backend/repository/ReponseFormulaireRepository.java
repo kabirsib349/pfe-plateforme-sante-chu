@@ -12,26 +12,23 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
     
     List<ReponseFormulaire> findByFormulaireMedecinId(Long formulaireMedecinId);
     
-    List<ReponseFormulaire> findByFormulaireMedecinIdAndPatientIdentifier(
-            Long formulaireMedecinId, 
-            String patientIdentifier
+    // Modifié pour chercher par hash
+    List<ReponseFormulaire> findByFormulaireMedecinIdAndPatientIdentifierHash(
+            Long formulaireMedecinId,
+            String patientIdentifierHash
     );
     
-    @Query("SELECT DISTINCT r.patientIdentifier FROM ReponseFormulaire r " +
-           "WHERE r.formulaireMedecin.id = :formulaireMedecinId " +
-           "AND r.patientIdentifier IS NOT NULL " +
-           "ORDER BY r.dateSaisie DESC")
-    List<String> findDistinctPatientIdentifiersByFormulaireMedecinId(
-            @Param("formulaireMedecinId") Long formulaireMedecinId
-    );
+    // La méthode findDistinctPatientIdentifiersByFormulaireMedecinId a été supprimée
+    // car une requête DISTINCT n'est pas possible sur une colonne chiffrée.
     
     @Modifying
     void deleteByFormulaireMedecinId(Long formulaireMedecinId);
     
+    // Modifié pour supprimer par hash
     @Modifying
-    void deleteByFormulaireMedecinIdAndPatientIdentifier(
-            Long formulaireMedecinId, 
-            String patientIdentifier
+    void deleteByFormulaireMedecinIdAndPatientIdentifierHash(
+            Long formulaireMedecinId,
+            String patientIdentifierHash
     );
 
     @Query("""
@@ -46,3 +43,4 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
 
 
 }
+
