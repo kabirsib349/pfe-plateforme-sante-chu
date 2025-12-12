@@ -119,9 +119,9 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
 
             for (const contact of contacts) {
                 try {
-                    const count = userType === "chercheur"
-                        ? await countMessagesNonLus(token, user.id, contact.id)
-                        : await countMessagesNonLus(token, contact.id, user.id);
+                    // L'API countMessagesNonLus attend (destinataireId, emetteurId)
+                    // On compte les messages que le contact a envoyés à l'utilisateur actuel
+                    const count = await countMessagesNonLus(token, user.id, contact.id);
                     counts[contact.id] = count;
                 } catch (e) {
                     console.error("Erreur récupération non lus", contact.id, e);

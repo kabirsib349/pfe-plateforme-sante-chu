@@ -315,8 +315,9 @@ export async function marquerMessagesLusMedecin(token: string, chercheurId: numb
     await handleResponse<void>(response);
 }
 
-export async function countMessagesNonLus(token: string, chercheurId: number, medecinId: number): Promise<number> {
-    const response = await fetch(apiUrl(`/api/messages/nonlus/${chercheurId}/${medecinId}`), {
+// Compte les messages non lus envoyés par emetteurId vers destinataireId
+export async function countMessagesNonLus(token: string, destinataireId: number, emetteurId: number): Promise<number> {
+    const response = await fetch(apiUrl(`/api/messages/nonlus/${destinataireId}/${emetteurId}`), {
         headers: createHeaders(token),
     });
 

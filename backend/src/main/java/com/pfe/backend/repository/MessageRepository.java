@@ -29,13 +29,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findConversation(@Param("medecinId") Long medecinId,
                                    @Param("chercheurId") Long chercheurId);
 
+    // Compte les messages non lus envoyés par userId2 vers userId1
+    // userId1 = destinataire (celui qui reçoit)
+    // userId2 = émetteur (celui qui envoie)
     @Query("""
     SELECT COUNT(m)
     FROM Message m
-    WHERE m.destinataire.id = :chercheurId
-      AND m.emetteur.id = :medecinId
+    WHERE m.destinataire.id = :destinataireId
+      AND m.emetteur.id = :emetteurId
       AND m.lu = false
 """)
-    int countUnreadMessages(Long chercheurId, Long medecinId);
+    int countUnreadMessages(@Param("destinataireId") Long destinataireId, @Param("emetteurId") Long emetteurId);
 
 }
