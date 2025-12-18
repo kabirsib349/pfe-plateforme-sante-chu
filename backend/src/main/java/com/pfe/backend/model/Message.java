@@ -1,5 +1,6 @@
 package com.pfe.backend.model;
 
+import com.pfe.backend.config.converter.StringCryptoConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public class Message {
     private Long id;
 
     @Setter
+    @Convert(converter = StringCryptoConverter.class)
     @Column(nullable = false, length = 2000)
     private String contenu;
 
