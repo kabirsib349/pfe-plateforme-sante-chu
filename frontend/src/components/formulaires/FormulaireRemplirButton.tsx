@@ -19,32 +19,20 @@ export function FormulaireRemplirButton({ formulaireId }: Props) {
 
   const handleClick = async (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
-    console.debug('FormulaireRemplirButton clicked for', formulaireId);
     if (!token) {
-      showToast('Authentification requise', 'error');
+      router.push('/login');
       return;
     }
-    // immediate feedback
-    showToast('Initialisation...', 'info');
     setIsLoading(true);
     try {
-      console.debug('Calling createEnvoiPourChercheur', { formulaireId });
-      try { window?.alert && window.alert('Démarrage création envoi...'); } catch (_) {}
       const res = await createEnvoiPourChercheur(token, formulaireId);
-      console.debug('createEnvoiPourChercheur response', res);
-      try { window?.alert && window.alert('Réponse API reçue'); } catch (_) {}
       const newId = res?.id;
       if (newId) {
-        showToast('Envoi préparé — ouverture du formulaire', 'success');
-        try { window?.alert && window.alert('Redirection vers formulaire: ' + newId); } catch (_) {}
         router.push(`/formulaire/remplir?id=${newId}&source=chercheur`);
       } else {
         showToast('Impossible de créer l\'envoi', 'error');
-        try { window?.alert && window.alert('Impossible de créer l\'envoi (pas d\'id retourné)'); } catch (_) {}
       }
     } catch (err: any) {
-      console.error('Erreur createEnvoi:', err);
-      try { window?.alert && window.alert('Erreur lors de la création: ' + (err?.message || String(err))); } catch (_) {}
       showToast(err?.message || 'Erreur lors de la création de l\'envoi', 'error');
     } finally {
       setIsLoading(false);
@@ -58,7 +46,6 @@ export function FormulaireRemplirButton({ formulaireId }: Props) {
       href={fallbackHref}
       role="button"
       onClick={async (e) => {
-        // Si JS est activé, on empêche la navigation et on exécute l'appel API
         e.preventDefault();
         if (!isLoading) await handleClick(e as any);
       }}
