@@ -5,7 +5,7 @@ import { Card } from '@/src/components/Card';
 import { Badge } from '@/src/components/Badge';
 import { ChartBarIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { EmptyState, LoadingState } from '@/src/components/ui';
-import { getFormulairesEnvoyes } from '@/src/lib/api';
+import { getFormulairesEnvoyes, getPatientIdentifiers } from '@/src/lib/api';
 import { handleError } from '@/src/lib/errorHandler';
 
 const ITEMS_PER_PAGE = 5;
@@ -17,6 +17,7 @@ export const DataTab: React.FC = React.memo(() => {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [aggregated, setAggregated] = useState<any[]>([]); // aggregated per formulaire
 
   useEffect(() => {
     const fetchFormulairesEnvoyes = async () => {
@@ -25,6 +26,35 @@ export const DataTab: React.FC = React.memo(() => {
       try {
         const data = await getFormulairesEnvoyes(token);
         setFormulairesEnvoyes(data);
+
+        // Aggregate by formulaire.idFormulaire
+        const map = new Map<number, { formulaire: any; patientIds: Set<string>; totalResponses: number }>();
+        for (const fe of data) {
+          const fid = fe.formulaire.idFormulaire;
+          if (!map.has(fid)) {
+            map.set(fid, { formulaire: fe.formulaire, patientIds: new Set(), totalResponses: 0 });
+          }
+        }
+
+        // For each FormulaireMedecin entry, fetch patient identifiers and add to the set
+        await Promise.all(data.map(async (fe: any) => {
+          try {
+            const ids = await getPatientIdentifiers(token, fe.id);
+            const entry = map.get(fe.formulaire.idFormulaire);
+            ids.forEach((id) => entry.patientIds.add(id));
+            entry.totalResponses += ids.length;
+          } catch (e) {
+            // ignore individual failures
+          }
+        }));
+
+        const agg = Array.from(map.values()).map(v => ({
+          formulaire: v.formulaire,
+          patientsCount: v.patientIds.size,
+          totalResponses: v.totalResponses
+        }));
+        setAggregated(agg);
+
       } catch (error) {
         handleError(error, 'FetchFormulairesEnvoyes');
       } finally {
@@ -37,16 +67,14 @@ export const DataTab: React.FC = React.memo(() => {
 
   const formulairesCompletes = formulairesEnvoyes.filter((f) => f.complete);
 
-  // --- Recherche ---
-  const filtered = formulairesCompletes.filter((f) => {
+  // Filter aggregated by formulaire titre / etude
+  const filtered = aggregated.filter((a) => {
     const q = search.toLowerCase();
-    const titre = (f.formulaire?.titre || "").toLowerCase();
-    const medecinNom = (f.medecin?.nom || "").toLowerCase();
-    const etudeTitre = (f.formulaire?.etude?.titre || "").toLowerCase();
-    return titre.includes(q) || medecinNom.includes(q) || etudeTitre.includes(q);
+    const titre = (a.formulaire?.titre || "").toLowerCase();
+    const etudeTitre = (a.formulaire?.etude?.titre || "").toLowerCase();
+    return titre.includes(q) || etudeTitre.includes(q);
   });
 
-  // --- Pagination ---
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedItems = filtered.slice(
     (page - 1) * ITEMS_PER_PAGE,
@@ -85,16 +113,16 @@ export const DataTab: React.FC = React.memo(() => {
           ) : (
             <>
               <div className="space-y-4">
-                {paginatedItems.map((formulaireEnvoye) => (
+                {paginatedItems.map((item) => (
                   <div
-                    key={formulaireEnvoye.id}
+                    key={item.formulaire.idFormulaire}
                     className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50/30 transition-all"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {formulaireEnvoye.formulaire.titre}
+                            {item.formulaire.titre}
                           </h3>
                           <Badge color="green">Complété</Badge>
                         </div>
@@ -102,28 +130,21 @@ export const DataTab: React.FC = React.memo(() => {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <BookOpenIcon className="w-4 h-4" />
-                            <span>{formulaireEnvoye.formulaire.etude?.titre || 'N/A'}</span>
+                            <span>{item.formulaire.etude?.titre || 'N/A'}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <UserIcon className="w-4 h-4" />
-                            <span>
-                              {formulaireEnvoye.medecin && formulaireEnvoye.medecin.nom
-                                ? `Rempli par Dr. ${formulaireEnvoye.medecin.nom}`
-                                : 'Rempli par Chercheur'}
-                            </span>
+                            <span>Patients: {item.patientsCount}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <CalendarDaysIcon className="w-4 h-4" />
-                            <span>
-                              Complété le{' '}
-                              {new Date(formulaireEnvoye.dateCompletion).toLocaleDateString('fr-FR')}
-                            </span>
+                            <span>Réponses totales: {item.totalResponses}</span>
                           </span>
                         </div>
                       </div>
 
                       <button
-                        onClick={() => router.push(`/formulaire/reponses?id=${formulaireEnvoye.id}`)}
+                        onClick={() => router.push(`/formulaire/reponses?formulaireId=${item.formulaire.idFormulaire}`)}
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ml-4 flex items-center gap-2"
                       >
                         <ChartBarIcon className="w-5 h-5" />

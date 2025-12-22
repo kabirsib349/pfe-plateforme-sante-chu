@@ -224,6 +224,14 @@ export async function getReponses(token: string, formulaireMedecinId: number): P
     return handleResponse<any[]>(response);
 }
 
+export async function getPatientIdentifiers(token: string, formulaireMedecinId: number): Promise<string[]> {
+    const response = await fetch(apiUrl(`/api/reponses/${formulaireMedecinId}/patients`), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<string[]>(response);
+}
+
 export async function submitReponses(token: string, data: any): Promise<void> {
     const response = await fetch(apiUrl('/api/reponses'), {
         method: 'POST',
