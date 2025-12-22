@@ -40,11 +40,10 @@ export const DataTab: React.FC = React.memo(() => {
   // --- Recherche ---
   const filtered = formulairesCompletes.filter((f) => {
     const q = search.toLowerCase();
-    return (
-      f.formulaire.titre.toLowerCase().includes(q) ||
-      f.medecin.nom.toLowerCase().includes(q) ||
-      (f.formulaire.etude?.titre || "").toLowerCase().includes(q)
-    );
+    const titre = (f.formulaire?.titre || "").toLowerCase();
+    const medecinNom = (f.medecin?.nom || "").toLowerCase();
+    const etudeTitre = (f.formulaire?.etude?.titre || "").toLowerCase();
+    return titre.includes(q) || medecinNom.includes(q) || etudeTitre.includes(q);
   });
 
   // --- Pagination ---
@@ -56,10 +55,8 @@ export const DataTab: React.FC = React.memo(() => {
 
   return (
     <Card
-      title="Formulaires complétés par les médecins"
-      subtitle={`${formulairesCompletes.length} formulaire${
-        formulairesCompletes.length !== 1 ? 's' : ''
-      } rempli${formulairesCompletes.length !== 1 ? 's' : ''}`}
+      title="Formulaires complétés"
+      subtitle={`${formulairesCompletes.length} formulaire${formulairesCompletes.length !== 1 ? 's' : ''} rempli${formulairesCompletes.length !== 1 ? 's' : ''}`}
     >
       {isLoading ? (
         <LoadingState />
@@ -109,7 +106,11 @@ export const DataTab: React.FC = React.memo(() => {
                           </span>
                           <span className="flex items-center gap-1">
                             <UserIcon className="w-4 h-4" />
-                            <span>Rempli par Dr. {formulaireEnvoye.medecin.nom}</span>
+                            <span>
+                              {formulaireEnvoye.medecin && formulaireEnvoye.medecin.nom
+                                ? `Rempli par Dr. ${formulaireEnvoye.medecin.nom}`
+                                : 'Rempli par Chercheur'}
+                            </span>
                           </span>
                           <span className="flex items-center gap-1">
                             <CalendarDaysIcon className="w-4 h-4" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useStats } from "@/src/hooks/useStats";
 import { useFormulaires } from "@/src/hooks/useFormulaires";
@@ -31,7 +31,15 @@ export default function Dashboard() {
         userRole: user?.role as 'chercheur' | 'medecin',
         isAuthenticated
     });
-    const [activeTab, setActiveTab] = useState("allforms");
+    const searchParams = useSearchParams();
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            const tab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
+            return tab || 'allforms';
+        } catch (e) {
+            return 'allforms';
+        }
+    });
 
 
     useEffect(() => {
@@ -42,7 +50,14 @@ export default function Dashboard() {
         if (!isLoading && isAuthenticated && user?.role !== 'chercheur') {
             router.push("/dashboard-medecin");
         }
-    }, [isAuthenticated, isLoading, user, router]);
+        // Sync with query param if present (permet redirection avec ?tab=data)
+        try {
+            const tab = searchParams.get('tab');
+            if (tab) setActiveTab(tab);
+        } catch (e) {
+            // ignore
+        }
+    }, [isAuthenticated, isLoading, user, router, searchParams]);
 
     if (isLoading) return <div className="flex items-center justify-center min-h-screen">Chargement...</div>; // Affichage pendant le chargement
     if (!isAuthenticated) return null; // évite un rendu avant redirection

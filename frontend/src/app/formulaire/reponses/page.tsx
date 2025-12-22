@@ -211,7 +211,11 @@ function ReponsesFormulaireContent() {
                             </span>
                             <span className="flex items-center gap-1">
                                 <UserIcon className="w-4 h-4" />
-                                <span>Rempli par Dr. {formulaireData.medecin.nom}</span>
+                                <span>
+                                    {formulaireData.medecin?.nom
+                                        ? `Rempli par Dr. ${formulaireData.medecin.nom}`
+                                        : 'Rempli par Chercheur'}
+                                </span>
                             </span>
                             <span className="flex items-center gap-1">
                                 <CalendarDaysIcon className="w-4 h-4" />

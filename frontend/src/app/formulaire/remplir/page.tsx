@@ -118,7 +118,11 @@ function RemplirFormulaireContent() {
 
             showToast('Formulaire enregistré avec succès pour le patient ' + patientIdentifier, 'success');
             setTimeout(() => {
-                router.push('/dashboard-medecin');
+                if (user?.role === 'chercheur') {
+                    router.push('/dashboard-chercheur?tab=data');
+                } else {
+                    router.push('/dashboard-medecin');
+                }
             }, 1500);
         } catch (error) {
             const formattedError = handleError(error, 'SubmitReponses');
