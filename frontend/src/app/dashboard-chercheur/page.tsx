@@ -20,6 +20,7 @@ import {
     CalendarDaysIcon,
     SparklesIcon
 } from "@heroicons/react/24/outline";
+import { FormulaireRemplirButton } from "@/src/components/formulaires/FormulaireRemplirButton";
 
 export default function Dashboard() {
     const router = useRouter();
@@ -205,6 +206,7 @@ const AllFormsTab = () => {
     const router = useRouter();
     const { formulaires, isLoading: isLoadingForms, error } = useFormulaires();
     const [expandedForm, setExpandedForm] = useState<number | null>(null);
+    const { user } = useAuth();
 
     const getStatutColor = (statut: string) => {
         switch (statut.toLowerCase()) {
@@ -280,7 +282,12 @@ const AllFormsTab = () => {
                                 {/* En-tête du formulaire */}
                                 <div 
                                     className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                                    onClick={() => setExpandedForm(expandedForm === formulaire.idFormulaire ? null : formulaire.idFormulaire)}
+                                    onClick={(e: React.MouseEvent) => {
+                                        // Si le clic provient d'un bouton ou d'un lien à l'intérieur, on ignore
+                                        const target = e.target as HTMLElement;
+                                        if (target.closest('button') || target.closest('a')) return;
+                                        setExpandedForm(expandedForm === formulaire.idFormulaire ? null : formulaire.idFormulaire);
+                                    }}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
@@ -306,7 +313,12 @@ const AllFormsTab = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button 
+                                            {/* Bouton Remplir visible uniquement pour le chercheur */}
+                                            {user?.role === 'chercheur' && (
+                                                <FormulaireRemplirButton formulaireId={formulaire.idFormulaire} />
+                                            )}
+
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     router.push(`/formulaire/modifier/${formulaire.idFormulaire}`);
@@ -319,7 +331,7 @@ const AllFormsTab = () => {
                                             <span className="text-gray-400">
                                                 {expandedForm === formulaire.idFormulaire ? '▼' : '▶'}
                                             </span>
-                                        </div>
+                                         </div>
                                     </div>
                                 </div>
 
@@ -348,6 +360,3 @@ const AllFormsTab = () => {
         </div>
     );
 };
-
-
-

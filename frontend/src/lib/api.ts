@@ -129,6 +129,15 @@ export async function getFormulaireById(token: string, id: number): Promise<any>
     return handleResponse<any>(response);
 }
 
+export async function createEnvoiPourChercheur(token: string, formulaireId: number): Promise<any> {
+    const response = await fetch(apiUrl(`/api/formulaires/${formulaireId}/create-envoi`), {
+        method: 'POST',
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<any>(response);
+}
+
 export async function createFormulaire(token: string, data: any): Promise<any> {
     const response = await fetch(apiUrl('/api/formulaires'), {
         method: 'POST',

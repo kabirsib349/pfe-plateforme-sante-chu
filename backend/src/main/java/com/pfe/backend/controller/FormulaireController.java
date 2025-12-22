@@ -39,6 +39,20 @@ public class FormulaireController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{formulaireId}/create-envoi")
+    @PreAuthorize("hasAuthority('chercheur')")
+    public ResponseEntity<com.pfe.backend.dto.FormulaireMedecinCreatedResponse> createEnvoiParChercheur(@PathVariable Long formulaireId, Principal principal) {
+        com.pfe.backend.model.FormulaireMedecin fm = formulaireMedecinService.createEnvoiParChercheur(formulaireId, principal.getName());
+        String dateStr = fm.getDateEnvoi() != null ? fm.getDateEnvoi().toString() : null;
+        com.pfe.backend.dto.FormulaireMedecinCreatedResponse dto = new com.pfe.backend.dto.FormulaireMedecinCreatedResponse(
+                fm.getId(),
+                fm.getFormulaire() != null ? fm.getFormulaire().getIdFormulaire() : null,
+                dateStr,
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
     @GetMapping
     public ResponseEntity<List<Formulaire>> getFormulaires(Principal principal) {
         List<Formulaire> formulaires = formulaireService.getFormulairesByChercheurEmail(principal.getName());

@@ -31,29 +31,52 @@ public class ReponseFormulaireService {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(request.getFormulaireMedecinId())
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
 
-        // Vérifier que c'est bien le médecin assigné
-        if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
-            throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
+        // Vérifier l'autorisation :
+        // - si un médecin est assigné, seul ce médecin peut remplir
+        // - si aucun médecin n'est assigné (envoi créé par le chercheur), seul le chercheur qui a créé l'envoi peut remplir
+        if (formulaireMedecin.getMedecin() != null) {
+            if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
+                throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
+            }
+        } else {
+            // Aucun médecin assigné → vérifier que c'est bien le chercheur qui a créé l'envoi
+            if (formulaireMedecin.getChercheur() == null || !formulaireMedecin.getChercheur().getEmail().equals(emailMedecin)) {
+                throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
+            }
         }
 
         // Vérifier si ce patient a déjà été enregistré pour ce formulaire
         List<ReponseFormulaire> reponsesExistantes = reponseFormulaireRepository
                 .findByFormulaireMedecinIdAndPatientIdentifier(
-                        request.getFormulaireMedecinId(), 
+                        request.getFormulaireMedecinId(),
                         request.getPatientIdentifier()
                 );
 
         if (!reponsesExistantes.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Le patient '" + request.getPatientIdentifier() + 
-                    "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
+                    "Le patient '" + request.getPatientIdentifier() +
+                            "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
             );
         }
 
         // Sauvegarder les nouvelles réponses avec l'identifiant patient
-        for (Map.Entry<Long, String> entry : request.getReponses().entrySet()) {
-            Long champId = entry.getKey();
-            String valeur = entry.getValue();
+        if (request.getReponses() == null || request.getReponses().isEmpty()) {
+            throw new IllegalArgumentException("Aucune réponse fournie");
+        }
+
+        for (Map.Entry<?, ?> rawEntry : request.getReponses().entrySet()) {
+            Object rawKey = rawEntry.getKey();
+            Object rawVal = rawEntry.getValue();
+
+            // Convertir la clé en Long de façon robuste
+            Long champId;
+            try {
+                champId = Long.valueOf(rawKey.toString());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Identifiant de champ invalide: " + rawKey);
+            }
+
+            String valeur = rawVal != null ? rawVal.toString() : null;
 
             if (valeur != null && !valeur.trim().isEmpty()) {
                 Champ champ = champRepository.findById(champId)
@@ -72,12 +95,12 @@ public class ReponseFormulaireService {
         // Marquer le formulaire comme complété
         formulaireMedecin.setComplete(true);
         formulaireMedecin.setDateCompletion(LocalDateTime.now());
-        
+
         // Démasquer pour le chercheur si c'était masqué (pour qu'il voie les nouvelles réponses)
         if (formulaireMedecin.isMasquePourChercheur()) {
             formulaireMedecin.setMasquePourChercheur(false);
         }
-        
+
         formulaireMedecinRepository.save(formulaireMedecin);
 
         // Enregistrer l'activité
@@ -86,8 +109,8 @@ public class ReponseFormulaireService {
                 "Formulaire rempli",
                 "Formulaire",
                 formulaireMedecin.getFormulaire().getIdFormulaire(),
-                "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() + 
-                "' rempli pour le patient: " + request.getPatientIdentifier()
+                "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() +
+                        "' rempli pour le patient: " + request.getPatientIdentifier()
         );
     }
 
@@ -117,16 +140,16 @@ public class ReponseFormulaireService {
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponsesByPatient(Long formulaireMedecinId, String patientIdentifier) {
         return reponseFormulaireRepository.findByFormulaireMedecinIdAndPatientIdentifier(
-                formulaireMedecinId, 
+                formulaireMedecinId,
                 patientIdentifier
         );
     }
-    
+
     @Transactional(readOnly = true)
     public List<String> getPatientIdentifiers(Long formulaireMedecinId) {
         return reponseFormulaireRepository.findDistinctPatientIdentifiersByFormulaireMedecinId(formulaireMedecinId);
     }
-    
+
     @Transactional
     public void supprimerReponsesPatient(Long formulaireMedecinId, String patientIdentifier, String emailMedecin) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
@@ -138,7 +161,7 @@ public class ReponseFormulaireService {
         }
 
         reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifier(
-                formulaireMedecinId, 
+                formulaireMedecinId,
                 patientIdentifier
         );
     }

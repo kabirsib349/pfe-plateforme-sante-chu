@@ -26,12 +26,15 @@ function RemplirFormulaireContent() {
     const [patientIdentifier, setPatientIdentifier] = useState<string>('');
     const [champsMap, setChampsMap] = useState<Map<string, string>>(new Map());
 
-    // Rediriger si pas médecin
+    // Rediriger si pas médecin sauf si on vient en tant que chercheur (source=chercheur)
     useEffect(() => {
-        if (user && user.role !== 'medecin') {
-            router.push('/dashboard-chercheur');
+        const source = searchParams.get('source');
+        if (user) {
+            if (user.role !== 'medecin' && source !== 'chercheur') {
+                router.push('/dashboard-chercheur');
+            }
         }
-    }, [user, router]);
+    }, [user, router, searchParams]);
 
     useEffect(() => {
         const fetchFormulaireRecu = async () => {
@@ -54,12 +57,14 @@ function RemplirFormulaireContent() {
                 });
                 setChampsMap(map);
 
-                // Marquer comme lu
-                marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
-                    if (config.features.enableDebug) {
-                        console.error('🔴 Erreur marquage lu:', err);
-                    }
-                });
+                // Marquer comme lu uniquement si l'utilisateur courant est un médecin
+                if (user && user.role === 'medecin') {
+                    marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
+                        if (config.features.enableDebug) {
+                            console.error('🔴 Erreur marquage lu:', err);
+                        }
+                    });
+                }
             } catch (err) {
                 const formattedError = handleError(err, 'RemplirFormulaire');
                 setError(formattedError.userMessage);
@@ -336,10 +341,10 @@ function RemplirFormulaireContent() {
                             disabled={isSending}
                             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSending ? 'Envoi en cours...' : 'Envoyer les réponses'}
+                            {isSending ? (user?.role === 'chercheur' ? 'Enregistrement...' : 'Envoi en cours...') : (user?.role === 'chercheur' ? 'Enregistrer' : 'Envoyer les réponses')}
                         </button>
-                    </div>
-                </form>
+                     </div>
+                 </form>
             </div>
             <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         </div>

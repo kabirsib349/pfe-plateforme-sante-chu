@@ -67,6 +67,30 @@ public class FormulaireMedecinService {
                 formulaireId, "Formulaire '" + formulaire.getTitre() + "' envoyé à " + medecin.getNom());
         return saved;
     }
+
+    @Transactional
+    public FormulaireMedecin createEnvoiParChercheur(Long formulaireId, String emailChercheur) {
+        Formulaire formulaire = formulaireRepository.findById(formulaireId)
+                .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + formulaireId));
+
+        Utilisateur chercheur = utilisateurRepository.findByEmail(emailChercheur)
+                .orElseThrow(() -> new ResourceNotFoundException("Chercheur non trouvé avec l'email: " + emailChercheur));
+
+        // Créer l'assignation sans médecin
+        FormulaireMedecin assignment = new FormulaireMedecin();
+        assignment.setFormulaire(formulaire);
+        assignment.setMedecin(null);
+        assignment.setChercheur(chercheur);
+
+        FormulaireMedecin saved = formulaireMedecinRepository.save(assignment);
+
+        // Enregistrer l'activité
+        activiteService.enregistrerActivite(emailChercheur, "Création envoi (chercheur)", "Formulaire",
+                formulaireId, "Formulaire '" + formulaire.getTitre() + "' préparé pour remplissage par le chercheur");
+
+        return saved;
+    }
+
     @Transactional(readOnly = true)
     public List<FormulaireMedecin> getFormulairesRecus(String emailMedecin) {
         // Plus besoin d'hydratation manuelle grâce au JOIN FETCH dans la requête
@@ -93,11 +117,12 @@ public class FormulaireMedecinService {
 
         return formulaire;
     }
-    
+
     @Transactional(readOnly = true)
     public List<FormulaireMedecin> getFormulairesEnvoyes(String emailChercheur) {
         return formulaireMedecinRepository.findByChercheurEmail(emailChercheur);
     }
+
     @Transactional(readOnly = true)
     public List<Utilisateur> getMedecins() {
         return utilisateurRepository.findByRoleName("medecin");
@@ -141,9 +166,9 @@ public class FormulaireMedecinService {
         } else {
             fm.setMasquePourChercheur(true);
         }
-        
+
         formulaireMedecinRepository.save(fm);
-        
+
         // Supprimer définitivement si masqué des deux côtés
         if (fm.isMasquePourMedecin() && fm.isMasquePourChercheur()) {
             supprimerDefinitivement(fm);
