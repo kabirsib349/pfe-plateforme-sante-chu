@@ -27,22 +27,30 @@ export const DataTab: React.FC = React.memo(() => {
         const data = await getFormulairesEnvoyes(token);
         setFormulairesEnvoyes(data);
 
-        // Aggregate by formulaire.idFormulaire
-        const map = new Map<number, { formulaire: any; patientIds: Set<string>; totalResponses: number }>();
+        // Aggregate by formulaire.idFormulaire, tracking latest timestamp per formulaire
+        const map = new Map<number, { formulaire: any; patientIds: Set<string>; totalResponses: number; latestTimestamp: number }>();
         for (const fe of data) {
           const fid = fe.formulaire.idFormulaire;
+          const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
           if (!map.has(fid)) {
-            map.set(fid, { formulaire: fe.formulaire, patientIds: new Set(), totalResponses: 0 });
+            map.set(fid, { formulaire: fe.formulaire, patientIds: new Set(), totalResponses: 0, latestTimestamp: ts });
+          } else {
+            const curr = map.get(fid)!;
+            if (ts > (curr.latestTimestamp || 0)) curr.latestTimestamp = ts;
           }
         }
 
-        // For each FormulaireMedecin entry, fetch patient identifiers and add to the set
+        // For each FormulaireMedecin entry, fetch patient identifiers and add to the set. Update latestTimestamp if needed.
         await Promise.all(data.map(async (fe: any) => {
           try {
             const ids = await getPatientIdentifiers(token, fe.id);
             const entry = map.get(fe.formulaire.idFormulaire);
-            ids.forEach((id) => entry.patientIds.add(id));
-            entry.totalResponses += ids.length;
+            if (entry) {
+              ids.forEach((id) => entry.patientIds.add(id));
+              entry.totalResponses += ids.length;
+              const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
+              if (ts > (entry.latestTimestamp || 0)) entry.latestTimestamp = ts;
+            }
           } catch (e) {
             // ignore individual failures
           }
@@ -51,8 +59,13 @@ export const DataTab: React.FC = React.memo(() => {
         const agg = Array.from(map.values()).map(v => ({
           formulaire: v.formulaire,
           patientsCount: v.patientIds.size,
-          totalResponses: v.totalResponses
+          totalResponses: v.totalResponses,
+          latestTimestamp: v.latestTimestamp || 0
         }));
+
+        // Sort by latestTimestamp descending (most recent first)
+        agg.sort((a, b) => (b.latestTimestamp || 0) - (a.latestTimestamp || 0));
+
         setAggregated(agg);
 
       } catch (error) {
