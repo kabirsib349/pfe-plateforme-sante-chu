@@ -5,7 +5,7 @@ import { Card } from '@/src/components/Card';
 import { Badge } from '@/src/components/Badge';
 import { ChartBarIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { EmptyState, LoadingState } from '@/src/components/ui';
-import { getFormulairesEnvoyes, getPatientIdentifiers } from '@/src/lib/api';
+import { getFormulairesEnvoyes, getPatientIdentifiers, getReponses } from '@/src/lib/api';
 import { handleError } from '@/src/lib/errorHandler';
 
 const ITEMS_PER_PAGE = 5;
@@ -40,17 +40,73 @@ export const DataTab: React.FC = React.memo(() => {
           }
         }
 
-        // For each FormulaireMedecin entry, fetch patient identifiers and add to the set. Update latestTimestamp if needed.
+        // For each FormulaireMedecin entry, try to fetch patient identifiers; if not available, fetch full responses and derive identifiers
         await Promise.all(data.map(async (fe: any) => {
           try {
-            const ids = await getPatientIdentifiers(token, fe.id);
             const entry = map.get(fe.formulaire.idFormulaire);
-            if (entry) {
+            if (!entry) return;
+
+            let ids: string[] = [];
+            try {
+              ids = await getPatientIdentifiers(token, fe.id);
+            } catch (e) {
+              // endpoint may not exist or fail — we'll fallback to fetching responses
+            }
+
+            if (!ids || ids.length === 0) {
+              // fallback: fetch responses and extract patientIdentifier from multiple possible keys
+              try {
+                const reps = await getReponses(token, fe.id);
+                // helper to pick patient id from a response object
+                const extractPatientId = (r: any): string | null => {
+                  if (!r) return null;
+                  const candidates = [
+                    r.patientIdentifier,
+                    r.patientId,
+                    r.patient?.id,
+                    r.patient?.identifier,
+                    r.patient?.identifierValue,
+                    r.patient_identifier,
+                    r.patient_identifier_value,
+                    r.identifier,
+                    r.patientIdentifierValue,
+                  ];
+                  for (const c of candidates) {
+                    if (c !== undefined && c !== null && String(c).trim() !== '') return String(c);
+                  }
+                  // try if response has a champ named IDENTIFIANT or similar
+                  if (r.champ && r.champ.nomVariable) {
+                    const v = r.valeur;
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v);
+                  }
+                  return null;
+                };
+
+                const extractedSet = new Set<string>();
+                reps.forEach((r: any) => {
+                  const pid = extractPatientId(r);
+                  if (pid) extractedSet.add(pid);
+                });
+
+                if (extractedSet.size > 0) {
+                  extractedSet.forEach(id => entry.patientIds.add(id));
+                } else {
+                  // No patient identifiers found inside responses: count this FormulaireMedecin as one patient
+                  entry.patientIds.add(`fm-${fe.id}`);
+                }
+
+                entry.totalResponses += reps.length;
+              } catch (err) {
+                // if even this fails, as a last resort count the envoi as one patient
+                entry.patientIds.add(`fm-${fe.id}`);
+              }
+            } else {
               ids.forEach((id) => entry.patientIds.add(id));
               entry.totalResponses += ids.length;
-              const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
-              if (ts > (entry.latestTimestamp || 0)) entry.latestTimestamp = ts;
             }
+
+            const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
+            if (ts > (entry.latestTimestamp || 0)) entry.latestTimestamp = ts;
           } catch (e) {
             // ignore individual failures
           }
