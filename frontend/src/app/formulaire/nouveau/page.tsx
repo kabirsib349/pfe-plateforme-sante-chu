@@ -36,7 +36,6 @@ export default function NouveauFormulaire() {
   const { showToast, toasts, removeToast } = useToast();
   const { triggerStatsRefresh } = useStatsRefresh();
   const [isLoading, setIsLoading] = useState(false);
-  const [nomFormulaire, setNomFormulaire] = useState('');
   const [description, setDescription] = useState('');
   const [titreEtude, setTitreEtude] = useState('');
   const [champs, setChamps] = useState<ChampFormulaire[]>([]);
@@ -573,18 +572,15 @@ export default function NouveauFormulaire() {
     };
   
         const sauvegarderFormulaire = async (statut: 'BROUILLON' | 'PUBLIE') => {
-          if (!nomFormulaire.trim()) {
-            showToast(MESSAGES.validation.nomFormulaire, 'error');
-            return;
-          }
+          // now only 'Etude' (titreEtude) is required
           if (!titreEtude.trim()) {
-            showToast("Veuillez saisir un nom pour l'étude.", 'error');
+            showToast("Veuillez saisir le nom de l'étude (obligatoire).", 'error');
             return;
           }
-          if (!token) {
-            showToast('Authentification requise. Veuillez vous reconnecter.', 'error');
-            return;
-          }
+           if (!token) {
+             showToast('Authentification requise. Veuillez vous reconnecter.', 'error');
+             return;
+           }
 
           // Validation des champs
           const champsInvalides = champs.filter(c => !c.question.trim() || !c.nomVariable.trim());
@@ -596,11 +592,13 @@ export default function NouveauFormulaire() {
           setIsLoading(true);
       
           const payload = {
-            titre: nomFormulaire,
-            description: description,
+            // We use the study title as the form title as well
+            titre: titreEtude,
+            // keep description empty at form level; study description sent in descriptionEtude
+            description: '',
             statut: statut,
             titreEtude: titreEtude,
-            descriptionEtude: `Étude concernant le formulaire : ${nomFormulaire}`,
+            descriptionEtude: description,
             champs: champs.map(champ => {
                if (champ.type === 'calcule') {
                 return {
@@ -831,16 +829,12 @@ export default function NouveauFormulaire() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-800 mb-1">Nom du formulaire *</label>
-                <input type="text" value={nomFormulaire} onChange={(e) => setNomFormulaire(e.target.value)} placeholder="Ex: Protocole de suivi post-opératoire" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-800 mb-1">Nom de l'étude associée *</label>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Etude *</label>
                 <input type="text" value={titreEtude} onChange={(e) => setTitreEtude(e.target.value)} placeholder="Ex: Étude sur l'efficacité de la molécule X" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-800 mb-1">Description du formulaire</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez brièvement l'objectif de ce formulaire..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                <label className="block text-sm font-medium text-gray-800 mb-1">Description de l'étude</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez brièvement l'objectif de l'étude..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
             </div>
           </div>
@@ -1075,4 +1069,3 @@ export default function NouveauFormulaire() {
       </>
     );
   }
-  
