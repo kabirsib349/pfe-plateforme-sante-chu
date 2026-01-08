@@ -1,7 +1,16 @@
 package com.pfe.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,8 +36,8 @@ public class Champ {
     @Column(name = "type", length = 30)
     private TypeChamp type;
 
-    @Column(name = "unite", length = 50) // AJOUT DE CETTE LIGNE
-    private String unite;                 // AJOUT DE CETTE LIGNE
+    @Column(name = "unite", length = 50)
+    private String unite;
 
     @Column(name = "obligatoire", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean obligatoire;
