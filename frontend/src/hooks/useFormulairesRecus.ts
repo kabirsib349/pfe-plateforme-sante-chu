@@ -14,7 +14,7 @@ export const useFormulairesRecus = () => {
   const fetchFormulairesRecus = useCallback(async () => {
     if (!token) {
       if (config.features.enableDebug) {
-        console.log('❌ useFormulairesRecus: Pas de token');
+        console.log('[useFormulairesRecus] No token');
       }
       setIsLoading(false);
       return;
@@ -23,17 +23,17 @@ export const useFormulairesRecus = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       if (config.features.enableDebug) {
-        console.log('🔍 useFormulairesRecus: Fetching formulaires reçus...');
+        console.log('[useFormulairesRecus] Fetching formulaires reçus...');
       }
-      
+
       const data = await getFormulairesRecus(token);
-      
+
       if (config.features.enableDebug) {
-        console.log('✅ useFormulairesRecus: Formulaires reçus:', data.length, 'formulaires');
+        console.log('[useFormulairesRecus] Formulaires reçus:', data.length, 'formulaires');
       }
-      
+
       setFormulairesRecus(data);
     } catch (err) {
       const formattedError = handleError(err, 'useFormulairesRecus');

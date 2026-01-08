@@ -19,17 +19,17 @@ export const useFormulaires = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       if (config.features.enableDebug) {
-        console.log('🔍 Fetching formulaires...');
+        console.log('[useFormulaires] Fetching formulaires...');
       }
-      
+
       const data = await getFormulaires(token);
-      
+
       if (config.features.enableDebug) {
-        console.log('📋 Formulaires loaded:', data.length, 'formulaires');
+        console.log('[useFormulaires] Formulaires loaded:', data.length, 'formulaires');
       }
-      
+
       setFormulaires(data);
     } catch (err) {
       const formattedError = handleError(err, 'useFormulaires');

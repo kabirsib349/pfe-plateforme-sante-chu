@@ -20,13 +20,13 @@ export const useFormulairesEnvoyes = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const data = await getFormulairesEnvoyes(token);
-      
+
       if (config.features.enableDebug) {
-        console.log('✅ useFormulairesEnvoyes:', data.length, 'formulaires');
+        console.log('[useFormulairesEnvoyes]', data.length, 'formulaires');
       }
-      
+
       setFormulairesEnvoyes(data);
     } catch (err) {
       const formattedError = handleError(err, 'useFormulairesEnvoyes');

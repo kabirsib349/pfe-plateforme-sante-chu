@@ -30,13 +30,13 @@ export interface FormattedError {
  */
 function getErrorType(status?: number): ErrorType {
     if (!status) return ErrorType.NETWORK;
-    
+
     if (status === 401) return ErrorType.AUTHENTICATION;
     if (status === 403) return ErrorType.AUTHORIZATION;
     if (status === 404) return ErrorType.NOT_FOUND;
     if (status >= 400 && status < 500) return ErrorType.VALIDATION;
     if (status >= 500) return ErrorType.SERVER;
-    
+
     return ErrorType.UNKNOWN;
 }
 
@@ -60,7 +60,7 @@ export function formatError(error: unknown): FormattedError {
     // Erreur API personnalisée
     if (error instanceof ApiException) {
         const type = getErrorType(error.status);
-        
+
         return {
             type,
             message: error.message,
@@ -110,7 +110,7 @@ export function logError(error: FormattedError, context?: string): void {
     };
 
     if (config.features.enableDebug) {
-        console.error('🔴 Error:', logData);
+        console.error('[ERROR]', logData);
     }
 
     // TODO: Envoyer à un service de monitoring (Sentry, LogRocket, etc.)
@@ -128,13 +128,13 @@ export function handleError(
     onError?: (formattedError: FormattedError) => void
 ): FormattedError {
     const formattedError = formatError(error);
-    
+
     logError(formattedError, context);
-    
+
     if (onError) {
         onError(formattedError);
     }
-    
+
     return formattedError;
 }
 

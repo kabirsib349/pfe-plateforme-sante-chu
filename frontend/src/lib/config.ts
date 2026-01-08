@@ -29,5 +29,5 @@ export const apiUrl = (path: string): string => {
 
 // Validation de la configuration au démarrage
 if (typeof window !== 'undefined' && config.features.enableDebug) {
-  console.log('🔧 Configuration:', config);
+  console.log('[CONFIG]', config);
 }

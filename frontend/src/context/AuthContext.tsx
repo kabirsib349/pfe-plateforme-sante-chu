@@ -44,12 +44,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setIsAuthenticated(true);
         } catch (err) {
             if (config.features.enableDebug) {
-                console.error('🔴 Erreur lors de la récupération des infos utilisateur:', err);
+                console.error('[AuthContext] Erreur lors de la récupération des infos utilisateur:', err);
             }
-            
+
             if (err instanceof ApiException) {
                 setError(err.message);
-                
+
                 // Si le token est invalide, on déconnecte l'utilisateur
                 if (err.status === 401 || err.status === 403) {
                     logout();
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
      */
     useEffect(() => {
         const savedToken = localStorage.getItem(config.storage.tokenKey);
-        
+
         if (savedToken) {
             setToken(savedToken);
             fetchUserInfo(savedToken);
@@ -128,10 +128,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
  */
 export const useAuthContext = (): AuthContextType => {
     const context = useContext(AuthContext);
-    
+
     if (!context) {
         throw new Error('useAuthContext doit être utilisé à l\'intérieur d\'un AuthProvider');
     }
-    
+
     return context;
 };
