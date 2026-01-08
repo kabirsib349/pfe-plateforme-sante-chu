@@ -109,6 +109,23 @@ export interface Champ {
   // Propriété purement frontend pour l'édition
   options?: OptionValeur[];
   tempId?: string;
+  // Propriétés pour les questions personnalisées
+  estPerso?: boolean;
+  themeNom?: string;
+  dateMin?: string;
+  dateMax?: string;
+}
+
+export interface QuestionPersonnalisee {
+  id?: number;
+  label: string;
+  type: string;
+  nomVariable: string;
+  options?: string; // JSON string
+  themeNom: string;
+  ordre?: number;
+  dateMin?: string;
+  dateMax?: string;
 }
 
 // ============= FORMULAIRE =============
@@ -153,6 +170,8 @@ export interface ChampRequest {
   categorie?: string;
   nomListeValeur?: string;
   options?: OptionValeur[];
+  dateMin?: string;
+  dateMax?: string;
 }
 
 // ============= FORMULAIRE MEDECIN & ENVOI =============
