@@ -55,7 +55,6 @@ public class ReponseFormulaireService {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(request.getFormulaireMedecinId())
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
 
-<<<<<<< HEAD
         // Vérifier l'autorisation :
         // - si un médecin est assigné, seul ce médecin peut remplir
         // - si aucun médecin n'est assigné (envoi créé par le chercheur), seul le chercheur qui a créé l'envoi peut remplir
@@ -68,29 +67,18 @@ public class ReponseFormulaireService {
             if (formulaireMedecin.getChercheur() == null || !formulaireMedecin.getChercheur().getEmail().equals(emailMedecin)) {
                 throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
             }
-=======
-        if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
-            throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
->>>>>>> origin/dev
         }
 
         String patientIdentifierHash = hashPatientIdentifier(request.getPatientIdentifier());
         List<ReponseFormulaire> reponsesExistantes = reponseFormulaireRepository
-<<<<<<< HEAD
-                .findByFormulaireMedecinIdAndPatientIdentifier(
-                        request.getFormulaireMedecinId(),
-                        request.getPatientIdentifier()
-=======
                 .findByFormulaireMedecinIdAndPatientIdentifierHash(
                         request.getFormulaireMedecinId(),
                         patientIdentifierHash
->>>>>>> origin/dev
                 );
 
         if (!reponsesExistantes.isEmpty()) {
             throw new IllegalArgumentException(
                     "Le patient '" + request.getPatientIdentifier() +
-<<<<<<< HEAD
                             "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
             );
         }
@@ -113,15 +101,6 @@ public class ReponseFormulaireService {
             }
 
             String valeur = rawVal != null ? rawVal.toString() : null;
-=======
-                    "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
-            );
-        }
-
-        for (Map.Entry<Long, String> entry : request.getReponses().entrySet()) {
-            Long champId = entry.getKey();
-            String valeur = entry.getValue();
->>>>>>> origin/dev
 
             if (valeur != null && !valeur.trim().isEmpty()) {
                 Champ champ = champRepository.findById(champId)
@@ -140,12 +119,8 @@ public class ReponseFormulaireService {
 
         formulaireMedecin.setComplete(true);
         formulaireMedecin.setDateCompletion(LocalDateTime.now());
-<<<<<<< HEAD
 
         // Démasquer pour le chercheur si c'était masqué (pour qu'il voie les nouvelles réponses)
-=======
-        
->>>>>>> origin/dev
         if (formulaireMedecin.isMasquePourChercheur()) {
             formulaireMedecin.setMasquePourChercheur(false);
         }
@@ -158,11 +133,7 @@ public class ReponseFormulaireService {
                 "Formulaire",
                 formulaireMedecin.getFormulaire().getIdFormulaire(),
                 "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() +
-<<<<<<< HEAD
                         "' rempli pour le patient: " + request.getPatientIdentifier()
-=======
-                "' rempli pour le patient: " + request.getPatientIdentifier()
->>>>>>> origin/dev
         );
     }
 
@@ -189,26 +160,14 @@ public class ReponseFormulaireService {
 
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponsesByPatient(Long formulaireMedecinId, String patientIdentifier) {
-<<<<<<< HEAD
-        return reponseFormulaireRepository.findByFormulaireMedecinIdAndPatientIdentifier(
-                formulaireMedecinId,
-                patientIdentifier
-        );
-    }
-
-=======
         String patientIdentifierHash = hashPatientIdentifier(patientIdentifier);
         return reponseFormulaireRepository.findByFormulaireMedecinIdAndPatientIdentifierHash(
                 formulaireMedecinId,
                 patientIdentifierHash
         );
     }
-    
-    /**
-     * Récupère les identifiants patients uniques pour un formulaire
-     * Utilise le hash pour identifier les patients uniques, puis déchiffre les identifiants
-     */
->>>>>>> origin/dev
+
+
     @Transactional(readOnly = true)
     public List<String> getPatientIdentifiers(Long formulaireMedecinId) {
         // Récupérer toutes les réponses pour ce formulaire
@@ -231,18 +190,11 @@ public class ReponseFormulaireService {
         if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ces réponses");
         }
-<<<<<<< HEAD
 
-        reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifier(
-                formulaireMedecinId,
-                patientIdentifier
-=======
-        
         String patientIdentifierHash = hashPatientIdentifier(patientIdentifier);
         reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
                 formulaireMedecinId,
                 patientIdentifierHash
->>>>>>> origin/dev
         );
     }
 }

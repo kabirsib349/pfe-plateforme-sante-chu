@@ -12,7 +12,7 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
     
     List<ReponseFormulaire> findByFormulaireMedecinId(Long formulaireMedecinId);
     
-    // Modifié pour chercher par hash
+    // Méthodes pour chercher par hash
     List<ReponseFormulaire> findByFormulaireMedecinIdAndPatientIdentifierHash(
             Long formulaireMedecinId,
             String patientIdentifierHash
@@ -24,7 +24,7 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
     @Modifying
     void deleteByFormulaireMedecinId(Long formulaireMedecinId);
     
-    // Modifié pour supprimer par hash
+    // Méthode pour supprimer par hash
     @Modifying
     void deleteByFormulaireMedecinIdAndPatientIdentifierHash(
             Long formulaireMedecinId,
