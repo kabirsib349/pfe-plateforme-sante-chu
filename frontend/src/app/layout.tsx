@@ -29,7 +29,6 @@ export default function RootLayout({
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
         >
-        {/* ✅ On injecte notre AuthProvider via le wrapper client */}
         <Providers>
             <DashboardHeader />
             {children}
