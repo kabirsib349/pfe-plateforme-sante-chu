@@ -3,11 +3,13 @@
 import React, { Suspense, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
-import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon, BookOpenIcon, PrinterIcon, ArrowDownTrayIcon, ClipboardDocumentListIcon, EyeIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon, BookOpenIcon, ArrowDownTrayIcon, ClipboardDocumentListIcon, EyeIcon, MagnifyingGlassIcon, XMarkIcon, ExclamationCircleIcon, DocumentTextIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import { getFormulairesEnvoyes, getFormulaireById, getReponses } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
 import { config } from "@/src/lib/config";
 import ExportCsvButton from "@/src/components/export/ExportCsvButton";
+import { PatientTable } from "@/src/components/reponses/PatientTable";
+import { PatientDetailsModal } from "@/src/components/reponses/PatientDetailsModal";
 
 const PATIENTS_PER_PAGE = 3;
 
@@ -27,7 +29,9 @@ function ReponsesFormulaireContent() {
     const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-    // Rediriger si pas chercheur
+    /**
+     * Redirect non-researcher users to medecin dashboard
+     */
     useEffect(() => {
         if (user && user.role !== 'chercheur') {
             router.push('/dashboard-medecin');
@@ -39,6 +43,12 @@ function ReponsesFormulaireContent() {
             setIsLoading(true);
             setError(null);
 
+            if (!token) {
+                setError('Non authentifié');
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const formulaires = await getFormulairesEnvoyes(token);
 
@@ -47,8 +57,12 @@ function ReponsesFormulaireContent() {
                     const formulaireEnvoye = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
                     if (formulaireEnvoye) {
                         try {
-                            const formulaireComplet = await getFormulaireById(token, formulaireEnvoye.formulaire.idFormulaire);
-                            setFormulaireData({ ...formulaireEnvoye, formulaire: formulaireComplet });
+                            if (formulaireEnvoye.formulaire?.idFormulaire) {
+                                const formulaireComplet = await getFormulaireById(token, formulaireEnvoye.formulaire.idFormulaire);
+                                setFormulaireData({ ...formulaireEnvoye, formulaire: formulaireComplet });
+                            } else {
+                                setFormulaireData(formulaireEnvoye);
+                            }
                         } catch {
                             setFormulaireData(formulaireEnvoye);
                         }
@@ -95,9 +109,12 @@ function ReponsesFormulaireContent() {
 
         fetchReponses();
 
-     }, [formulaireMedecinId, formulaireIdParam, token]);
+    }, [formulaireMedecinId, formulaireIdParam, token]);
 
-    // Grouper les réponses par patient avec date de saisie (useMemo pour éviter recalculs)
+    /**
+     * Group responses by patient identifier with submission date
+     * Uses useMemo to avoid unnecessary recalculations
+     */
     const reponsesParPatient = useMemo(() => {
         return reponses.reduce((acc: any, reponse: any) => {
             const patientId = reponse.patientIdentifier || 'Non spécifié';
@@ -168,7 +185,7 @@ function ReponsesFormulaireContent() {
         setCurrentPage(1);
     }, [searchTerm]);
 
-    // Obtenir les réponses du patient sélectionné
+
     const selectedPatientData = selectedPatient ? reponsesParPatient[selectedPatient] : null;
 
 
@@ -187,7 +204,7 @@ function ReponsesFormulaireContent() {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="text-red-600 text-xl mb-4">❌</div>
+                    <ExclamationCircleIcon className="w-12 h-12 text-red-600 mx-auto mb-4" />
                     <p className="text-gray-900 font-semibold mb-2">Erreur</p>
                     <p className="text-gray-600">{error || 'Données non trouvées'}</p>
                     <button
@@ -213,7 +230,7 @@ function ReponsesFormulaireContent() {
                         <ArrowLeftIcon className="w-5 h-5" />
                         <span>Retour au dashboard</span>
                     </button>
-                    
+
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <h1 className="text-2xl font-bold text-gray-900">
@@ -269,14 +286,14 @@ function ReponsesFormulaireContent() {
                     {!formulaireData.formulaire.champs || formulaireData.formulaire.champs.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">📝</span>
+                                <DocumentTextIcon className="w-8 h-8 text-blue-600" />
                             </div>
                             <p className="text-gray-600">Aucune question dans ce formulaire</p>
                         </div>
                     ) : patientsData.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">❌</span>
+                                <ExclamationCircleIcon className="w-8 h-8 text-gray-400" />
                             </div>
                             <p className="text-gray-600">Aucune réponse enregistrée</p>
                         </div>
@@ -288,12 +305,12 @@ function ReponsesFormulaireContent() {
                                     <div className="flex items-center gap-2">
                                         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 px-4 py-2 rounded-r-lg">
                                             <p className="text-green-900 font-semibold text-sm">
-                                                📊 {patientsData.length} patient{patientsData.length > 1 ? 's' : ''}
+                                                <UserGroupIcon className="w-5 h-5" /> {patientsData.length} patient{patientsData.length > 1 ? 's' : ''}
                                             </p>
                                         </div>
                                         <div className="bg-gradient-to-r from-blue-50 to-sky-50 border-l-4 border-blue-500 px-4 py-2 rounded-r-lg">
                                             <p className="text-blue-900 font-semibold text-sm">
-                                                📝 {reponses.length} réponse{reponses.length > 1 ? 's' : ''}
+                                                <ClipboardDocumentListIcon className="w-5 h-5" /> {reponses.length} réponse{reponses.length > 1 ? 's' : ''}
                                             </p>
                                         </div>
                                     </div>
@@ -320,252 +337,30 @@ function ReponsesFormulaireContent() {
                                 </div>
                             </div>
 
-                            {/* Tableau des patients */}
-                            {filteredPatients.length === 0 ? (
-                                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                                    <MagnifyingGlassIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                    <p className="text-gray-600">Aucun patient ne correspond à votre recherche</p>
-                                    <button
-                                        onClick={() => setSearchTerm('')}
-                                        className="mt-3 text-green-600 hover:text-green-700 font-medium"
-                                    >
-                                        Réinitialiser la recherche
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Identifiant Patient
-                                                    </th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Date de remplissage
-                                                    </th>
-                                                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Action
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {patientsToDisplay.map((patient, index) => (
-                                                    <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="flex items-center">
-                                                                <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-                                                                    <UserIcon className="h-5 w-5 text-green-600" />
-                                                                </div>
-                                                                <div className="ml-4">
-                                                                    <div className="text-sm font-medium text-gray-900">
-                                                                        {patient.id}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm text-gray-900">
-                                                                {new Date(patient.dateSaisie).toLocaleDateString('fr-FR', {
-                                                                    day: '2-digit',
-                                                                    month: 'long',
-                                                                    year: 'numeric'
-                                                                })}
-                                                            </div>
-                                                            <div className="text-sm text-gray-500">
-                                                                {new Date(patient.dateSaisie).toLocaleTimeString('fr-FR', {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedPatient(patient.id);
-                                                                    setIsModalOpen(true);
-                                                                }}
-                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                                            >
-                                                                <EyeIcon className="w-5 h-5" />
-                                                                Voir les réponses
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    {/* Pagination */}
-                                    {totalPages > 1 && (
-                                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
-                                            <div className="text-sm text-gray-700">
-                                                Affichage de {startIndex + 1} à {Math.min(endIndex, sortedPatients.length)} sur {sortedPatients.length} patient{sortedPatients.length > 1 ? 's' : ''}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                                    disabled={currentPage === 1}
-                                                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    Précédent
-                                                </button>
-                                                <span className="text-sm text-gray-700">
-                                                    Page {currentPage} sur {totalPages}
-                                                </span>
-                                                <button
-                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                                    disabled={currentPage === totalPages}
-                                                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    Suivant
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
+                            <PatientTable
+                                patients={filteredPatients}
+                                searchTerm={searchTerm}
+                                onSearchChange={setSearchTerm}
+                                onPatientSelect={(patientId) => {
+                                    setSelectedPatient(patientId);
+                                    setIsModalOpen(true);
+                                }}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                patientsPerPage={PATIENTS_PER_PAGE}
+                            />
                         </div>
                     )}
                 </div>
 
-                {/* Modal des détails du patient */}
-                {isModalOpen && selectedPatient && selectedPatientData && (
-                    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-gray-100" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                        <div className="max-w-4xl mx-auto">
-                            {/* Contenu du modal */}
-                            <div className="bg-white rounded-lg shadow-xl">
-                                {/* En-tête du modal */}
-                                <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-white rounded-full p-2">
-                                            <UserIcon className="w-6 h-6 text-green-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">
-                                                Patient : {selectedPatient}
-                                            </h3>
-                                            <p className="text-green-100 text-sm">
-                                                Rempli le {new Date(selectedPatientData.dateSaisie).toLocaleDateString('fr-FR', {
-                                                    day: '2-digit',
-                                                    month: 'long',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="text-white hover:text-gray-200 transition-colors"
-                                    >
-                                        <XMarkIcon className="w-6 h-6" />
-                                    </button>
-                                </div>
-
-                                {/* Corps du modal */}
-                                <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
-                                    <div className="space-y-6">
-                                        {formulaireData.formulaire.champs.map((champ: any, index: number) => {
-                                            const reponsesMap = selectedPatientData.reponses.reduce((acc: any, reponse: any) => {
-                                                acc[reponse.champ.idChamp] = reponse.valeur;
-                                                return acc;
-                                            }, {});
-                                            const reponseValue = reponsesMap[champ.idChamp];
-                                            const champType = champ.type?.toUpperCase();
-
-                                            return (
-                                                <div key={champ.idChamp} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                                    <label className="block text-sm font-medium text-gray-900 mb-3">
-                                                        {index + 1}. {champ.label}
-                                                        {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
-                                                    </label>
-
-                                                    {champType === 'TEXTE' && (
-                                                        <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
-                                                            <p className="text-gray-900 font-medium">
-                                                                {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
-                                                            </p>
-                                                        </div>
-                                                    )}
-
-                                                    {champType === 'NOMBRE' && (
-                                                        <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
-                                                            <p className="text-gray-900 font-medium">
-                                                                {reponseValue || <span className="text-gray-400 italic">Non rempli</span>}
-                                                                {champ.unite && reponseValue && <span className="text-gray-600 ml-2">{champ.unite}</span>}
-                                                            </p>
-                                                        </div>
-                                                    )}
-
-                                                    {champType === 'DATE' && (
-                                                        <div className="bg-white border-2 border-green-500 rounded-lg px-4 py-3">
-                                                            <p className="text-gray-900 font-medium">
-                                                                {reponseValue ? new Date(reponseValue).toLocaleDateString('fr-FR', {
-                                                                    day: '2-digit',
-                                                                    month: 'long',
-                                                                    year: 'numeric'
-                                                                }) : <span className="text-gray-400 italic">Non rempli</span>}
-                                                            </p>
-                                                        </div>
-                                                    )}
-
-                                                    {champType === 'CHOIX_MULTIPLE' && (
-                                                        <div className="space-y-2">
-                                                            {champ.listeValeur?.options?.map((option: any, optIndex: number) => {
-                                                                const isSelected = reponseValue === option.libelle;
-                                                                return (
-                                                                    <div
-                                                                        key={optIndex}
-                                                                        className={`flex items-center gap-3 p-3 border-2 rounded-lg ${
-                                                                            isSelected
-                                                                                ? 'bg-green-50 border-green-500'
-                                                                                : 'bg-white border-gray-200'
-                                                                        }`}
-                                                                    >
-                                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                                                            isSelected
-                                                                                ? 'border-green-600 bg-green-600'
-                                                                                : 'border-gray-300'
-                                                                        }`}>
-                                                                            {isSelected && (
-                                                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                                </svg>
-                                                                            )}
-                                                                        </div>
-                                                                        <span className={`${isSelected ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
-                                                                            {option.libelle}
-                                                                        </span>
-                                                                        {isSelected && (
-                                                                            <span className="ml-auto text-green-600 text-sm font-medium">✓ Sélectionné</span>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Pied du modal */}
-                                <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
-                                    <button
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-                                    >
-                                        Fermer
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <PatientDetailsModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    patientId={selectedPatient!}
+                    patientData={selectedPatientData!}
+                    formulaireChamps={formulaireData.formulaire.champs}
+                />
 
                 {/* Actions */}
                 <div className="mt-6 flex justify-between items-center">
@@ -575,21 +370,12 @@ function ReponsesFormulaireContent() {
                     >
                         Retour
                     </button>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => window.print()}
-                            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
-                        >
-                            <PrinterIcon className="w-5 h-5" />
-                            Imprimer
-                        </button>
-                        {formulaireMedecinId && (
-                            <ExportCsvButton
-                                formulaireMedecinId={Number(formulaireMedecinId)}
-                                variant="button"
-                            />
-                        )}
-                    </div>
+                    {(formulaireMedecinId || formulaireIdParam) && (
+                        <ExportCsvButton
+                            formulaireMedecinId={Number(formulaireMedecinId || formulaireIdParam)}
+                            variant="button"
+                        />
+                    )}
                 </div>
             </div>
         </div>
