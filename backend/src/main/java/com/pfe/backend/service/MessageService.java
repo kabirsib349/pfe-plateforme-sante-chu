@@ -3,7 +3,7 @@ package com.pfe.backend.service;
 import com.pfe.backend.model.Message;
 import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.MessageRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -11,15 +11,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MessageService {
 
-    @Autowired
-    private MessageRepository messageRepository;
+    private final MessageRepository messageRepository;
     /**
-     * @brief Méthode permettant d'envoyer un message entre médecin et chercheur avec contrôle strict des rôles.
-     * @param contenu : contenu du message.
-     * @return Message : message persistant.
-     * @date 07/11/2025
+     * Envoie un message entre médecin et chercheur avec contrôle strict des rôles.
+     *
+     * @param emetteur utilisateur émetteur
+     * @param destinataire utilisateur destinataire
+     * @param contenu contenu du message
+     * @return message persistant
      */
     public Message envoyerMessage(Utilisateur emetteur, Utilisateur destinataire, String contenu) {
 
@@ -53,7 +55,9 @@ public class MessageService {
         return messageRepository.findConversation(medecinId, chercheurId);
     }
 
-//marquer comme lus seulement les messages dont le destinataire est le chercheur
+    /**
+     * Marque comme lus seulement les messages dont le destinataire est le chercheur.
+     */
     public void marquerCommeLus(Long chercheurId, Long medecinId) {
         List<Message> messages = messageRepository
                 .findConversation(medecinId, chercheurId)
@@ -64,7 +68,9 @@ public class MessageService {
         messages.forEach(m -> m.setLu(true));
         messageRepository.saveAll(messages);
     }
-    //marquer comme lus seulement les messages dont le destinataire est le medecin
+    /**
+     * Marque comme lus seulement les messages dont le destinataire est le médecin.
+     */
     public void marquerCommeLusPourMedecin(Long chercheurId, Long medecinId) {
         List<Message> messages = messageRepository
                 .findConversation(medecinId, chercheurId)
@@ -82,7 +88,9 @@ public class MessageService {
 
 
 
-    // Compte les messages non lus envoyés par emetteurId vers destinataireId
+    /**
+     * Compte les messages non lus envoyés par emetteurId vers destinataireId.
+     */
     public int countUnreadForConversation(Long destinataireId, Long emetteurId) {
         return messageRepository.countUnreadMessages(destinataireId, emetteurId);
     }

@@ -5,7 +5,7 @@ import com.pfe.backend.model.Theme;
 import com.pfe.backend.repository.QuestionThemeRepository;
 import com.pfe.backend.repository.ThemeRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +13,11 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ThemeService {
 
-    @Autowired
-    private ThemeRepository themeRepository;
-
-    @Autowired
-    private QuestionThemeRepository questionThemeRepository;
+    private final ThemeRepository themeRepository;
+    private final QuestionThemeRepository questionThemeRepository;
 
     /**
      * Récupère tous les thèmes.
