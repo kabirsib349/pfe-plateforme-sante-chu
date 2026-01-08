@@ -48,6 +48,12 @@ public class Champ {
     @Column(name = "valeur_max")
     private Float valeurMax;
 
+    @Column(name = "date_min")
+    private java.time.LocalDate dateMin;
+
+    @Column(name = "date_max")
+    private java.time.LocalDate dateMax;
+
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "id_liste_valeur", foreignKey = @ForeignKey(name = "fk_liste_valeur"))
     private ListeValeur listeValeur;
