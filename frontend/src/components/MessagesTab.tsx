@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getMedecins, getChercheurs, getConversation, sendMessage, marquerMessagesLusChercheur, marquerMessagesLusMedecin, countMessagesNonLus } from "@/src/lib/api";
-import { 
-    PaperAirplaneIcon, 
-    UserCircleIcon, 
+import {
+    PaperAirplaneIcon,
+    UserCircleIcon,
     ChatBubbleLeftRightIcon,
-    MagnifyingGlassIcon 
+    MagnifyingGlassIcon
 } from "@heroicons/react/24/outline";
+import { User, Message } from "@/src/types";
 
 interface MessagesTabProps {
     onMessagesRead?: () => void;
@@ -18,9 +19,9 @@ interface MessagesTabProps {
 export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
     const { user, token } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [contacts, setContacts] = useState<any[]>([]);
-    const [selectedContact, setSelectedContact] = useState<any | null>(null);
-    const [messages, setMessages] = useState<any[]>([]);
+    const [contacts, setContacts] = useState<User[]>([]);
+    const [selectedContact, setSelectedContact] = useState<User | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
     const [searchTerm, setSearchTerm] = useState("");
@@ -36,7 +37,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
     const getInitials = (nom?: string) => {
         const n = (nom || "").trim();
         if (!n) return "?";
-        
+
         const parts = n.split(" ");
         if (parts.length >= 2) {
             return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -65,8 +66,8 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
         });
     };
 
-    const groupMessagesByDay = (msgs: any[]) => {
-        const groups: { dateKey: string; label: string; items: any[] }[] = [];
+    const groupMessagesByDay = (msgs: Message[]) => {
+        const groups: { dateKey: string; label: string; items: Message[] }[] = [];
 
         msgs.forEach((msg) => {
             const d = new Date(msg.dateEnvoi);
@@ -100,7 +101,7 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
         const loadContacts = async () => {
             if (!token) return;
             try {
-                const data = userType === "chercheur" 
+                const data = userType === "chercheur"
                     ? await getMedecins(token)
                     : await getChercheurs(token);
                 setContacts(data);
@@ -254,18 +255,16 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                         <div
                             key={contact.id}
                             onClick={() => setSelectedContact(contact)}
-                            className={`relative p-4 cursor-pointer border-b border-gray-100 transition-all duration-200 ${
-                                selectedContact?.id === contact.id 
-                                    ? "bg-blue-50 border-l-4 border-l-blue-600" 
+                            className={`relative p-4 cursor-pointer border-b border-gray-100 transition-all duration-200 ${selectedContact?.id === contact.id
+                                    ? "bg-blue-50 border-l-4 border-l-blue-600"
                                     : "hover:bg-gray-50"
-                            }`}
+                                }`}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${
-                                    selectedContact?.id === contact.id
+                                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${selectedContact?.id === contact.id
                                         ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
                                         : "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
-                                }`}>
+                                    }`}>
                                     {getInitials(contact.nom)}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -335,17 +334,15 @@ export const MessagesTab = ({ onMessagesRead, userType }: MessagesTabProps) => {
                                                     className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fadeIn`}
                                                 >
                                                     <div
-                                                        className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${
-                                                            isMe
+                                                        className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${isMe
                                                                 ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-sm"
                                                                 : "bg-white border border-gray-200 rounded-bl-sm"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <p className="text-sm leading-relaxed">{msg.contenu}</p>
                                                         <p
-                                                            className={`text-xs mt-1.5 ${
-                                                                isMe ? "text-blue-100" : "text-gray-400"
-                                                            }`}
+                                                            className={`text-xs mt-1.5 ${isMe ? "text-blue-100" : "text-gray-400"
+                                                                }`}
                                                         >
                                                             {formatTime(msg.dateEnvoi)}
                                                         </p>

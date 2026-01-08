@@ -1,8 +1,9 @@
 import React from 'react';
 import { UserIcon, XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { ReponseFormulaire, Champ } from '@/src/types';
 
 interface PatientData {
-    reponses: any[];
+    reponses: ReponseFormulaire[];
     dateSaisie: string;
 }
 
@@ -11,7 +12,7 @@ interface PatientDetailsModalProps {
     onClose: () => void;
     patientId: string;
     patientData: PatientData;
-    formulaireChamps: any[];
+    formulaireChamps: Champ[];
 }
 
 /**
@@ -26,8 +27,11 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 }) => {
     if (!isOpen) return null;
 
-    const reponsesMap = patientData.reponses.reduce((acc: any, reponse: any) => {
-        acc[reponse.champ.idChamp] = reponse.valeur;
+    const reponsesMap = patientData.reponses.reduce((acc: Record<number, string>, reponse: ReponseFormulaire) => {
+        // Le backend renvoie parfois l'objet champ complet
+        if (reponse.champ && reponse.champ.idChamp) {
+            acc[reponse.champ.idChamp] = reponse.valeur;
+        }
         return acc;
     }, {});
 
@@ -67,9 +71,9 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                     {/* Body */}
                     <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
                         <div className="space-y-6">
-                            {formulaireChamps.map((champ: any, index: number) => {
-                                const reponseValue = reponsesMap[champ.idChamp];
-                                const champType = champ.type?.toUpperCase();
+                            {formulaireChamps.map((champ: Champ, index: number) => {
+                                const reponseValue = champ.idChamp ? reponsesMap[champ.idChamp] : undefined;
+                                const champType = (champ.type as string)?.toUpperCase();
 
                                 return (
                                     <div key={champ.idChamp} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -109,7 +113,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 
                                         {champType === 'CHOIX_MULTIPLE' && (
                                             <div className="space-y-2">
-                                                {champ.listeValeur?.options?.map((option: any, optIndex: number) => {
+                                                {champ.listeValeur?.options?.map((option, optIndex) => {
                                                     const isSelected = reponseValue === option.libelle;
                                                     return (
                                                         <div

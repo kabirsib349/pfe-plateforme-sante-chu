@@ -22,6 +22,7 @@ import {
     ExclamationCircleIcon
 } from "@heroicons/react/24/outline";
 import { FormulaireRemplirButton } from "@/src/components/formulaires/FormulaireRemplirButton";
+import { Formulaire, Champ } from "@/src/types";
 
 export default function Dashboard() {
     const router = useRouter();
@@ -127,12 +128,12 @@ export default function Dashboard() {
 // --- Composants d'onglets ---
 
 // Aperçu interactif d'un formulaire (preview)
-const FormPreview: React.FC<{ champs: any[] }> = ({ champs }) => {
+const FormPreview: React.FC<{ champs: Champ[] }> = ({ champs }) => {
     if (!champs || champs.length === 0) return <p className="text-gray-500">Aucune question dans ce formulaire</p>;
 
     return (
         <form className="space-y-4">
-            {champs.map((champ: any, idx: number) => (
+            {champs.map((champ: Champ, idx: number) => (
                 <div key={champ.idChamp ?? idx} className="p-3 border border-gray-200 rounded-lg">
                     <label className="block text-sm font-medium text-gray-800">
                         {idx + 1}. {champ.label}
@@ -183,7 +184,7 @@ const FormPreview: React.FC<{ champs: any[] }> = ({ champs }) => {
                                 case 'choix':
                                     return (
                                         <div className="space-y-2">
-                                            {((champ.listeValeur && champ.listeValeur.options) || champ.options || []).map((opt: any, oi: number) => (
+                                            {((champ.listeValeur && champ.listeValeur.options) || champ.options || []).map((opt, oi: number) => (
                                                 <label key={oi} className="flex items-center gap-2 text-sm">
                                                     <input type="checkbox" className="w-4 h-4" />
                                                     <span>{opt.libelle ?? opt.valeur ?? `Option ${oi + 1}`}</span>
@@ -195,7 +196,7 @@ const FormPreview: React.FC<{ champs: any[] }> = ({ champs }) => {
                                 case 'radio':
                                     return (
                                         <div className="space-y-2">
-                                            {((champ.listeValeur && champ.listeValeur.options) || champ.options || []).map((opt: any, oi: number) => (
+                                            {((champ.listeValeur && champ.listeValeur.options) || champ.options || []).map((opt, oi: number) => (
                                                 <label key={oi} className="flex items-center gap-2 text-sm">
                                                     <input type="radio" name={`q_${champ.idChamp ?? idx}`} className="w-4 h-4" />
                                                     <span>{opt.libelle ?? opt.valeur ?? `Option ${oi + 1}`}</span>
@@ -294,7 +295,7 @@ const AllFormsTab = () => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {formulaires.map((formulaire: any) => (
+                        {formulaires.map((formulaire: Formulaire) => (
                             <div key={formulaire.idFormulaire} className="border border-gray-200 rounded-lg overflow-hidden">
                                 {/* En-tête du formulaire */}
                                 <div
@@ -315,10 +316,7 @@ const AllFormsTab = () => {
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                <span className="flex items-center gap-1">
-                                                    <BookOpenIcon className="w-4 h-4" />
-                                                    {formulaire.etude?.titre || 'N/A'}
-                                                </span>
+
                                                 <span className="flex items-center gap-1">
                                                     <CalendarDaysIcon className="w-4 h-4" />
                                                     {new Date(formulaire.dateCreation).toLocaleDateString('fr-FR')}

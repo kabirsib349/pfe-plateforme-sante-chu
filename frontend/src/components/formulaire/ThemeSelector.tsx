@@ -1,11 +1,11 @@
 import React from 'react';
 import { RocketLaunchIcon, PlusIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { themesMedicaux } from '@/src/constants/themes';
+import { themesMedicaux, ThemeMedical } from '@/src/constants/themes';
 
 interface ThemeSelectorProps {
     rechercheTheme: string;
     onRechercheChange: (value: string) => void;
-    onThemeSelect: (theme: any) => void;
+    onThemeSelect: (theme: ThemeMedical) => void;
     champsCount: number;
 }
 

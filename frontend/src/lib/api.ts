@@ -4,6 +4,15 @@ import type {
     LoginRequest,
     LoginResponse,
     User,
+    Formulaire,
+    FormulaireRequest,
+    FormulaireMedecin,
+    FormulaireRecuResponse,
+    FormulaireEnvoyeResponse,
+    ReponseFormulaireRequest,
+    EnvoiFormulaireRequest,
+    UserUpdateRequest,
+    ChangePasswordRequest,
     ApiError,
 } from '@/src/types';
 
@@ -27,7 +36,7 @@ export class ApiException extends Error {
 async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
         const contentType = response.headers.get('content-type');
-        
+
         if (contentType?.includes('application/json')) {
             const errorData = await response.json();
             throw new ApiException(
@@ -48,7 +57,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     if (contentType?.includes('application/json')) {
         return response.json();
     }
-    
+
     return response.text() as Promise<T>;
 }
 
@@ -113,49 +122,49 @@ export async function getMedecins(token: string): Promise<User[]> {
 
 // ============= FORMULAIRES API =============
 
-export async function getFormulaires(token: string): Promise<any[]> {
+export async function getFormulaires(token: string): Promise<Formulaire[]> {
     const response = await fetch(apiUrl('/api/formulaires'), {
         headers: createHeaders(token),
     });
 
-    return handleResponse<any[]>(response);
+    return handleResponse<Formulaire[]>(response);
 }
 
-export async function getFormulaireById(token: string, id: number): Promise<any> {
+export async function getFormulaireById(token: string, id: number): Promise<Formulaire> {
     const response = await fetch(apiUrl(`/api/formulaires/${id}`), {
         headers: createHeaders(token),
     });
 
-    return handleResponse<any>(response);
+    return handleResponse<Formulaire>(response);
 }
 
-export async function createEnvoiPourChercheur(token: string, formulaireId: number): Promise<any> {
+export async function createEnvoiPourChercheur(token: string, formulaireId: number): Promise<FormulaireMedecin> {
     const response = await fetch(apiUrl(`/api/formulaires/${formulaireId}/create-envoi`), {
         method: 'POST',
         headers: createHeaders(token),
     });
 
-    return handleResponse<any>(response);
+    return handleResponse<FormulaireMedecin>(response);
 }
 
-export async function createFormulaire(token: string, data: any): Promise<any> {
+export async function createFormulaire(token: string, data: FormulaireRequest): Promise<Formulaire> {
     const response = await fetch(apiUrl('/api/formulaires'), {
         method: 'POST',
         headers: createHeaders(token),
         body: JSON.stringify(data),
     });
 
-    return handleResponse<any>(response);
+    return handleResponse<Formulaire>(response);
 }
 
-export async function updateFormulaire(token: string, id: number, data: any): Promise<any> {
+export async function updateFormulaire(token: string, id: number, data: FormulaireRequest): Promise<Formulaire> {
     const response = await fetch(apiUrl(`/api/formulaires/${id}`), {
         method: 'PUT',
         headers: createHeaders(token),
         body: JSON.stringify(data),
     });
 
-    return handleResponse<any>(response);
+    return handleResponse<Formulaire>(response);
 }
 
 export async function deleteFormulaire(token: string, id: number): Promise<void> {
@@ -181,28 +190,28 @@ export async function sendFormulaireToMedecin(
     await handleResponse<void>(response);
 }
 
-export async function getFormulairesEnvoyes(token: string): Promise<any[]> {
+export async function getFormulairesEnvoyes(token: string): Promise<FormulaireEnvoyeResponse[]> {
     const response = await fetch(apiUrl('/api/formulaires/envoyes'), {
         headers: createHeaders(token),
     });
 
-    return handleResponse<any[]>(response);
+    return handleResponse<FormulaireEnvoyeResponse[]>(response);
 }
 
-export async function getFormulairesRecus(token: string): Promise<any[]> {
+export async function getFormulairesRecus(token: string): Promise<FormulaireRecuResponse[]> {
     const response = await fetch(apiUrl('/api/formulaires/recus'), {
         headers: createHeaders(token),
     });
 
-    return handleResponse<any[]>(response);
+    return handleResponse<FormulaireRecuResponse[]>(response);
 }
 
-export async function getFormulaireRecu(token: string, id: number): Promise<any> {
+export async function getFormulaireRecu(token: string, id: number): Promise<Formulaire> {
     const response = await fetch(apiUrl(`/api/formulaires/recus/${id}`), {
         headers: createHeaders(token),
     });
 
-    return handleResponse<any>(response);
+    return handleResponse<Formulaire>(response);
 }
 
 export async function deleteFormulaireRecu(token: string, id: number): Promise<void> {
@@ -232,7 +241,7 @@ export async function getPatientIdentifiers(token: string, formulaireMedecinId: 
     return handleResponse<string[]>(response);
 }
 
-export async function submitReponses(token: string, data: any): Promise<void> {
+export async function submitReponses(token: string, data: ReponseFormulaireRequest): Promise<void> {
     const response = await fetch(apiUrl('/api/reponses'), {
         method: 'POST',
         headers: createHeaders(token),

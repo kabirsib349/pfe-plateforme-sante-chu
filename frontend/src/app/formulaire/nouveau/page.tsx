@@ -29,7 +29,8 @@ import {
 import Question, { ChampFormulaire, TypeChamp } from "@/src/components/form-builder/Question";
 import { ToastContainer } from "@/src/components/ToastContainer";
 import { MESSAGES } from "@/src/constants/messages";
-import { themesMedicaux } from "@/src/constants/themes";
+import { themesMedicaux, ThemeMedical, ChampTemplate } from "@/src/constants/themes";
+import { ChampRequest } from "@/src/types";
 import { ThemeSelector } from "@/src/components/formulaire/ThemeSelector";
 import { QuestionTypeSelector } from "@/src/components/formulaire/QuestionTypeSelector";
 import { DeleteConfirmationModal } from "@/src/components/formulaire/DeleteConfirmationModal";
@@ -51,11 +52,11 @@ export default function NouveauFormulaire() {
   const [rechercheTheme, setRechercheTheme] = useState('');
   const [nouveauxChampsIds, setNouveauxChampsIds] = useState<string[]>([]);
 
-  const ajouterTheme = (theme: any) => {
+  const ajouterTheme = (theme: ThemeMedical) => {
     // Sauvegarder l'état actuel dans l'historique
     setHistorique([...historique, champs]);
 
-    const nouveauxChamps = theme.champs.map((champ: any) => ({
+    const nouveauxChamps = theme.champs.map((champ: ChampTemplate) => ({
       ...champ,
       categorie: theme.nom,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -201,7 +202,7 @@ export default function NouveauFormulaire() {
             options: champ.options,
           };
         }
-        const champData: any = {
+        const champData: ChampRequest = {
           label: champ.question,
           type: champ.type.toUpperCase(),
           obligatoire: champ.obligatoire,
@@ -243,14 +244,15 @@ export default function NouveauFormulaire() {
       setTimeout(() => {
         router.push('/formulaire');
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { data?: { errors?: Record<string, string> } };
       if (config.features.enableDebug) {
-        console.error('[FormNouveau] Erreurs de validation:', error?.data?.errors);
+        console.error('[FormNouveau] Erreurs de validation:', err?.data?.errors);
       }
 
       // Afficher les erreurs de validation détaillées
-      if (error?.data?.errors) {
-        const errorDetails = Object.entries(error.data.errors)
+      if (err?.data?.errors) {
+        const errorDetails = Object.entries(err.data.errors)
           .map(([field, msg]) => `${field}: ${msg}`)
           .join(', ');
 

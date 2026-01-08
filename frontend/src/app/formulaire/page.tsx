@@ -11,21 +11,11 @@ import { ToastContainer } from "@/src/components/ToastContainer";
 import ModalEnvoiFormulaire from '@/src/components/ModalEnvoiFormulaire';
 import { getFormulaires, deleteFormulaire } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
+import type { Formulaire } from "@/src/types";
 
 // Type mis à jour pour correspondre à la réponse de l'API backend
-interface FormulaireAPI {
-    idFormulaire: number;
-    titre: string;
-    etude: {
-        titre: string;
-    };
-    statut: string;
-    dateCreation: string;
-    champs: any[];
-    chercheur: {
-        nom: string;
-    };
-}
+// Interface supprimée car remplacée par le type global importé
+
 
 export default function Formulaire() {
     const router = useRouter();
@@ -41,7 +31,7 @@ export default function Formulaire() {
     const { triggerStatsRefresh } = useStatsRefresh();
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
-    const [formulaires, setFormulaires] = useState<FormulaireAPI[]>([]);
+    const [formulaires, setFormulaires] = useState<Formulaire[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [formulaireToDelete, setFormulaireToDelete] = useState<number | null>(null);
@@ -66,7 +56,7 @@ export default function Formulaire() {
     };
 
     // Fonction pour ouvrir le modal d'envoi
-    const handleOpenModalEnvoi = (formulaire: FormulaireAPI) => {
+    const handleOpenModalEnvoi = (formulaire: Formulaire) => {
         setFormulaireSelectionne({ id: formulaire.idFormulaire, titre: formulaire.titre });
         setModalEnvoiOpen(true);
     };
@@ -301,9 +291,7 @@ export default function Formulaire() {
                                         <span className="text-lg">{getStatutIcon(formulaire.statut)}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getEtudeColor(formulaire.etude.titre)}`}>
-                                            {formulaire.etude.titre}
-                                        </span>
+
                                         <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getStatutColor(formulaire.statut)}`}>
                                             {formulaire.statut.toLowerCase()}
                                         </span>
@@ -314,7 +302,7 @@ export default function Formulaire() {
                                     <div className="space-y-3 mb-6">
                                         <div className="flex items-center gap-3 text-sm text-gray-600">
                                             <UserIcon className="w-4 h-4" />
-                                            <span>Créé par {formulaire.chercheur.nom}</span>
+                                            <span>Créé par {formulaire.chercheur?.nom}</span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm text-gray-600">
                                             <CalendarDaysIcon className="w-4 h-4" />
