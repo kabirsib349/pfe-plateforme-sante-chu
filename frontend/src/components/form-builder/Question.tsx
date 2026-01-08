@@ -5,7 +5,7 @@ import { TrashIcon, ExclamationTriangleIcon, Bars3Icon } from "@heroicons/react/
 import { validateNomVariable } from '@/src/lib/validation';
 
 // Ce type est maintenant aligné avec l'énumération TypeChamp du backend
-export type TypeChamp = 'texte' | 'nombre' | 'choix_multiple' |'choix_unique' | 'date' | 'calcule';
+export type TypeChamp = 'texte' | 'nombre' | 'choix_multiple' | 'choix_unique' | 'date' | 'calcule';
 
 // Interface pour une seule option de choix
 export interface Option {
@@ -23,6 +23,8 @@ export interface ChampFormulaire {
   unite?: string;
   valeurMin?: number;
   valeurMax?: number;
+  dateMin?: string;
+  dateMax?: string;
   formuleCalcul?: string;
   champsRequis?: string[];
 }
@@ -42,12 +44,12 @@ interface QuestionProps {
   onDrop?: (e: React.DragEvent, targetId: string) => void;
 }
 
-const Question: React.FC<QuestionProps> = ({ 
-  champ, 
-  index, 
-  onDelete, 
-  onUpdate, 
-  isActive, 
+const Question: React.FC<QuestionProps> = ({
+  champ,
+  index,
+  onDelete,
+  onUpdate,
+  isActive,
   existingVariables = [],
   isDragging = false,
   onDragStart,
@@ -72,7 +74,7 @@ const Question: React.FC<QuestionProps> = ({
     const upperValue = value.toUpperCase();
     onUpdate(champ.id, { nomVariable: upperValue });
   };
-  
+
   const handleOptionChange = (optionIndex: number, field: 'libelle' | 'valeur', value: string) => {
     const newOptions = champ.options?.map((option, i) => {
       if (i === optionIndex) {
@@ -84,7 +86,7 @@ const Question: React.FC<QuestionProps> = ({
   };
 
   const addOption = () => {
-    const newOptions = [...(champ.options || []), { libelle: `Option ${ (champ.options?.length || 0) + 1}`, valeur: `${ (champ.options?.length || 0) + 1}` }];
+    const newOptions = [...(champ.options || []), { libelle: `Option ${(champ.options?.length || 0) + 1}`, valeur: `${(champ.options?.length || 0) + 1}` }];
     onUpdate(champ.id, { options: newOptions });
   };
 
@@ -103,11 +105,10 @@ const Question: React.FC<QuestionProps> = ({
             value={champ.nomVariable}
             onChange={(e) => handleNomVariableChange(e.target.value)}
             placeholder="EX: POIDS_PATIENT"
-            className={`w-full bg-gray-50 px-3 py-2 border rounded-lg focus:ring-1 text-sm font-mono ${
-              validationError 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-            }`}
+            className={`w-full bg-gray-50 px-3 py-2 border rounded-lg focus:ring-1 text-sm font-mono ${validationError
+              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+              : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
+              }`}
             maxLength={25}
           />
           {validationError && (
@@ -170,7 +171,7 @@ const Question: React.FC<QuestionProps> = ({
                 <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
               </svg>
               <div>
-                <strong>Conseil :</strong> Définissez des valeurs min/max pour éviter les erreurs de saisie. 
+                <strong>Conseil :</strong> Définissez des valeurs min/max pour éviter les erreurs de saisie.
                 Par exemple, pour l&apos;âge : min=0, max=120 ; pour une échelle de douleur : min=0, max=10.
               </div>
             </div>
@@ -182,8 +183,8 @@ const Question: React.FC<QuestionProps> = ({
             <label className="block text-sm font-medium text-gray-800 mb-2">Options de réponse</label>
             <div className="space-y-2">
               <div className="grid grid-cols-10 gap-2 text-xs text-gray-800 font-medium">
-                  <div className="col-span-5">Libellé (vu par l'utilisateur)</div>
-                  <div className="col-span-4">Valeur (stockée)</div>
+                <div className="col-span-5">Libellé (vu par l'utilisateur)</div>
+                <div className="col-span-4">Valeur (stockée)</div>
               </div>
               {(champ.options || []).map((option, i) => (
                 <div key={i} className="grid grid-cols-10 items-center gap-2">
@@ -209,44 +210,73 @@ const Question: React.FC<QuestionProps> = ({
               </button>
             </div>
           </div>
-      );
-      case 'choix_unique': 
+        );
+
+      case 'date':
+        return (
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Date Min</label>
+                <input
+                  type="date"
+                  value={champ.dateMin || ''}
+                  onChange={(e) => onUpdate(champ.id, { dateMin: e.target.value })}
+                  className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Date Max</label>
+                <input
+                  type="date"
+                  value={champ.dateMax || ''}
+                  onChange={(e) => onUpdate(champ.id, { dateMax: e.target.value })}
+                  className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+              <strong>Information :</strong> Vous pouvez définir une plage de dates acceptables.
+            </div>
+          </div>
+        );
+      case 'choix_unique':
         return (
           <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Options de réponse (choix unique)
-          </label>
-          <div className="space-y-2">
-            <div className="grid grid-cols-10 gap-2 text-xs text-gray-800 font-medium">
-              <div className="col-span-5">Libellé (vu par l'utilisateur)</div>
-              <div className="col-span-4">Valeur (stockée)</div>
-            </div>
-            {(champ.options || []).map((option, i) => (
-              <div key={i} className="grid grid-cols-10 items-center gap-2">
-                <input
-                  type="text"
-                  value={option.libelle}
-                  onChange={(e) => handleOptionChange(i, 'libelle', e.target.value)}
-                  className="col-span-5 bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                />
-                <input
-                  type="text"
-                  value={option.valeur}
-                  onChange={(e) => handleOptionChange(i, 'valeur', e.target.value)}
-                  className="col-span-4 bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                />
-                <button onClick={() => removeOption(i)} className="col-span-1 p-1 text-gray-400 hover:text-red-500 justify-self-center">
-                  <TrashIcon className="w-4 h-4" />
-                </button>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              Options de réponse (choix unique)
+            </label>
+            <div className="space-y-2">
+              <div className="grid grid-cols-10 gap-2 text-xs text-gray-800 font-medium">
+                <div className="col-span-5">Libellé (vu par l'utilisateur)</div>
+                <div className="col-span-4">Valeur (stockée)</div>
               </div>
-            ))}
-            <button onClick={addOption} className="text-sm text-blue-600 hover:text-blue-800 pt-2">
-              Ajouter une option
-            </button>
+              {(champ.options || []).map((option, i) => (
+                <div key={i} className="grid grid-cols-10 items-center gap-2">
+                  <input
+                    type="text"
+                    value={option.libelle}
+                    onChange={(e) => handleOptionChange(i, 'libelle', e.target.value)}
+                    className="col-span-5 bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={option.valeur}
+                    onChange={(e) => handleOptionChange(i, 'valeur', e.target.value)}
+                    className="col-span-4 bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                  <button onClick={() => removeOption(i)} className="col-span-1 p-1 text-gray-400 hover:text-red-500 justify-self-center">
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button onClick={addOption} className="text-sm text-blue-600 hover:text-blue-800 pt-2">
+                Ajouter une option
+              </button>
+            </div>
           </div>
-        </div>
         );
-    
+
       case 'calcule':
         return (
           <div className="mt-4 space-y-3">
@@ -274,7 +304,7 @@ const Question: React.FC<QuestionProps> = ({
               />
             </div>
             <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
-              <strong>Information :</strong> Ce champ sera calculé automatiquement lors du remplissage du formulaire. 
+              <strong>Information :</strong> Ce champ sera calculé automatiquement lors du remplissage du formulaire.
               Il sera en lecture seule pour les utilisateurs.
             </div>
           </div>
@@ -285,10 +315,9 @@ const Question: React.FC<QuestionProps> = ({
   };
 
   return (
-    <div 
-      className={`border rounded-lg p-4 transition-all duration-200 ${
-        isDragging ? 'opacity-50 transform rotate-2' : ''
-      } ${isActive ? 'bg-white border-blue-500 shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}
+    <div
+      className={`border rounded-lg p-4 transition-all duration-200 ${isDragging ? 'opacity-50 transform rotate-2' : ''
+        } ${isActive ? 'bg-white border-blue-500 shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}
       draggable
       onDragStart={(e) => onDragStart?.(e, champ.id)}
       onDragEnd={onDragEnd}
@@ -324,7 +353,7 @@ const Question: React.FC<QuestionProps> = ({
           {renderOptions()}
           <hr className="my-4" />
           <div className="flex items-center justify-end gap-4">
-             <label className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
               <input
                 type="checkbox"
                 checked={champ.obligatoire}
