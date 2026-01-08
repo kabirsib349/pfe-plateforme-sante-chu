@@ -15,6 +15,14 @@ function RemplirFormulaireContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { token, user } = useAuth();
+    // helper to navigate back according to role
+    const goBack = () => {
+        if (user?.role === 'chercheur') {
+            router.push('/dashboard-chercheur?tab=allforms');
+        } else {
+            router.push('/dashboard-medecin');
+        }
+    };
     const { showToast, toasts, removeToast } = useToast();
     const formulaireRecuId = searchParams.get('id');
     
@@ -26,12 +34,15 @@ function RemplirFormulaireContent() {
     const [patientIdentifier, setPatientIdentifier] = useState<string>('');
     const [champsMap, setChampsMap] = useState<Map<string, string>>(new Map());
 
-    // Rediriger si pas médecin
+    // Rediriger si pas médecin sauf si on vient en tant que chercheur (source=chercheur)
     useEffect(() => {
-        if (user && user.role !== 'medecin') {
-            router.push('/dashboard-chercheur');
+        const source = searchParams.get('source');
+        if (user) {
+            if (user.role !== 'medecin' && source !== 'chercheur') {
+                router.push('/dashboard-chercheur');
+            }
         }
-    }, [user, router]);
+    }, [user, router, searchParams]);
 
     useEffect(() => {
         const fetchFormulaireRecu = async () => {
@@ -54,12 +65,14 @@ function RemplirFormulaireContent() {
                 });
                 setChampsMap(map);
 
-                // Marquer comme lu
-                marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
-                    if (config.features.enableDebug) {
-                        console.error('🔴 Erreur marquage lu:', err);
-                    }
-                });
+                // Marquer comme lu uniquement si l'utilisateur courant est un médecin
+                if (user && user.role === 'medecin') {
+                    marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
+                        if (config.features.enableDebug) {
+                            console.error('🔴 Erreur marquage lu:', err);
+                        }
+                    });
+                }
             } catch (err) {
                 const formattedError = handleError(err, 'RemplirFormulaire');
                 setError(formattedError.userMessage);
@@ -113,7 +126,11 @@ function RemplirFormulaireContent() {
 
             showToast('Formulaire enregistré avec succès pour le patient ' + patientIdentifier, 'success');
             setTimeout(() => {
-                router.push('/dashboard-medecin');
+                if (user?.role === 'chercheur') {
+                    router.push('/dashboard-chercheur?tab=data');
+                } else {
+                    router.push('/dashboard-medecin');
+                }
             }, 1500);
         } catch (error) {
             const formattedError = handleError(error, 'SubmitReponses');
@@ -142,7 +159,7 @@ function RemplirFormulaireContent() {
                     <p className="text-gray-900 font-semibold mb-2">Erreur</p>
                     <p className="text-gray-600">{error || 'Formulaire non trouvé'}</p>
                     <button
-                        onClick={() => router.push('/dashboard-medecin')}
+                        onClick={() => goBack()}
                         className="mt-4 text-blue-600 hover:text-blue-800"
                     >
                         Retour au dashboard
@@ -158,7 +175,7 @@ function RemplirFormulaireContent() {
             <div className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-4xl mx-auto px-6 py-4">
                     <button
-                        onClick={() => router.push('/dashboard-medecin')}
+                        onClick={() => goBack()}
                         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
                     >
                         <ArrowLeftIcon className="w-5 h-5" />
@@ -326,7 +343,7 @@ function RemplirFormulaireContent() {
                     <div className="mt-8 flex justify-end gap-4">
                         <button
                             type="button"
-                            onClick={() => router.push('/dashboard-medecin')}
+                            onClick={() => goBack()}
                             className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                             Annuler
@@ -336,10 +353,10 @@ function RemplirFormulaireContent() {
                             disabled={isSending}
                             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSending ? 'Envoi en cours...' : 'Envoyer les réponses'}
+                            {isSending ? (user?.role === 'chercheur' ? 'Enregistrement...' : 'Envoi en cours...') : (user?.role === 'chercheur' ? 'Enregistrer' : 'Envoyer les réponses')}
                         </button>
-                    </div>
-                </form>
+                     </div>
+                 </form>
             </div>
             <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         </div>

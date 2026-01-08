@@ -6,7 +6,6 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
 import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { TYPES_ETUDES } from "@/src/constants/etudes";
 import { MESSAGES } from "@/src/constants/messages";
 import { ToastContainer } from "@/src/components/ToastContainer";
 import ModalEnvoiFormulaire from '@/src/components/ModalEnvoiFormulaire';
@@ -41,7 +40,6 @@ export default function Formulaire() {
     }, [user, isAuthLoading, router]);
     const { triggerStatsRefresh } = useStatsRefresh();
     const [search, setSearch] = useState("");
-    const [typeFilter, setTypeFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [formulaires, setFormulaires] = useState<FormulaireAPI[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -94,9 +92,8 @@ export default function Formulaire() {
         const matchesSearch = search === "" ||
             formulaire.titre.toLowerCase().includes(search.toLowerCase()) ||
             formulaire.etude.titre.toLowerCase().includes(search.toLowerCase());
-        const matchesType = typeFilter === "" || formulaire.etude.titre === typeFilter;
         const matchesStatus = statusFilter === "" || statutNormalized === statusFilter;
-        return matchesSearch && matchesType && matchesStatus;
+        return matchesSearch && matchesStatus;
     });
 
     // Fonctions d'action
@@ -155,22 +152,15 @@ export default function Formulaire() {
         }
     };
 
+    // Déduit une palette de couleur simple à partir du titre de l'étude (sans dépendre d'un tableau externe)
     const getEtudeColor = (etudeTitre: string) => {
-        const foundEtude = TYPES_ETUDES.find(e => e.value === etudeTitre);
-        if (foundEtude) {
-             switch (foundEtude.value) {
-                case "Cardio-Vasculaire":
-                    return "bg-rose-50 text-rose-700 border border-rose-200";
-                case "Chirurgie":
-                    return "bg-indigo-50 text-indigo-700 border border-indigo-200";
-                case "Endocrinologie":
-                    return "bg-cyan-50 text-cyan-700 border border-cyan-200";
-                case "Urgences":
-                    return "bg-orange-50 text-orange-700 border border-orange-200";
-                default:
-                    return "bg-gray-50 text-gray-700 border border-gray-200";
-            }
-        }
+        if (!etudeTitre) return "bg-gray-50 text-gray-700 border border-gray-200";
+        const t = etudeTitre.toLowerCase();
+        if (t.includes('cardio')) return "bg-rose-50 text-rose-700 border border-rose-200";
+        if (t.includes('chirurg')) return "bg-indigo-50 text-indigo-700 border border-indigo-200";
+        if (t.includes('endocrin')) return "bg-cyan-50 text-cyan-700 border border-cyan-200";
+        if (t.includes('urgence')) return "bg-orange-50 text-orange-700 border border-orange-200";
+        // fallback neutre
         return "bg-gray-50 text-gray-700 border border-gray-200";
     };
 
@@ -277,18 +267,6 @@ export default function Formulaire() {
                                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                         </div>
-                        <select
-                            value={typeFilter}
-                            onChange={(e) => setTypeFilter(e.target.value)}
-                            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 min-w-[200px]"
-                        >
-                            <option value="">Toutes les études</option>
-                            {TYPES_ETUDES.map(etude => (
-                                <option key={etude.value} value={etude.value}>
-                                    {etude.label}
-                                </option>
-                            ))}
-                        </select>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}

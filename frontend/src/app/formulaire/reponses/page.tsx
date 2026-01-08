@@ -16,7 +16,8 @@ function ReponsesFormulaireContent() {
     const searchParams = useSearchParams();
     const { token, user } = useAuth();
     const formulaireMedecinId = searchParams.get('id');
-    
+    const formulaireIdParam = searchParams.get('formulaireId');
+
     const [formulaireData, setFormulaireData] = useState<any>(null);
     const [reponses, setReponses] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -35,37 +36,55 @@ function ReponsesFormulaireContent() {
 
     useEffect(() => {
         const fetchReponses = async () => {
-            // Attendre que token et formulaireMedecinId soient disponibles
-            if (!formulaireMedecinId || !token) {
-                return; // Ne rien faire, attendre le prochain rendu
-            }
-
             setIsLoading(true);
             setError(null);
 
             try {
-                // Récupérer les infos du formulaire envoyé
                 const formulaires = await getFormulairesEnvoyes(token);
-                const formulaireEnvoye = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
-                
-                if (formulaireEnvoye) {
-                    // Récupérer le formulaire complet avec tous les champs
-                    try {
-                        const formulaireComplet = await getFormulaireById(token, formulaireEnvoye.formulaire.idFormulaire);
-                        setFormulaireData({
-                            ...formulaireEnvoye,
-                            formulaire: formulaireComplet
-                        });
-                    } catch {
-                        setFormulaireData(formulaireEnvoye);
-                    }
-                } else {
-                    setError('Formulaire non trouvé');
-                }
 
-                // Récupérer les réponses
-                const reponsesData = await getReponses(token, parseInt(formulaireMedecinId));
-                setReponses(reponsesData);
+                if (formulaireMedecinId) {
+                    // existing behaviour: treat id as FormulaireMedecin id
+                    const formulaireEnvoye = formulaires.find((f: any) => f.id === parseInt(formulaireMedecinId));
+                    if (formulaireEnvoye) {
+                        try {
+                            const formulaireComplet = await getFormulaireById(token, formulaireEnvoye.formulaire.idFormulaire);
+                            setFormulaireData({ ...formulaireEnvoye, formulaire: formulaireComplet });
+                        } catch {
+                            setFormulaireData(formulaireEnvoye);
+                        }
+                    } else {
+                        setError('Formulaire non trouvé');
+                    }
+
+                    const reponsesData = await getReponses(token, parseInt(formulaireMedecinId));
+                    setReponses(reponsesData);
+                } else if (formulaireIdParam) {
+                    // new behaviour: treat formulaireIdParam as the base formulaire id and aggregate across all envoyes
+                    const baseFormId = parseInt(formulaireIdParam);
+                    // find all FormulaireMedecin entries for this formulaire
+                    const related = formulaires.filter((f: any) => f.formulaire?.idFormulaire === baseFormId);
+                    if (related.length === 0) {
+                        setError('Aucun envoi trouvé pour ce formulaire');
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    // Use the first one as formulaireData base and fetch full formulaire
+                    const first = related[0];
+                    try {
+                        const formulaireComplet = await getFormulaireById(token, baseFormId);
+                        setFormulaireData({ ...first, formulaire: formulaireComplet });
+                    } catch {
+                        setFormulaireData(first);
+                    }
+
+                    // fetch all responses for each FormulaireMedecin and merge
+                    const allResponsesArrays = await Promise.all(related.map((r: any) => getReponses(token, r.id).catch(() => [])));
+                    const merged = ([] as any[]).concat(...allResponsesArrays);
+                    setReponses(merged);
+                } else {
+                    setError('ID manquant');
+                }
             } catch (err) {
                 const formattedError = handleError(err, 'ReponsesFormulaire');
                 setError(formattedError.userMessage);
@@ -75,7 +94,8 @@ function ReponsesFormulaireContent() {
         };
 
         fetchReponses();
-    }, [formulaireMedecinId, token]);
+
+     }, [formulaireMedecinId, formulaireIdParam, token]);
 
     // Grouper les réponses par patient avec date de saisie (useMemo pour éviter recalculs)
     const reponsesParPatient = useMemo(() => {
@@ -187,7 +207,7 @@ function ReponsesFormulaireContent() {
             <div className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-4xl mx-auto px-6 py-4">
                     <button
-                        onClick={() => router.push('/dashboard-chercheur')}
+                        onClick={() => router.push('/dashboard-chercheur?tab=data')}
                         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
                     >
                         <ArrowLeftIcon className="w-5 h-5" />
@@ -211,7 +231,11 @@ function ReponsesFormulaireContent() {
                             </span>
                             <span className="flex items-center gap-1">
                                 <UserIcon className="w-4 h-4" />
-                                <span>Rempli par Dr. {formulaireData.medecin.nom}</span>
+                                <span>
+                                    {formulaireData.medecin?.nom
+                                        ? `Rempli par Dr. ${formulaireData.medecin.nom}`
+                                        : 'Rempli par Chercheur'}
+                                </span>
                             </span>
                             <span className="flex items-center gap-1">
                                 <CalendarDaysIcon className="w-4 h-4" />
@@ -546,7 +570,7 @@ function ReponsesFormulaireContent() {
                 {/* Actions */}
                 <div className="mt-6 flex justify-between items-center">
                     <button
-                        onClick={() => router.push('/dashboard-chercheur')}
+                        onClick={() => router.push('/dashboard-chercheur?tab=data')}
                         className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                         Retour

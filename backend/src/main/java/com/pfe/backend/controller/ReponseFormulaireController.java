@@ -27,7 +27,7 @@ public class ReponseFormulaireController {
     private final ReponseFormulaireService reponseFormulaireService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('medecin')")
+    @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Void> sauvegarderReponses(
             @RequestBody ReponseFormulaireRequest request,
