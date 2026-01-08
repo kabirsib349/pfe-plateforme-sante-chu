@@ -31,11 +31,13 @@ public class ChampRequest {
     
     private boolean obligatoire;
     
-    @Min(value = 0, message = "La valeur minimale doit être positive")
     private Float valeurMin;
     
-    @Min(value = 0, message = "La valeur maximale doit être positive")
     private Float valeurMax;
+
+    private java.time.LocalDate dateMin;
+
+    private java.time.LocalDate dateMax;
     
     @Size(max = 100, message = "Le nom de la liste ne peut pas dépasser 100 caractères")
     private String nomListeValeur;
