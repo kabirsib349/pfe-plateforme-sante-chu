@@ -12,13 +12,14 @@ import { Badge } from "@/src/components/Badge";
 import { Card } from "@/src/components/Card";
 import { MessagesTab } from "@/src/components/MessagesTab";
 import { DataTab } from "./components/DataTab";
-import { 
-    ClipboardDocumentListIcon, 
-    PencilSquareIcon, 
+import {
+    ClipboardDocumentListIcon,
+    PencilSquareIcon,
     CheckCircleIcon,
     BookOpenIcon,
     CalendarDaysIcon,
-    SparklesIcon
+    SparklesIcon,
+    ExclamationCircleIcon
 } from "@heroicons/react/24/outline";
 import { FormulaireRemplirButton } from "@/src/components/formulaires/FormulaireRemplirButton";
 
@@ -46,11 +47,9 @@ export default function Dashboard() {
         if (!isLoading && !isAuthenticated) {
             router.push("/login");
         }
-        // Vérifier que l'utilisateur est bien un chercheur
         if (!isLoading && isAuthenticated && user?.role !== 'chercheur') {
             router.push("/dashboard-medecin");
         }
-        // Sync with query param if present (permet redirection avec ?tab=data)
         try {
             const tab = searchParams.get('tab');
             if (tab) setActiveTab(tab);
@@ -59,33 +58,33 @@ export default function Dashboard() {
         }
     }, [isAuthenticated, isLoading, user, router, searchParams]);
 
-    if (isLoading) return <div className="flex items-center justify-center min-h-screen">Chargement...</div>; // Affichage pendant le chargement
-    if (!isAuthenticated) return null; // évite un rendu avant redirection
-    if (user?.role !== 'chercheur') return null; // évite un rendu si mauvais rôle
+    if (isLoading) return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
+    if (!isAuthenticated) return null;
+    if (user?.role !== 'chercheur') return null;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-blue-50/30 to-indigo-50/50">
             <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                    <StatCard 
-                        label="Formulaires créés" 
-                        value={stats.totalFormulaires} 
+                    <StatCard
+                        label="Formulaires créés"
+                        value={stats.totalFormulaires}
                         isLoading={statsLoading}
                         error={!!statsError}
                         icon={<ClipboardDocumentListIcon className="w-6 h-6" />}
                     />
-                    <StatCard 
-                        label="Brouillons" 
-                        value={stats.brouillons} 
+                    <StatCard
+                        label="Brouillons"
+                        value={stats.brouillons}
                         valueColor="text-amber-600"
                         isLoading={statsLoading}
                         error={!!statsError}
                         icon={<PencilSquareIcon className="w-6 h-6" />}
                     />
-                    <StatCard 
-                        label="Formulaires envoyés" 
-                        value={stats.envoyes} 
+                    <StatCard
+                        label="Formulaires envoyés"
+                        value={stats.envoyes}
                         valueColor="text-emerald-600"
                         isLoading={statsLoading}
                         error={!!statsError}
@@ -168,10 +167,10 @@ const FormPreview: React.FC<{ champs: any[] }> = ({ champs }) => {
                                                     {champ.valeurMin !== null && champ.valeurMin !== undefined && champ.valeurMax !== null && champ.valeurMax !== undefined
                                                         ? `Entre ${champ.valeurMin} et ${champ.valeurMax}`
                                                         : champ.valeurMin !== null && champ.valeurMin !== undefined
-                                                        ? `Min: ${champ.valeurMin}`
-                                                        : champ.valeurMax !== null && champ.valeurMax !== undefined
-                                                        ? `Max: ${champ.valeurMax}`
-                                                        : ''}
+                                                            ? `Min: ${champ.valeurMin}`
+                                                            : champ.valeurMax !== null && champ.valeurMax !== undefined
+                                                                ? `Max: ${champ.valeurMax}`
+                                                                : ''}
                                                     {champ.unite && ` (${champ.unite})`}
                                                 </p>
                                             )}
@@ -268,8 +267,11 @@ const AllFormsTab = () => {
                     </div>
                 ) : error ? (
                     <div className="text-center py-12">
-                        <div className="text-red-600">❌ Erreur: {error}</div>
-                        <button 
+                        <div className="text-red-600 flex items-center gap-2">
+                            <ExclamationCircleIcon className="w-5 h-5" />
+                            Erreur: {error}
+                        </div>
+                        <button
                             onClick={() => window.location.reload()}
                             className="mt-2 text-blue-600 hover:text-blue-800"
                         >
@@ -283,7 +285,7 @@ const AllFormsTab = () => {
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun formulaire créé</h3>
                         <p className="text-gray-600 mb-4">Commencez par créer votre premier formulaire</p>
-                        <button 
+                        <button
                             onClick={() => router.push('/formulaire/nouveau')}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
                         >
@@ -295,7 +297,7 @@ const AllFormsTab = () => {
                         {formulaires.map((formulaire: any) => (
                             <div key={formulaire.idFormulaire} className="border border-gray-200 rounded-lg overflow-hidden">
                                 {/* En-tête du formulaire */}
-                                <div 
+                                <div
                                     className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                                     onClick={(e: React.MouseEvent) => {
                                         // Si le clic provient d'un bouton ou d'un lien à l'intérieur, on ignore
@@ -346,7 +348,7 @@ const AllFormsTab = () => {
                                             <span className="text-gray-400">
                                                 {expandedForm === formulaire.idFormulaire ? '▼' : '▶'}
                                             </span>
-                                         </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -358,7 +360,7 @@ const AllFormsTab = () => {
                                                 <p className="text-sm text-blue-800">{formulaire.description}</p>
                                             </div>
                                         )}
-                                        
+
                                         <h4 className="font-semibold text-gray-900 mb-3">Questions du formulaire :</h4>
 
                                         {/* Rendu d'aperçu interactif des champs */}

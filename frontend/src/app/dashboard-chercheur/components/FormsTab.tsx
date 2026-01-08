@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useFormulaires } from '@/src/hooks/useFormulaires';
 import { Card } from '@/src/components/Card';
 import { Badge } from '@/src/components/Badge';
-import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { EmptyState, LoadingState } from '@/src/components/ui';
 
 export const FormsTab: React.FC = React.memo(() => {
@@ -47,7 +47,7 @@ export const FormsTab: React.FC = React.memo(() => {
           <LoadingState message="Chargement des formulaires..." />
         ) : formulaires.length === 0 ? (
           <EmptyState
-            icon={<span className="text-3xl">✨</span>}
+            icon={<SparklesIcon className="w-8 h-8 text-blue-600" />}
             title="Aucun formulaire créé"
             action={
               <button

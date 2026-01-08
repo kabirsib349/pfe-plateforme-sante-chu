@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useFormulaires } from '@/src/hooks/useFormulaires';
 import { Card } from '@/src/components/Card';
 import { Badge } from '@/src/components/Badge';
-import { BookOpenIcon, CalendarDaysIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, CalendarDaysIcon, ClipboardDocumentListIcon, SparklesIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { EmptyState, LoadingState } from '@/src/components/ui';
 
 export const AllFormsTab: React.FC = React.memo(() => {
@@ -42,7 +42,10 @@ export const AllFormsTab: React.FC = React.memo(() => {
   if (error) {
     return (
       <Card title="Tous mes formulaires">
-        <div className="text-center py-12 text-red-600">❌ Erreur: {error}</div>
+        <div className="text-center py-12 text-red-600 flex items-center justify-center gap-2">
+          <ExclamationCircleIcon className="w-5 h-5" />
+          Erreur: {error}
+        </div>
       </Card>
     );
   }
@@ -64,7 +67,7 @@ export const AllFormsTab: React.FC = React.memo(() => {
       >
         {formulaires.length === 0 ? (
           <EmptyState
-            icon={<span className="text-3xl">✨</span>}
+            icon={<SparklesIcon className="w-8 h-8 text-blue-600" />}
             title="Aucun formulaire créé"
             description="Commencez par créer votre premier formulaire"
             action={
