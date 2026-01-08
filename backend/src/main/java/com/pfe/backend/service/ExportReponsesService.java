@@ -6,37 +6,36 @@ import com.pfe.backend.model.Formulaire;
 import com.pfe.backend.model.ReponseFormulaire;
 import com.pfe.backend.repository.FormulaireRepository;
 import com.pfe.backend.repository.ReponseFormulaireRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @brief Service permettant d'exporter en CSV les réponses d'un formulaire, groupées par patient.
- * @date 18/12/2025
+ * Service permettant d'exporter en CSV les réponses d'un formulaire, groupées par patient.
  */
 @Service
+@RequiredArgsConstructor
 public class ExportReponsesService {
+
 
     private final FormulaireRepository formulaireRepository;
     private final ReponseFormulaireRepository reponseFormulaireRepository;
 
-    public ExportReponsesService(FormulaireRepository formulaireRepository,
-                                 ReponseFormulaireRepository reponseFormulaireRepository) {
-        this.formulaireRepository = formulaireRepository;
-        this.reponseFormulaireRepository = reponseFormulaireRepository;
-    }
-
     /**
-     * @brief Génère un CSV contenant les réponses d'un formulaire, avec une ligne par patient.
-     * @param formulaireId Identifiant du formulaire.
-     * @param emailChercheur Email du chercheur demandeur, utilisé pour vérifier l'autorisation.
-     * @return ByteArrayResource Fichier CSV prêt à être téléchargé.
-     * @date 18/12/2025
+     * Génère un CSV contenant les réponses d'un formulaire, avec une ligne par patient.
+     *
+     * @param formulaireId identifiant du formulaire
+     * @param emailChercheur email du chercheur demandeur
+     * @return fichier CSV prêt à être téléchargé
      */
     public ByteArrayResource exporterReponsesCsv(Long formulaireId, String emailChercheur) {
         // 1. Récupérer le formulaire

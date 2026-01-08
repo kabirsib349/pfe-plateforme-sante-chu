@@ -2,11 +2,21 @@ package com.pfe.backend.service;
 
 import com.pfe.backend.dto.ChampRequest;
 import com.pfe.backend.dto.FormulaireRequest;
-import com.pfe.backend.model.*;
 import com.pfe.backend.exception.ResourceNotFoundException;
+import com.pfe.backend.model.Champ;
+import com.pfe.backend.model.Etude;
+import com.pfe.backend.model.Formulaire;
+import com.pfe.backend.model.FormulaireMedecin;
+import com.pfe.backend.model.ListeValeur;
+import com.pfe.backend.model.OptionValeur;
+import com.pfe.backend.model.StatutFormulaire;
+import com.pfe.backend.model.TypeChamp;
+import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.EtudeRepository;
+import com.pfe.backend.repository.FormulaireMedecinRepository;
 import com.pfe.backend.repository.FormulaireRepository;
 import com.pfe.backend.repository.ListeValeurRepository;
+import com.pfe.backend.repository.ReponseFormulaireRepository;
 import com.pfe.backend.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,8 +38,8 @@ public class FormulaireService {
     private final UtilisateurRepository utilisateurRepository;
     private final ActiviteService activiteService;
     private final ListeValeurRepository listeValeurRepository;
-    private final com.pfe.backend.repository.FormulaireMedecinRepository formulaireMedecinRepository;
-    private final com.pfe.backend.repository.ReponseFormulaireRepository reponseFormulaireRepository;
+    private final FormulaireMedecinRepository formulaireMedecinRepository;
+    private final ReponseFormulaireRepository reponseFormulaireRepository;
 
     @Transactional
     public Formulaire createFormulaire(FormulaireRequest request, String userEmail) {
@@ -144,7 +154,6 @@ public class FormulaireService {
                 Long champId = Long.parseLong(req.getId());
                 champ = champsExistantsMap.remove(champId);
                 if (champ == null) {
-                    // Gérer le cas où l'ID n'est pas trouvé, peut-être lever une exception
                     continue;
                 }
             } else {
@@ -220,30 +229,24 @@ public class FormulaireService {
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé avec l'email: " + userEmail));
         
-        // Vérifier que l'utilisateur est bien le propriétaire du formulaire
         if (!formulaire.getChercheur().getId().equals(chercheur.getId())) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
         }
         
-        // Récupérer tous les FormulaireMedecin liés à ce formulaire
         List<FormulaireMedecin> formulairesMedecins = formulaireMedecinRepository
                 .findAll()
                 .stream()
                 .filter(fm -> fm.getFormulaire().getIdFormulaire().equals(id))
                 .collect(Collectors.toList());
         
-        // Supprimer les réponses pour chaque FormulaireMedecin, puis les FormulaireMedecin eux-mêmes
         for (FormulaireMedecin fm : formulairesMedecins) {
-            // Supprimer d'abord les réponses liées à ce FormulaireMedecin
             reponseFormulaireRepository.deleteByFormulaireMedecinId(fm.getId());
-            // Puis supprimer le FormulaireMedecin
             formulaireMedecinRepository.delete(fm);
         }
         
         activiteService.enregistrerActivite(userEmail, "Suppression de formulaire",
                 "Formulaire", id, "Formulaire '" + formulaire.getTitre() + "' supprimé");
         
-        // Enfin, supprimer le formulaire (les champs seront supprimés automatiquement grâce au cascade)
         formulaireRepository.deleteById(id);
     }
 }
