@@ -141,7 +141,8 @@ public class ReponseFormulaireController {
                 Map.entry("Complications thromboemboliques", "COMPLICATIONS"),
                 Map.entry("Réadmission sous 30 jours", "COMPLICATIONS")
         );
-        //  Ordre des catégories
+        
+        // Ordre des catégories
         List<String> ordreCategories = List.of(
                 "IDENTITE PATIENT",
                 "ANTECEDENTS",
@@ -156,61 +157,92 @@ public class ReponseFormulaireController {
                 "AUTRE"
         );
 
+        // Grouper les réponses par patient
+        Map<String, List<ReponseFormulaire>> reponsesParPatient = reponses.stream()
+                .filter(r -> r.getPatientIdentifierHash() != null)
+                .collect(Collectors.groupingBy(ReponseFormulaire::getPatientIdentifierHash));
 
-        // Regrouper par catégorie
-        Map<String, List<ReponseFormulaire>> groupes = reponses.stream()
-                .collect(Collectors.groupingBy(r -> {
-                    String label = r.getChamp().getLabel();
-                    String cat = mappingCategories.get(label);
-                    return (cat != null) ? cat : "AUTRE";
-                }));
-
+        // Créer une liste ordonnée de tous les champs (pour l'en-tête)
+        List<ReponseFormulaire> tousLesChamps = reponses.stream()
+                .collect(Collectors.toMap(
+                        r -> r.getChamp().getIdChamp(),
+                        r -> r,
+                        (r1, r2) -> r1
+                ))
+                .values()
+                .stream()
+                .sorted((r1, r2) -> {
+                    String cat1 = mappingCategories.getOrDefault(r1.getChamp().getLabel(), "AUTRE");
+                    String cat2 = mappingCategories.getOrDefault(r2.getChamp().getLabel(), "AUTRE");
+                    int catCompare = Integer.compare(ordreCategories.indexOf(cat1), ordreCategories.indexOf(cat2));
+                    return catCompare != 0 ? catCompare : r1.getChamp().getLabel().compareTo(r2.getChamp().getLabel());
+                })
+                .collect(Collectors.toList());
 
         StringBuilder csv = new StringBuilder();
 
-        //  Première ligne : blocs de catégories
-        for (String categorie : ordreCategories) {
-            if (groupes.containsKey(categorie)) {
-                int nbChamps = groupes.get(categorie).size();
-                csv.append(categorie).append(";".repeat(Math.max(0, nbChamps)));
-            }
-        }
-        csv.append("\n");
-
-        // Deuxième ligne : labels
-        for (String categorie : ordreCategories) {
-            if (groupes.containsKey(categorie)) {
-                for (ReponseFormulaire r : groupes.get(categorie)) {
-                    csv.append(r.getChamp().getLabel()).append(";");
+        // Première ligne : blocs de catégories
+        String currentCat = "";
+        int countInCat = 0;
+        for (ReponseFormulaire r : tousLesChamps) {
+            String cat = mappingCategories.getOrDefault(r.getChamp().getLabel(), "AUTRE");
+            if (!cat.equals(currentCat)) {
+                if (countInCat > 0) {
+                    csv.append(currentCat).append(";".repeat(Math.max(0, countInCat)));
                 }
+                currentCat = cat;
+                countInCat = 0;
             }
+            countInCat++;
+        }
+        if (countInCat > 0) {
+            csv.append(currentCat).append(";".repeat(Math.max(0, countInCat)));
         }
         csv.append("\n");
 
-        // Troisième ligne : valeurs
-        for (String categorie : ordreCategories) {
-            if (groupes.containsKey(categorie)) {
-                for (ReponseFormulaire r : groupes.get(categorie)) {
+        // Deuxième ligne : labels des champs
+        for (ReponseFormulaire r : tousLesChamps) {
+            csv.append(r.getChamp().getLabel()).append(";");
+        }
+        csv.append("\n");
 
-                    String valeur = r.getValeur();
+        // Lignes de données : une ligne par patient
+        for (Map.Entry<String, List<ReponseFormulaire>> entry : reponsesParPatient.entrySet()) {
+            List<ReponseFormulaire> reponsesPatient = entry.getValue();
+            
+            // Créer une map champId -> ReponseFormulaire pour ce patient
+            Map<Long, ReponseFormulaire> reponsesParChamp = reponsesPatient.stream()
+                    .collect(Collectors.toMap(
+                            r -> r.getChamp().getIdChamp(),
+                            r -> r,
+                            (r1, r2) -> r1
+                    ));
 
+            // Pour chaque champ dans l'ordre, ajouter la valeur ou vide
+            for (ReponseFormulaire champRef : tousLesChamps) {
+                ReponseFormulaire reponse = reponsesParChamp.get(champRef.getChamp().getIdChamp());
+                
+                if (reponse != null) {
+                    String valeur = reponse.getValeur();
+                    
                     // Choix multiples → libellé visible
-                    if (r.getChamp().getListeValeur() != null &&
-                            r.getChamp().getListeValeur().getOptions() != null) {
-
-                        valeur = r.getChamp().getListeValeur().getOptions().stream()
+                    if (reponse.getChamp().getListeValeur() != null &&
+                            reponse.getChamp().getListeValeur().getOptions() != null) {
+                        valeur = reponse.getChamp().getListeValeur().getOptions().stream()
                                 .filter(o -> o.getValeur() != null &&
-                                        o.getValeur().equals(r.getValeur()))
+                                        o.getValeur().equals(reponse.getValeur()))
                                 .map(OptionValeur::getLibelle)
                                 .findFirst()
                                 .orElse(valeur);
                     }
-
+                    
                     csv.append(valeur != null ? valeur : "").append(";");
+                } else {
+                    csv.append(";");
                 }
             }
+            csv.append("\n");
         }
-
 
         byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
         byte[] data = csv.toString().getBytes(StandardCharsets.UTF_8);
@@ -226,6 +258,5 @@ public class ReponseFormulaireController {
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(new InputStreamResource(inputStream));
     }
-
 
 }

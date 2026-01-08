@@ -41,6 +41,12 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
        """)
     List<ReponseFormulaire> findAllWithOptions(@Param("id") Long formulaireMedecinId);
 
-
+    @Query("""
+       SELECT r
+       FROM ReponseFormulaire r
+       JOIN FETCH r.champ c
+       WHERE r.formulaireMedecin.formulaire.id = :formulaireId
+       """)
+    List<ReponseFormulaire> findByFormulaireIdWithChamp(@Param("formulaireId") Long formulaireId);
 }
 

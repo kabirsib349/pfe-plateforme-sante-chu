@@ -25,25 +25,25 @@ public class ExportReponsesController {
     private final ExportReponsesService exportReponsesService;
 
     /**
-     * @brief Exporte en CSV les réponses d'un formulaire rempli par un médecin.
-     * @param formulaireMedecinId Identifiant du formulaire médecin.
-     * @param principal Utilisateur connecté (chercheur).
+     * @brief Exporte en CSV les réponses d'un formualaire
+     * @param formulaireId Identifiant du formulaire.
+     * @param principal Utilisateur connecté
      * @return ResponseEntity Fichier CSV en pièce jointe.
-     * @date 20/11/2025
+     * @date 18/12/2025
      */
-    @GetMapping("/formulaires-medecins/{formulaireMedecinId}/csv")
+    @GetMapping("/formulaires/{formulaireId}/csv")
     @PreAuthorize("hasAuthority('chercheur')")
     public ResponseEntity<ByteArrayResource> exporterReponsesCsv(
-            @PathVariable Long formulaireMedecinId,
+            @PathVariable Long formulaireId,
             Principal principal) {
 
         ByteArrayResource resource =
-                exportReponsesService.exporterReponsesCsv(formulaireMedecinId, principal.getName());
+                exportReponsesService.exporterReponsesCsv(formulaireId, principal.getName());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(
                 ContentDisposition.attachment()
-                        .filename("formulaire_medecin_" + formulaireMedecinId + ".csv")
+                        .filename("formulaire_" + formulaireId + "_reponses.csv")
                         .build()
         );
 
