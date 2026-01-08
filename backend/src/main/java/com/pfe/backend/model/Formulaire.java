@@ -49,10 +49,6 @@ public class Formulaire {
     @JoinColumn(name = "id_chercheur")
     private Utilisateur chercheur;
 
-    @ManyToOne
-    @JoinColumn(name = "id_etude")
-    private Etude etude;
-
     @OneToMany(mappedBy = "formulaire", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Champ> champs;

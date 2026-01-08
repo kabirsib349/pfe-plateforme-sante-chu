@@ -4,7 +4,6 @@ import com.pfe.backend.dto.ChampRequest;
 import com.pfe.backend.dto.FormulaireRequest;
 import com.pfe.backend.exception.ResourceNotFoundException;
 import com.pfe.backend.model.Champ;
-import com.pfe.backend.model.Etude;
 import com.pfe.backend.model.Formulaire;
 import com.pfe.backend.model.FormulaireMedecin;
 import com.pfe.backend.model.ListeValeur;
@@ -12,7 +11,7 @@ import com.pfe.backend.model.OptionValeur;
 import com.pfe.backend.model.StatutFormulaire;
 import com.pfe.backend.model.TypeChamp;
 import com.pfe.backend.model.Utilisateur;
-import com.pfe.backend.repository.EtudeRepository;
+
 import com.pfe.backend.repository.FormulaireMedecinRepository;
 import com.pfe.backend.repository.FormulaireRepository;
 import com.pfe.backend.repository.ListeValeurRepository;
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 public class FormulaireService {
 
     private final FormulaireRepository formulaireRepository;
-    private final EtudeRepository etudeRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final ActiviteService activiteService;
     private final ListeValeurRepository listeValeurRepository;
@@ -57,17 +55,11 @@ public class FormulaireService {
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé avec l'email: " + userEmail));
 
-        Etude nouvelleEtude = new Etude();
-        nouvelleEtude.setTitre(request.getTitreEtude());
-        nouvelleEtude.setDescription(request.getDescriptionEtude());
-        nouvelleEtude.setUtilisateur(chercheur);
-        Etude etudeEnregistree = etudeRepository.save(nouvelleEtude);
-
         Formulaire formulaire = new Formulaire();
         formulaire.setTitre(request.getTitre());
-        formulaire.setDescription(request.getDescription());
+        // On utilise la description de l'étude comme description du formulaire
+        formulaire.setDescription(request.getDescriptionEtude());
         formulaire.setChercheur(chercheur);
-        formulaire.setEtude(etudeEnregistree);
 
         try {
             formulaire.setStatut(StatutFormulaire.valueOf(request.getStatut().toUpperCase()));
@@ -157,13 +149,8 @@ public class FormulaireService {
         }
 
         formulaire.setTitre(request.getTitre());
-        formulaire.setDescription(request.getDescription());
+        formulaire.setDescription(request.getDescriptionEtude());
         formulaire.setStatut(StatutFormulaire.valueOf(request.getStatut().toUpperCase()));
-
-        if (formulaire.getEtude() != null) {
-            formulaire.getEtude().setTitre(request.getTitreEtude());
-            formulaire.getEtude().setDescription(request.getDescriptionEtude());
-        }
 
         updateChamps(formulaire, request.getChamps());
 

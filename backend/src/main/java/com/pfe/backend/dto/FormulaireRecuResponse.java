@@ -78,12 +78,11 @@ public class FormulaireRecuResponse {
             formulaire.setStatut(fm.getFormulaire().getStatut() != null ? fm.getFormulaire().getStatut().name() : null);
             formulaire.setDateCreation(fm.getFormulaire().getDateCreation());
 
-            // Etude
-            if (fm.getFormulaire().getEtude() != null) {
-                EtudeInfo etude = new EtudeInfo();
-                etude.setTitre(fm.getFormulaire().getEtude().getTitre());
-                formulaire.setEtude(etude);
-            }
+            // Etude (virtuelle)
+            EtudeInfo etude = new EtudeInfo();
+            // Le titre du formulaire devient le titre de l'étude
+            etude.setTitre(fm.getFormulaire().getTitre());
+            formulaire.setEtude(etude);
 
             // Champs
             if (fm.getFormulaire().getChamps() != null) {

@@ -60,12 +60,10 @@ public class FormulaireEnvoyeResponse {
             formulaire.setIdFormulaire(fm.getFormulaire().getIdFormulaire());
             formulaire.setTitre(fm.getFormulaire().getTitre());
 
-            // Etude
-            if (fm.getFormulaire().getEtude() != null) {
-                EtudeInfo etude = new EtudeInfo();
-                etude.setTitre(fm.getFormulaire().getEtude().getTitre());
-                formulaire.setEtude(etude);
-            }
+            // Etude (virtuelle)
+            EtudeInfo etude = new EtudeInfo();
+            etude.setTitre(fm.getFormulaire().getTitre());
+            formulaire.setEtude(etude);
 
             response.setFormulaire(formulaire);
         }

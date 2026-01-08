@@ -4,7 +4,9 @@ import com.pfe.backend.dto.EnvoiFormulaireRequest;
 import com.pfe.backend.dto.FormulaireMedecinCreatedResponse;
 import com.pfe.backend.dto.FormulaireEnvoyeResponse;
 import com.pfe.backend.dto.FormulaireRecuResponse;
+import com.pfe.backend.dto.FormulaireRecuResponse;
 import com.pfe.backend.dto.FormulaireRequest;
+import com.pfe.backend.dto.FormulaireResponse;
 import com.pfe.backend.model.Formulaire;
 import com.pfe.backend.model.FormulaireMedecin;
 import com.pfe.backend.service.FormulaireMedecinService;
@@ -44,8 +46,9 @@ public class FormulaireController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('chercheur')")
-    public Formulaire createFormulaire(@Valid @RequestBody FormulaireRequest request, Principal principal) {
-        return formulaireService.createFormulaire(request, principal.getName());
+    public FormulaireResponse createFormulaire(@Valid @RequestBody FormulaireRequest request, Principal principal) {
+        Formulaire formulaire = formulaireService.createFormulaire(request, principal.getName());
+        return FormulaireResponse.fromEntity(formulaire);
     }
 
     @PostMapping("/{formulaireId}/envoyer")
@@ -70,9 +73,12 @@ public class FormulaireController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Formulaire>> getFormulaires(Principal principal) {
+    public ResponseEntity<List<FormulaireResponse>> getFormulaires(Principal principal) {
         List<Formulaire> formulaires = formulaireService.getFormulairesByChercheurEmail(principal.getName());
-        return ResponseEntity.ok(formulaires);
+        List<FormulaireResponse> response = formulaires.stream()
+                .map(FormulaireResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/recus")
@@ -87,9 +93,9 @@ public class FormulaireController {
 
     @GetMapping("/recus/{id}")
     @PreAuthorize("hasAuthority('medecin')")
-    public ResponseEntity<Formulaire> getFormulaireRecuById(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<FormulaireResponse> getFormulaireRecuById(@PathVariable Long id, Principal principal) {
         Formulaire formulaire = formulaireMedecinService.getFormulairePourRemplissage(id);
-        return ResponseEntity.ok(formulaire);
+        return ResponseEntity.ok(FormulaireResponse.fromEntity(formulaire));
     }
 
     @GetMapping("/envoyes")
@@ -103,16 +109,16 @@ public class FormulaireController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Formulaire> getFormulaire(@PathVariable Long id) {
+    public ResponseEntity<FormulaireResponse> getFormulaire(@PathVariable Long id) {
         Formulaire formulaire = formulaireService.getFormulaireById(id);
-        return ResponseEntity.ok(formulaire);
+        return ResponseEntity.ok(FormulaireResponse.fromEntity(formulaire));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('chercheur')")
-    public ResponseEntity<Formulaire> updateFormulaire(@PathVariable Long id, @Valid @RequestBody FormulaireRequest request, Principal principal) {
+    public ResponseEntity<FormulaireResponse> updateFormulaire(@PathVariable Long id, @Valid @RequestBody FormulaireRequest request, Principal principal) {
         Formulaire formulaire = formulaireService.updateFormulaire(id, request, principal.getName());
-        return ResponseEntity.ok(formulaire);
+        return ResponseEntity.ok(FormulaireResponse.fromEntity(formulaire));
     }
 
     @GetMapping("/stats")

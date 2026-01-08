@@ -15,7 +15,7 @@ public interface FormulaireMedecinRepository extends JpaRepository<FormulaireMed
     //Récupération des formulaires envoyés à un médecin (non masqués pour lui)
     @Query("SELECT DISTINCT fm FROM FormulaireMedecin fm " +
             "JOIN FETCH fm.formulaire f " +
-            "LEFT JOIN FETCH f.etude " +
+
             "LEFT JOIN FETCH f.champs " +
             "JOIN FETCH fm.chercheur " +
             "WHERE fm.medecin.email = :emailMedecin " +

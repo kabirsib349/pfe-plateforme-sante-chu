@@ -31,6 +31,4 @@ public interface FormulaireRepository extends JpaRepository<Formulaire, Long> {
     @Query("SELECT COUNT(f) FROM Formulaire f WHERE f.chercheur.email = :email AND f.statut = :statut")
     long countByUserEmailAndStatut(@Param("email") String email, @Param("statut") StatutFormulaire statut);
     
-    @Query("SELECT COUNT(DISTINCT f.etude) FROM Formulaire f WHERE f.chercheur.email = :email")
-    long countEtudesByUserEmail(@Param("email") String email);
 }

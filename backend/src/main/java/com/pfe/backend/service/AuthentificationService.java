@@ -19,6 +19,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 /**
@@ -75,6 +76,10 @@ public class AuthentificationService {
         );
         Utilisateur user = utilisateurRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
+
+        // Mise à jour de la date de dernière connexion
+        user.setDerniereConnexion(LocalDateTime.now());
+        utilisateurRepository.save(user);
 
         var userDetails = new User(
                 user.getEmail(),
