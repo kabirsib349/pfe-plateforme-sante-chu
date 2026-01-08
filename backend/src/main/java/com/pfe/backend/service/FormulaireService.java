@@ -193,7 +193,10 @@ public class FormulaireService {
         champ.setUnite(request.getUnite());
         champ.setObligatoire(request.isObligatoire());
         champ.setValeurMin(request.getValeurMin());
+        champ.setValeurMin(request.getValeurMin());
         champ.setValeurMax(request.getValeurMax());
+        champ.setDateMin(request.getDateMin());
+        champ.setDateMax(request.getDateMax());
         champ.setCategorie(request.getCategorie());
         champ.setType(TypeChamp.valueOf(request.getType().toUpperCase()));
 
