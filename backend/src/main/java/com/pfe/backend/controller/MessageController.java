@@ -4,32 +4,37 @@ import com.pfe.backend.model.Message;
 import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.service.MessageService;
 import com.pfe.backend.service.UtilisateurService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * @brief Contrôleur pour la gestion des messages entre médecin et chercheur.
- * @date 07/11/2025
+ * Contrôleur pour la gestion des messages entre médecin et chercheur.
  */
 @RestController
 @RequestMapping("/api/messages")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class MessageController {
 
-    @Autowired
-    private MessageService messageService;
-
-    @Autowired
-    private UtilisateurService utilisateurService;
+    private final MessageService messageService;
+    private final UtilisateurService utilisateurService;
 
     /**
-     * @brief Endpoint permettant d’envoyer un message entre chercheur et médecin.
-     * @param request : contient le contenu du message, l'id de l'émetteur et du destinataire.
-     * @return ResponseEntity : message envoyé avec succès ou erreur.
+     * Envoie un message entre chercheur et médecin.
+     *
+     * @param request contient le contenu du message, l'id de l'émetteur et du destinataire
+     * @return le message envoyé ou une erreur
      */
     @PostMapping("/envoyer")
     public ResponseEntity<?> envoyerMessage(@RequestBody Map<String, String> request) {
@@ -54,8 +59,10 @@ public class MessageController {
     }
 
     /**
-     * @brief Récupère tous les messages reçus par un chercheur.
-     * @param idChercheur : identifiant du chercheur.
+     * Récupère tous les messages reçus par un chercheur.
+     *
+     * @param idChercheur identifiant du chercheur
+     * @return liste des messages reçus
      */
     @GetMapping("/recus/chercheur/{idChercheur}")
     public ResponseEntity<List<Message>> getMessagesRecusParChercheur(@PathVariable Long idChercheur) {
@@ -65,8 +72,10 @@ public class MessageController {
     }
 
     /**
-     * @brief Récupère tous les messages envoyés par un chercheur.
-     * @param idChercheur : identifiant du chercheur.
+     * Récupère tous les messages envoyés par un chercheur.
+     *
+     * @param idChercheur identifiant du chercheur
+     * @return liste des messages envoyés
      */
     @GetMapping("/envoyes/chercheur/{idChercheur}")
     public ResponseEntity<List<Message>> getMessagesEnvoyesParChercheur(@PathVariable Long idChercheur) {
@@ -75,8 +84,10 @@ public class MessageController {
     }
 
     /**
-     * @brief Récupère tous les messages envoyés par un médecin.
-     * @param idMedecin : identifiant du médecin.
+     * Récupère tous les messages envoyés par un médecin.
+     *
+     * @param idMedecin identifiant du médecin
+     * @return liste des messages envoyés
      */
     @GetMapping("/envoyes/medecin/{idMedecin}")
     public ResponseEntity<List<Message>> getMessagesEnvoyesParMedecin(@PathVariable Long idMedecin) {
@@ -92,7 +103,9 @@ public class MessageController {
         List<Message> conversation = messageService.getConversation(chercheurId, medecinId);
         return ResponseEntity.ok(conversation);
     }
-//marque comme lus les messages dont le destinataire est le chercheur
+    /**
+     * Marque comme lus les messages dont le destinataire est le chercheur.
+     */
     @PutMapping("/conversation/lire/chercheur/{chercheurId}/{medecinId}")
     public ResponseEntity<?> marquerCommeLusPourChercheur(
             @PathVariable Long chercheurId,
@@ -101,7 +114,9 @@ public class MessageController {
         messageService.marquerCommeLus(chercheurId, medecinId);
         return ResponseEntity.ok("Messages mis à jour comme lus (côté chercheur).");
     }
-//marque comme lus les messages dont le destinataire est le medecin
+    /**
+     * Marque comme lus les messages dont le destinataire est le médecin.
+     */
     @PutMapping("/conversation/lire/medecin/{chercheurId}/{medecinId}")
     public ResponseEntity<?> marquerCommeLusPourMedecin(
             @PathVariable Long chercheurId,
@@ -120,10 +135,11 @@ public class MessageController {
     }
 
     /**
-     * @brief Compte les messages non lus envoyés par emetteurId vers destinataireId
-     * @param destinataireId : ID de l'utilisateur qui reçoit les messages
-     * @param emetteurId : ID de l'utilisateur qui envoie les messages
-     * @return Le nombre de messages non lus
+     * Compte les messages non lus envoyés par emetteurId vers destinataireId.
+     *
+     * @param destinataireId ID de l'utilisateur qui reçoit les messages
+     * @param emetteurId ID de l'utilisateur qui envoie les messages
+     * @return le nombre de messages non lus
      */
     @GetMapping("/nonlus/{destinataireId}/{emetteurId}")
     public ResponseEntity<Integer> countUnread(
@@ -140,11 +156,5 @@ public class MessageController {
         long count = messageService.countMessagesNonLusPourMedecin(idMedecin);
         return ResponseEntity.ok(count);
     }
-
-
-
-
-
-
 
 }

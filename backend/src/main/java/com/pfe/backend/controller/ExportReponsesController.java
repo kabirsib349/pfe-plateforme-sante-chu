@@ -8,13 +8,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 
 /**
- * @brief Contrôleur REST pour l'export CSV des réponses d'un formulaire médecin.
- * @date 20/11/2025
+ * Contrôleur REST pour l'export CSV des réponses d'un formulaire médecin.
  */
 @RestController
 @RequestMapping("/api/export")
@@ -25,11 +28,11 @@ public class ExportReponsesController {
     private final ExportReponsesService exportReponsesService;
 
     /**
-     * @brief Exporte en CSV les réponses d'un formualaire
-     * @param formulaireId Identifiant du formulaire.
-     * @param principal Utilisateur connecté
-     * @return ResponseEntity Fichier CSV en pièce jointe.
-     * @date 18/12/2025
+     * Exporte en CSV les réponses d'un formulaire.
+     *
+     * @param formulaireId identifiant du formulaire
+     * @param principal utilisateur connecté
+     * @return fichier CSV en pièce jointe
      */
     @GetMapping("/formulaires/{formulaireId}/csv")
     @PreAuthorize("hasAuthority('chercheur')")

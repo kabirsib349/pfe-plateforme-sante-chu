@@ -1,8 +1,12 @@
 package com.pfe.backend.controller;
 
 import com.pfe.backend.dto.EnvoiFormulaireRequest;
+import com.pfe.backend.dto.FormulaireMedecinCreatedResponse;
+import com.pfe.backend.dto.FormulaireEnvoyeResponse;
+import com.pfe.backend.dto.FormulaireRecuResponse;
 import com.pfe.backend.dto.FormulaireRequest;
 import com.pfe.backend.model.Formulaire;
+import com.pfe.backend.model.FormulaireMedecin;
 import com.pfe.backend.service.FormulaireMedecinService;
 import com.pfe.backend.service.FormulaireService;
 import jakarta.validation.Valid;
@@ -10,11 +14,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/formulaires")
@@ -28,7 +41,6 @@ public class FormulaireController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('chercheur')")
     public Formulaire createFormulaire(@Valid @RequestBody FormulaireRequest request, Principal principal) {
-        // Il suffit d'appeler le service. Les exceptions seront gérées par le GlobalExceptionHandler.
         return formulaireService.createFormulaire(request, principal.getName());
     }
 
@@ -41,10 +53,10 @@ public class FormulaireController {
 
     @PostMapping("/{formulaireId}/create-envoi")
     @PreAuthorize("hasAuthority('chercheur')")
-    public ResponseEntity<com.pfe.backend.dto.FormulaireMedecinCreatedResponse> createEnvoiParChercheur(@PathVariable Long formulaireId, Principal principal) {
-        com.pfe.backend.model.FormulaireMedecin fm = formulaireMedecinService.createEnvoiParChercheur(formulaireId, principal.getName());
+    public ResponseEntity<FormulaireMedecinCreatedResponse> createEnvoiParChercheur(@PathVariable Long formulaireId, Principal principal) {
+        FormulaireMedecin fm = formulaireMedecinService.createEnvoiParChercheur(formulaireId, principal.getName());
         String dateStr = fm.getDateEnvoi() != null ? fm.getDateEnvoi().toString() : null;
-        com.pfe.backend.dto.FormulaireMedecinCreatedResponse dto = new com.pfe.backend.dto.FormulaireMedecinCreatedResponse(
+        FormulaireMedecinCreatedResponse dto = new FormulaireMedecinCreatedResponse(
                 fm.getId(),
                 fm.getFormulaire() != null ? fm.getFormulaire().getIdFormulaire() : null,
                 dateStr,
@@ -61,31 +73,28 @@ public class FormulaireController {
 
     @GetMapping("/recus")
     @PreAuthorize("hasAuthority('medecin')")
-    public ResponseEntity<List<com.pfe.backend.dto.FormulaireRecuResponse>> getFormulairesRecus(Principal principal) {
-        List<com.pfe.backend.model.FormulaireMedecin> formulairesRecus = formulaireMedecinService.getFormulairesRecus(principal.getName());
-        List<com.pfe.backend.dto.FormulaireRecuResponse> response = formulairesRecus.stream()
-                .map(com.pfe.backend.dto.FormulaireRecuResponse::fromEntity)
-                .collect(java.util.stream.Collectors.toList());
+    public ResponseEntity<List<FormulaireRecuResponse>> getFormulairesRecus(Principal principal) {
+        List<FormulaireMedecin> formulairesRecus = formulaireMedecinService.getFormulairesRecus(principal.getName());
+        List<FormulaireRecuResponse> response = formulairesRecus.stream()
+                .map(FormulaireRecuResponse::fromEntity)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/recus/{id}")
     @PreAuthorize("hasAuthority('medecin')")
     public ResponseEntity<Formulaire> getFormulaireRecuById(@PathVariable Long id, Principal principal) {
-        // L'autorisation est déjà vérifiée par PreAuthorize, mais on pourrait ajouter une vérification
-        // supplémentaire pour s'assurer que le médecin qui demande est bien celui à qui le formulaire est assigné.
-        // Pour l'instant, on fait confiance à l'ID unique de FormulaireMedecin.
         Formulaire formulaire = formulaireMedecinService.getFormulairePourRemplissage(id);
         return ResponseEntity.ok(formulaire);
     }
 
     @GetMapping("/envoyes")
     @PreAuthorize("hasAuthority('chercheur')")
-    public ResponseEntity<List<com.pfe.backend.dto.FormulaireEnvoyeResponse>> getFormulairesEnvoyes(Principal principal) {
-        List<com.pfe.backend.model.FormulaireMedecin> formulairesEnvoyes = formulaireMedecinService.getFormulairesEnvoyes(principal.getName());
-        List<com.pfe.backend.dto.FormulaireEnvoyeResponse> response = formulairesEnvoyes.stream()
-                .map(com.pfe.backend.dto.FormulaireEnvoyeResponse::fromEntity)
-                .collect(java.util.stream.Collectors.toList());
+    public ResponseEntity<List<FormulaireEnvoyeResponse>> getFormulairesEnvoyes(Principal principal) {
+        List<FormulaireMedecin> formulairesEnvoyes = formulaireMedecinService.getFormulairesEnvoyes(principal.getName());
+        List<FormulaireEnvoyeResponse> response = formulairesEnvoyes.stream()
+                .map(FormulaireEnvoyeResponse::fromEntity)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 

@@ -1,24 +1,29 @@
 package com.pfe.backend.controller;
 
 import com.pfe.backend.dto.ChangePasswordRequest;
-import com.pfe.backend.dto.UserUpdateRequest;
 import com.pfe.backend.dto.UserResponse;
+import com.pfe.backend.dto.UserUpdateRequest;
+import com.pfe.backend.dto.UtilisateurDto;
 import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.repository.UtilisateurRepository;
 import com.pfe.backend.service.FormulaireMedecinService;
 import com.pfe.backend.service.UserService;
+import com.pfe.backend.service.UtilisateurService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -29,7 +34,7 @@ public class UserController {
     private final UtilisateurRepository utilisateurRepository;
     private final FormulaireMedecinService formulaireMedecinService;
     private final UserService userService;
-    private final com.pfe.backend.service.UtilisateurService utilisateurService;
+    private final UtilisateurService utilisateurService;
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(Principal principal){
@@ -51,7 +56,7 @@ public class UserController {
 
     @GetMapping("/chercheurs")
     public ResponseEntity<List<UserResponse>> getChercheurs(){
-        List<com.pfe.backend.dto.UtilisateurDto> chercheurs = utilisateurService.getChercheurs();
+        List<UtilisateurDto> chercheurs = utilisateurService.getChercheurs();
         List<UserResponse> response = chercheurs.stream()
                 .map(c -> new UserResponse(c.id, c.nom, c.email, c.role))
                 .collect(Collectors.toList());
@@ -59,10 +64,7 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(
-            Principal principal,
-            @RequestBody @Validated UserUpdateRequest dto
-    ) {
+    public ResponseEntity<?> updateProfile(Principal principal, @RequestBody UserUpdateRequest dto) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
         }
@@ -84,11 +86,7 @@ public class UserController {
 
 
     @PutMapping("/changer-mot-de-passe")
-    public ResponseEntity<?> changePassword(
-            Principal principal,
-            @RequestBody @Validated ChangePasswordRequest dto
-    ) {
-        // Si l'utilisateur n'est pas authentifié, renvoyer 401 au lieu d'un NPE qui génère 500
+    public ResponseEntity<?> changePassword(Principal principal, @RequestBody ChangePasswordRequest dto) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
         }

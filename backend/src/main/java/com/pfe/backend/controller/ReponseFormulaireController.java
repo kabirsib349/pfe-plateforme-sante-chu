@@ -10,7 +10,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -87,7 +93,7 @@ public class ReponseFormulaireController {
 
         List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
 
-        // Mapping des labels → catégories (basé sur ton front)
+        // Mapping des labels → catégories 
         Map<String, String> mappingCategories = Map.ofEntries(
                 Map.entry("Sexe", "IDENTITE PATIENT"),
                 Map.entry("Age", "IDENTITE PATIENT"),
