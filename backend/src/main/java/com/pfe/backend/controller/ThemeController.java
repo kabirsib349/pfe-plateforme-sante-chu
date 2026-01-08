@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST pour la gestion des thèmes et des questions associées.
+ * Permet de définir les catégories de questions réutilisables dans les formulaires.
+ */
 @RestController
 @RequestMapping("/api/themes")
 @CrossOrigin(origins = "*")
@@ -25,6 +29,11 @@ public class ThemeController {
 
     private final ThemeService themeService;
 
+    /**
+     * Récupère la liste de tous les thèmes.
+     *
+     * @return liste des thèmes
+     */
     @GetMapping
     public List<Theme> getAllThemes() {
         return themeService.findAll();
@@ -36,6 +45,13 @@ public class ThemeController {
         return new ResponseEntity<>(nouveauTheme, HttpStatus.CREATED);
     }
 
+    /**
+     * Ajoute une nouvelle question à un thème existant.
+     *
+     * @param themeId identifiant du thème
+     * @param question question à ajouter
+     * @return question créée
+     */
     @PostMapping("/{themeId}/questions")
     public ResponseEntity<QuestionTheme> addQuestionToTheme(@PathVariable Long themeId, @RequestBody QuestionTheme question) {
         QuestionTheme nouvelleQuestion = themeService.addQuestion(themeId, question);

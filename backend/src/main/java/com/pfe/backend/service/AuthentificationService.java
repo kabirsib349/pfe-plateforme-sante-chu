@@ -21,6 +21,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 
+/**
+ * Service dédié à l'authentification et à l'inscription des utilisateurs.
+ * Gère la validation des identifiants et la génération des tokens JWT.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthentificationService {
@@ -31,6 +35,13 @@ public class AuthentificationService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
 
+    /**
+     * Inscrit un nouvel utilisateur dans le système.
+     * Vérifie si l'email existe déjà et encode le mot de passe.
+     *
+     * @param request informations d'inscription
+     * @throws IllegalStateException si l'email est déjà utilisé
+     */
     @org.springframework.transaction.annotation.Transactional
     public void register(RegisterRequest request) {
         if (utilisateurRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -48,6 +59,13 @@ public class AuthentificationService {
         utilisateurRepository.save(utilisateur);
     }
 
+    /**
+     * Authentifie un utilisateur et retourne un token JWT.
+     *
+     * @param request identifiants de connexion
+     * @return token JWT si l'authentification réussit
+     * @throws UsernameNotFoundException si l'utilisateur n'existe pas
+     */
     public LoginResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

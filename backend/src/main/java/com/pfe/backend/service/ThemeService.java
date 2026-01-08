@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service de gestion des thèmes et des questions.
+ * Permet de définir les catégories de questions réutilisables.
+ */
 @Service
 @Transactional
 @RequiredArgsConstructor

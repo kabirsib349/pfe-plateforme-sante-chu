@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Contrôleur REST pour la gestion des réponses aux formulaires.
+ * Permet la saisie des réponses, la consultation par patient et l'exportation des données.
+ */
 @RestController
 @RequestMapping("/api/reponses")
 @RequiredArgsConstructor
@@ -32,6 +36,13 @@ public class ReponseFormulaireController {
 
     private final ReponseFormulaireService reponseFormulaireService;
 
+    /**
+     * Enregistre les réponses saisies pour un formulaire donné.
+     *
+     * @param request données des réponses (formulaire, patient, valeurs)
+     * @param principal utilisateur connecté (médecin ou chercheur)
+     * @return statut 200 OK
+     */
     @PostMapping
     @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
     @ResponseStatus(HttpStatus.CREATED)
@@ -88,6 +99,13 @@ public class ReponseFormulaireController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Exporte les données d'un formulaire au format CSV.
+     * Les données sont anonymisées et structurées par catégories.
+     *
+     * @param formulaireMedecinId identifiant de l'envoi
+     * @return fichier CSV à télécharger
+     */
     @GetMapping("/export/{formulaireMedecinId}")
     public ResponseEntity<InputStreamResource> exportCSV(@PathVariable Long formulaireMedecinId) {
 

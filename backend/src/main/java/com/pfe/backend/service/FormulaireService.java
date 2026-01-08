@@ -29,6 +29,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Service principal de gestion des formulaires de recherche.
+ * Gère la création, modification, suppression et récupération des formulaires complets.
+ */
 @Service
 @RequiredArgsConstructor
 public class FormulaireService {
@@ -41,6 +45,13 @@ public class FormulaireService {
     private final FormulaireMedecinRepository formulaireMedecinRepository;
     private final ReponseFormulaireRepository reponseFormulaireRepository;
 
+    /**
+     * Crée un nouveau formulaire et son étude associée.
+     *
+     * @param request Données du formulaire et de l'étude
+     * @param userEmail Email du chercheur créateur
+     * @return Le formulaire créé
+     */
     @Transactional
     public Formulaire createFormulaire(FormulaireRequest request, String userEmail) {
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
@@ -78,6 +89,12 @@ public class FormulaireService {
         return savedFormulaire;
     }
 
+    /**
+     * Récupère tous les formulaires d'un chercheur.
+     *
+     * @param email Email du chercheur
+     * @return Liste des formulaires avec leurs champs
+     */
     @Transactional(readOnly = true)
     public List<Formulaire> getFormulairesByChercheurEmail(String email) {
         List<Formulaire> formulaires = formulaireRepository.findAllWithChampsByChercheurEmail(email);
@@ -96,6 +113,13 @@ public class FormulaireService {
         return formulaires;
     }
 
+    /**
+     * Récupère un formulaire par son identifiant.
+     *
+     * @param id ID du formulaire
+     * @return Le formulaire complet
+     * @throws ResourceNotFoundException si non trouvé
+     */
     @Transactional(readOnly = true)
     public Formulaire getFormulaireById(Long id) {
         Formulaire formulaire = formulaireRepository.findByIdWithChamps(id)
@@ -111,6 +135,15 @@ public class FormulaireService {
         return formulaire;
     }
 
+    /**
+     * Met à jour un formulaire existant et ses champs.
+     * Gère l'ajout, la modification et la suppression de champs.
+     *
+     * @param id ID du formulaire
+     * @param request Nouvelles données
+     * @param userEmail Email de l'utilisateur demandeur (pour vérification)
+     * @return Le formulaire mis à jour
+     */
     @Transactional
     public Formulaire updateFormulaire(Long id, FormulaireRequest request, String userEmail) {
         Formulaire formulaire = formulaireRepository.findByIdWithChamps(id)
@@ -209,6 +242,12 @@ public class FormulaireService {
         return champ;
     }
 
+    /**
+     * Calcule les statistiques des formulaires pour le tableau de bord.
+     *
+     * @param userEmail Email du chercheur
+     * @return Map contenant les compteurs (total, brouillons, envoyés)
+     */
     public Map<String, Object> getStatsByUser(String userEmail) {
         Map<String, Object> stats = new HashMap<>();
         long totalFormulaires = formulaireRepository.countByUserEmail(userEmail);
@@ -221,6 +260,12 @@ public class FormulaireService {
         return stats;
     }
 
+    /**
+     * Supprime un formulaire et toutes ses données associées (réponses, activités).
+     *
+     * @param id ID du formulaire
+     * @param userEmail Email du demandeur pour vérification
+     */
     @Transactional
     public void deleteFormulaire(Long id, String userEmail) {
         Formulaire formulaire = formulaireRepository.findById(id)

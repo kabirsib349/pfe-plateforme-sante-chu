@@ -15,6 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Service utilitaire pour la gestion des JSON Web Tokens (JWT).
+ * Gère la génération, l'extraction de claims et la validation des tokens.
+ */
 @Service
 public class JwtService {
 
@@ -24,6 +28,12 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private Long expiration;
 
+    /**
+     * Extrait le nom d'utilisateur (email) du token.
+     *
+     * @param token token JWT
+     * @return email contenu dans le token
+     */
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
     }
@@ -47,6 +57,13 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    /**
+     * Génère un token JWT avec des claims supplémentaires.
+     *
+     * @param extraClaims map de claims additionnels
+     * @param userDetails détails de l'utilisateur
+     * @return token JWT signé
+     */
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails){
         return Jwts
                 .builder()
@@ -58,10 +75,23 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Génère un token JWT simple pour un utilisateur.
+     *
+     * @param userDetails détails de l'utilisateur
+     * @return token JWT signé
+     */
     public String generateToken(UserDetails userDetails){
         return generateToken(new HashMap<>(), userDetails);
     }
 
+    /**
+     * Vérifie la validité d'un token pour un utilisateur donné.
+     *
+     * @param token token JWT
+     * @param userDetails utilisateur concerné
+     * @return true si le token est valide et correspond à l'utilisateur
+     */
     public boolean isTokenValid(String token, UserDetails userDetails){
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));

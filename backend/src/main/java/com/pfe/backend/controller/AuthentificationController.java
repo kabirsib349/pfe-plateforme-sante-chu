@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Contrôleur REST pour l'authentification et l'enregistrement des utilisateurs.
+ * Gère l'inscription et la connexion avec génération de token JWT.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -20,6 +24,12 @@ public class AuthentificationController {
 
     private final AuthentificationService authentificationService;
 
+    /**
+     * Enregistre un nouvel utilisateur (médecin ou chercheur).
+     *
+     * @param request données d'inscription (nom, email, mot de passe, rôle)
+     * @return message de confirmation
+     */
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request){
         try{
@@ -30,6 +40,12 @@ public class AuthentificationController {
         }
     }
 
+    /**
+     * Authentifie un utilisateur et génère un token JWT.
+     *
+     * @param request identifiants de connexion (email, mot de passe)
+     * @return token JWT
+     */
     @PostMapping("login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request){
         try{

@@ -95,6 +95,13 @@ public class MessageController {
         return ResponseEntity.ok(messages);
     }
 
+    /**
+     * Récupère l'historique complet de la conversation entre un chercheur et un médecin.
+     *
+     * @param chercheurId identifiant du chercheur
+     * @param medecinId identifiant du médecin
+     * @return liste chronologique des messages
+     */
     @GetMapping("/conversation/{chercheurId}/{medecinId}")
     public ResponseEntity<List<Message>> getConversation(
             @PathVariable Long chercheurId,
@@ -128,6 +135,12 @@ public class MessageController {
 
 
 
+    /**
+     * Compte le nombre total de messages non lus pour un chercheur donné.
+     *
+     * @param idChercheur identifiant du chercheur
+     * @return nombre total de messages non lus
+     */
     @GetMapping("/non-lus/chercheur/{idChercheur}")
     public ResponseEntity<Long> getNombreNonLusPourChercheur(@PathVariable Long idChercheur) {
         long count = messageService.countMessagesNonLusPourChercheur(idChercheur);
@@ -151,6 +164,12 @@ public class MessageController {
         );
     }
 
+    /**
+     * Compte le nombre total de messages non lus pour un médecin donné.
+     *
+     * @param idMedecin identifiant du médecin
+     * @return nombre total de messages non lus
+     */
     @GetMapping("/non-lus/medecin/{idMedecin}")
     public ResponseEntity<Long> getNombreNonLusPourMedecin(@PathVariable Long idMedecin) {
         long count = messageService.countMessagesNonLusPourMedecin(idMedecin);

@@ -10,6 +10,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Service de gestion de la messagerie interne.
+ * Permet l'envoi, la réception et la consultation des messages entre médecins et chercheurs.
+ */
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -35,18 +39,42 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
+    /**
+     * Récupère tous les messages envoyés par un utilisateur.
+     *
+     * @param emetteur utilisateur émetteur
+     * @return liste des messages envoyés
+     */
     public List<Message> getMessagesEnvoyes(Utilisateur emetteur) {
         return messageRepository.findByEmetteur(emetteur);
     }
 
+    /**
+     * Récupère tous les messages reçus par un utilisateur.
+     *
+     * @param destinataire utilisateur destinataire
+     * @return liste des messages reçus
+     */
     public List<Message> getMessagesRecus(Utilisateur destinataire) {
         return messageRepository.findByDestinataire(destinataire);
     }
 
+    /**
+     * Récupère les messages envoyés par un chercheur par ordre chronologique inverse.
+     *
+     * @param idChercheur ID du chercheur
+     * @return liste des messages
+     */
     public List<Message> getMessagesEnvoyesParChercheur(Long idChercheur) {
         return messageRepository.findByEmetteurIdOrderByDateEnvoiDesc(idChercheur);
     }
 
+    /**
+     * Récupère les messages envoyés par un médecin par ordre chronologique inverse.
+     *
+     * @param idMedecin ID du médecin
+     * @return liste des messages
+     */
     public List<Message> getMessagesEnvoyesParMedecin(Long idMedecin) {
         return messageRepository.findByEmetteurIdOrderByDateEnvoiDesc(idMedecin);
     }

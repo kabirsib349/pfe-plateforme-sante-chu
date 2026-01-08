@@ -18,6 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion des assignations de formulaires aux médecins.
+ * Gère l'envoi, la réception et la consultation des formulaires à remplir.
+ */
 @Service
 @RequiredArgsConstructor
 public class FormulaireMedecinService {
@@ -29,6 +33,15 @@ public class FormulaireMedecinService {
     private final ReponseFormulaireRepository reponseFormulaireRepository;
     private final ListeValeurRepository listeValeurRepository;
 
+    /**
+     * Envoie un formulaire à un médecin spécifique.
+     * Le statut du formulaire passe à PUBLIE s'il était en BROUILLON.
+     *
+     * @param formulaireId ID du formulaire
+     * @param emailMedecin Email du médecin destinataire
+     * @param emailChercheur Email du chercheur envoyeur
+     * @return L'assignation créée
+     */
     @Transactional
     public FormulaireMedecin envoyerFormulaire(Long formulaireId, String emailMedecin, String emailChercheur) {
         // Récupérer le formulaire
@@ -68,6 +81,13 @@ public class FormulaireMedecinService {
         return saved;
     }
 
+    /**
+     * Crée une assignation pour le chercheur lui-même (test ou remplissage direct).
+     *
+     * @param formulaireId ID du formulaire
+     * @param emailChercheur Email du chercheur
+     * @return L'assignation créée
+     */
     @Transactional
     public FormulaireMedecin createEnvoiParChercheur(Long formulaireId, String emailChercheur) {
         Formulaire formulaire = formulaireRepository.findById(formulaireId)
@@ -91,12 +111,25 @@ public class FormulaireMedecinService {
         return saved;
     }
 
+    /**
+     * Récupère la liste des formulaires reçus par un médecin.
+     *
+     * @param emailMedecin Email du médecin
+     * @return Liste des formulaires reçus
+     */
     @Transactional(readOnly = true)
     public List<FormulaireMedecin> getFormulairesRecus(String emailMedecin) {
         // Plus besoin d'hydratation manuelle grâce au JOIN FETCH dans la requête
         return formulaireMedecinRepository.findByMedecinEmail(emailMedecin);
     }
 
+    /**
+     * Récupère un formulaire complet prêt pour le remplissage.
+     * Charge explicitement les listes de valeurs pour éviter les LazyInitializationException.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @return Le formulaire complet
+     */
     @Transactional(readOnly = true)
     public Formulaire getFormulairePourRemplissage(Long formulaireMedecinId) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)

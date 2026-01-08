@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Contrôleur REST pour la gestion des utilisateurs.
+ * Permet de récupérer les informations de profil, lister les médecins/chercheurs et mettre à jour les données utilisateur.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/users")
@@ -36,6 +40,12 @@ public class UserController {
     private final UserService userService;
     private final UtilisateurService utilisateurService;
 
+    /**
+     * Récupère le profil de l'utilisateur actuellement connecté.
+     *
+     * @param principal utilisateur connecté
+     * @return informations de l'utilisateur
+     */
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(Principal principal){
         String username = principal.getName();
@@ -45,6 +55,11 @@ public class UserController {
         UserResponse response = new UserResponse(user.getId(), user.getNom(), user.getEmail(), user.getRole().getNom());
         return ResponseEntity.ok(response);
     }
+    /**
+     * Récupère la liste de tous les médecins.
+     *
+     * @return liste des médecins
+     */
     @GetMapping("/medecins")
     public ResponseEntity<List<UserResponse>> getMedecins(){
         List<Utilisateur> medecins = formulaireMedecinService.getMedecins();
@@ -54,6 +69,11 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Récupère la liste de tous les chercheurs.
+     *
+     * @return liste des chercheurs
+     */
     @GetMapping("/chercheurs")
     public ResponseEntity<List<UserResponse>> getChercheurs(){
         List<UtilisateurDto> chercheurs = utilisateurService.getChercheurs();
@@ -63,6 +83,13 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Met à jour le profil de l'utilisateur connecté.
+     *
+     * @param principal utilisateur connecté
+     * @param dto nouvelles informations
+     * @return profil mis à jour
+     */
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(Principal principal, @RequestBody UserUpdateRequest dto) {
         if (principal == null) {
@@ -85,6 +112,13 @@ public class UserController {
     }
 
 
+    /**
+     * Change le mot de passe de l'utilisateur connecté.
+     *
+     * @param principal utilisateur connecté
+     * @param dto demande de changement de mot de passe avec ancien et nouveau mot de passe
+     * @return message de succès
+     */
     @PutMapping("/changer-mot-de-passe")
     public ResponseEntity<?> changePassword(Principal principal, @RequestBody ChangePasswordRequest dto) {
         if (principal == null) {

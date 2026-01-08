@@ -19,6 +19,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service de gestion des réponses aux formulaires.
+ * Gère la sauvegarde sécurisée, le hachage des identifiants patients et l'export des données.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReponseFormulaireService {
@@ -50,6 +54,14 @@ public class ReponseFormulaireService {
         }
     }
 
+    /**
+     * Sauvegarde les réponses d'un formulaire pour un patient donné.
+     * Vérifie les droits d'accès et l'unicité du patient pour ce formulaire.
+     *
+     * @param request Données des réponses
+     * @param emailMedecin Email de l'utilisateur qui soumet (médecin ou chercheur)
+     * @throws IllegalArgumentException si non autorisé ou patient déjà existant
+     */
     @Transactional
     public void sauvegarderReponses(ReponseFormulaireRequest request, String emailMedecin) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(request.getFormulaireMedecinId())
@@ -137,6 +149,12 @@ public class ReponseFormulaireService {
         );
     }
 
+    /**
+     * Marque un formulaire médecin comme lu.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @param emailMedecin Email du médecin (vérification de sécurité)
+     */
     @Transactional
     public void marquerCommeLu(Long formulaireMedecinId, String emailMedecin) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
@@ -153,11 +171,24 @@ public class ReponseFormulaireService {
         }
     }
 
+    /**
+     * Récupère toutes les réponses d'un formulaire assigné.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @return Liste complète des réponses
+     */
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponses(Long formulaireMedecinId) {
         return reponseFormulaireRepository.findAllWithOptions(formulaireMedecinId);
     }
 
+    /**
+     * Récupère les réponses d'un patient spécifique pour un formulaire.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @param patientIdentifier Identifiant du patient (sera haché pour la recherche)
+     * @return Liste des réponses du patient
+     */
     @Transactional(readOnly = true)
     public List<ReponseFormulaire> getReponsesByPatient(Long formulaireMedecinId, String patientIdentifier) {
         String patientIdentifierHash = hashPatientIdentifier(patientIdentifier);
@@ -168,6 +199,12 @@ public class ReponseFormulaireService {
     }
 
 
+    /**
+     * Récupère la liste des identifiants de patients uniques ayant des réponses pour ce formulaire.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @return Liste d'identifiants patients
+     */
     @Transactional(readOnly = true)
     public List<String> getPatientIdentifiers(Long formulaireMedecinId) {
         // Récupérer toutes les réponses pour ce formulaire
@@ -182,6 +219,13 @@ public class ReponseFormulaireService {
                 .toList();
     }
 
+    /**
+     * Supprime toutes les réponses d'un patient donné pour un formulaire.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @param patientIdentifier Identifiant du patient
+     * @param emailMedecin Email du médecin demandeur (sécurité)
+     */
     @Transactional
     public void supprimerReponsesPatient(Long formulaireMedecinId, String patientIdentifier, String emailMedecin) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)

@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Contrôleur REST pour la gestion des formulaires.
+ * Permet aux chercheurs de créer, modifier, lister et supprimer des formulaires.
+ */
 @RestController
 @RequestMapping("/api/formulaires")
 @RequiredArgsConstructor
