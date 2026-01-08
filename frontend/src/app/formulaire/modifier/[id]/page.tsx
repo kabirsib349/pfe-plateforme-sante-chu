@@ -7,17 +7,18 @@ import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
 import { getFormulaireById, updateFormulaire } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
-import { 
-  ArrowLeftIcon, 
-  CheckIcon, 
-  PlusIcon, 
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  PlusIcon,
   DocumentTextIcon,
   DocumentIcon,
   HashtagIcon,
   CalendarDaysIcon,
   QuestionMarkCircleIcon,
   ClipboardDocumentListIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  SparklesIcon
 } from "@heroicons/react/24/outline";
 import Question, { ChampFormulaire, TypeChamp } from "@/src/components/form-builder/Question";
 import { ToastContainer } from "@/src/components/ToastContainer";
@@ -62,7 +63,7 @@ export default function ModifierFormulaire() {
         setNomFormulaire(data.titre);
         setDescription(data.description || '');
         setTitreEtude(data.etude.titre);
-        
+
         // Convertir les champs de l'API vers le format du composant
         const champsConverts: ChampFormulaire[] = data.champs.map((champ, index) => ({
           id: champ.idChamp?.toString() || index.toString(),
@@ -78,7 +79,7 @@ export default function ModifierFormulaire() {
           valeurMax: champ.valeurMax,
           unite: champ.unite || '',
         }));
-        
+
         setChamps(champsConverts);
       } catch (error) {
         const formattedError = handleError(error, 'FetchFormulaire');
@@ -132,7 +133,7 @@ export default function ModifierFormulaire() {
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    
+
     if (!draggedItemId || draggedItemId === targetId) return;
 
     const draggedIndex = champs.findIndex(c => c.id === draggedItemId);
@@ -185,7 +186,7 @@ export default function ModifierFormulaire() {
 
     try {
       await updateFormulaire(token!, parseInt(formulaireId), payload);
-      
+
       const message = statut === 'BROUILLON'
         ? 'Formulaire modifié et sauvegardé comme brouillon !'
         : 'Formulaire modifié et publié avec succès !';
@@ -277,61 +278,61 @@ export default function ModifierFormulaire() {
           {modeAjout && (
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-6 border border-blue-200">
               <h3 className="font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                <span className="text-lg">✨</span>
+                <SparklesIcon className="w-6 h-6 text-blue-600" />
                 Choisissez le type de question :
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <button 
-                    onClick={() => ajouterChamp('texte')} 
-                    className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
-                  >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                          <DocumentTextIcon className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="font-semibold text-gray-900">Texte</div>
-                      </div>
-                      <div className="text-xs text-gray-600">Réponse courte ou longue</div>
-                  </button>
-                  <button 
-                    onClick={() => ajouterChamp('nombre')} 
-                    className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
-                  >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                          <HashtagIcon className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div className="font-semibold text-gray-900">Nombre</div>
-                      </div>
-                      <div className="text-xs text-gray-600">Valeur numérique avec limites</div>
-                  </button>
-                  <button 
-                    onClick={() => ajouterChamp('date')} 
-                    className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
-                  >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-                          <CalendarDaysIcon className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div className="font-semibold text-gray-900">Date</div>
-                      </div>
-                      <div className="text-xs text-gray-600">Sélecteur de date</div>
-                  </button>
-                  <button 
-                    onClick={() => ajouterChamp('choix_multiple')} 
-                    className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-orange-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
-                  >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
-                          <CheckCircleIcon className="w-5 h-5 text-orange-600" />
-                        </div>
-                        <div className="font-semibold text-gray-900">Choix Multiple</div>
-                      </div>
-                      <div className="text-xs text-gray-600">Liste d'options prédéfinies</div>
-                  </button>
+                <button
+                  onClick={() => ajouterChamp('texte')}
+                  className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                      <DocumentTextIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="font-semibold text-gray-900">Texte</div>
+                  </div>
+                  <div className="text-xs text-gray-600">Réponse courte ou longue</div>
+                </button>
+                <button
+                  onClick={() => ajouterChamp('nombre')}
+                  className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                      <HashtagIcon className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div className="font-semibold text-gray-900">Nombre</div>
+                  </div>
+                  <div className="text-xs text-gray-600">Valeur numérique avec limites</div>
+                </button>
+                <button
+                  onClick={() => ajouterChamp('date')}
+                  className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                      <CalendarDaysIcon className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="font-semibold text-gray-900">Date</div>
+                  </div>
+                  <div className="text-xs text-gray-600">Sélecteur de date</div>
+                </button>
+                <button
+                  onClick={() => ajouterChamp('choix_multiple')}
+                  className="group p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-orange-400 hover:shadow-md text-left transition-all duration-200 transform hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                      <CheckCircleIcon className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div className="font-semibold text-gray-900">Choix Multiple</div>
+                  </div>
+                  <div className="text-xs text-gray-600">Liste d'options prédéfinies</div>
+                </button>
               </div>
               <div className="mt-4 text-center">
-                <button 
+                <button
                   onClick={() => setModeAjout(false)}
                   className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >

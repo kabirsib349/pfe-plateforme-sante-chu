@@ -24,10 +24,10 @@ export default function Login() {
         try {
             const response = await apiLogin({ email, password });
             await login(response.token);
-            
+
             // Récupérer les infos utilisateur après le login
             const userInfo = await getUserInfo(response.token);
-            
+
             // Redirection basée sur le rôle
             if (userInfo.role === Role.MEDECIN) {
                 router.push("/dashboard-medecin");
@@ -112,7 +112,7 @@ export default function Login() {
                             className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span className="flex items-center justify-center gap-2">
-                                {isLoading ? '⏳ Connexion...' : '🔐 Se connecter'}
+                                {isLoading ? 'Connexion en cours...' : 'Se connecter'}
                             </span>
                         </button>
 
