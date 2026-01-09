@@ -14,7 +14,12 @@ La plateforme vise à remplacer les processus manuels ou non sécurisés par une
 ## Fonctionnalités Clés
 
 ### Pour les Chercheurs
-*   Création et personnalisation de formulaires d'étude (questions types, logique conditionnelle).
+*   **Création de formulaires avancés** :
+    *   Types de champs : Texte, Nombre, Date, Choix unique, Choix multiple, Champs calculés
+    *   **Validation des champs numériques** : Définition de valeurs min/max (supporte les valeurs négatives pour température, acuité visuelle, etc.)
+    *   **Contraintes de dates** : Définition de plages de dates acceptables (dateMin/dateMax)
+    *   Validation automatique des noms de variables (unicité, format)
+    *   Gestion de thèmes médicaux prédéfinis et questions personnalisées
 *   Envoi de formulaires aux médecins collaborateurs.
 *   Tableau de bord de suivi de la collecte (taux de réponse, progression).
 *   Exportation des données collectées (format CSV sécurisé).
