@@ -3,9 +3,11 @@ import { RocketLaunchIcon, PlusIcon, CheckCircleIcon } from '@heroicons/react/24
 import { themesMedicaux, ThemeMedical } from '@/src/constants/themes';
 
 interface ThemeSelectorProps {
+    themes: ThemeMedical[];
     rechercheTheme: string;
     onRechercheChange: (value: string) => void;
     onThemeSelect: (theme: ThemeMedical) => void;
+    onCustomizeTheme: (theme: ThemeMedical) => void;
     champsCount: number;
 }
 
@@ -13,12 +15,14 @@ interface ThemeSelectorProps {
  * Component for selecting and adding medical themes to a form
  */
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
+    themes,
     rechercheTheme,
     onRechercheChange,
     onThemeSelect,
+    onCustomizeTheme,
     champsCount
 }) => {
-    const filteredThemes = themesMedicaux.filter(theme =>
+    const filteredThemes = themes.filter(theme =>
         theme.nom.toLowerCase().includes(rechercheTheme.toLowerCase()) ||
         theme.description.toLowerCase().includes(rechercheTheme.toLowerCase())
     );
@@ -36,9 +40,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                         <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
                     </svg>
                     <span>
-                        <strong>Astuce :</strong> Cliquez sur les thèmes pour ajouter progressivement les questions à votre formulaire.
-                        Si vous ajoutez un mauvais thème, utilisez le bouton <strong>&quot;Annuler&quot;</strong> pour revenir en arrière,
-                        ou <strong>&quot;Tout supprimer&quot;</strong> pour recommencer.
+                        <strong>Astuce :</strong> Cliquez sur une carte pour ajouter toutes ses questions.
+                        Cliquez sur <strong>"Personnaliser"</strong> pour ajouter vos propres questions à un thème.
                     </span>
                 </div>
             </div>
@@ -74,7 +77,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 {filteredThemes.map((theme, index) => (
                     <div
                         key={index}
-                        className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer transform hover:scale-105 active:scale-95"
+                        className="group relative border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer transform hover:scale-105 active:scale-95"
                         onClick={() => onThemeSelect(theme)}
                     >
                         <div className="text-center">
@@ -88,6 +91,20 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                                 <span>+{theme.champs.length} questions</span>
                             </div>
                         </div>
+
+                        {/* Customize Button */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCustomizeTheme(theme);
+                            }}
+                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Ajouter une question personnalisée à ce thème"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                        </button>
                     </div>
                 ))}
             </div>

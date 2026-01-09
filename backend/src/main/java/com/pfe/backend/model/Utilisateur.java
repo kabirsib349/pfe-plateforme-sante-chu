@@ -35,6 +35,7 @@ public class Utilisateur {
     private String email;
 
     @Column(name="mot_de_passe",nullable=false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String motDePasse;
 
     @Column(name="date_creation",updatable=false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")

@@ -14,6 +14,7 @@ import type {
     UserUpdateRequest,
     ChangePasswordRequest,
     ApiError,
+    QuestionPersonnalisee,
 } from '@/src/types';
 
 /**
@@ -364,4 +365,33 @@ export async function countMessagesNonLusMedecin(token: string, medecinId: numbe
     });
 
     return handleResponse<number>(response);
+}
+
+// ============= CUSTOM QUESTIONS API =============
+
+export async function getCustomQuestions(token: string): Promise<QuestionPersonnalisee[]> {
+    const response = await fetch(apiUrl('/api/questions-perso'), {
+        headers: createHeaders(token),
+    });
+
+    return handleResponse<QuestionPersonnalisee[]>(response);
+}
+
+export async function addCustomQuestion(token: string, question: QuestionPersonnalisee): Promise<QuestionPersonnalisee> {
+    const response = await fetch(apiUrl('/api/questions-perso'), {
+        method: 'POST',
+        headers: createHeaders(token),
+        body: JSON.stringify(question),
+    });
+
+    return handleResponse<QuestionPersonnalisee>(response);
+}
+
+export async function deleteCustomQuestion(token: string, id: number): Promise<void> {
+    const response = await fetch(apiUrl(`/api/questions-perso/${id}`), {
+        method: 'DELETE',
+        headers: createHeaders(token),
+    });
+
+    await handleResponse<void>(response);
 }

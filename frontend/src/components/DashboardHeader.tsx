@@ -3,14 +3,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/src/hooks/useAuth';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  ArrowLeftOnRectangleIcon, 
-  BeakerIcon, 
-  HeartIcon, 
-  ChevronDownIcon, 
-  UserCircleIcon, 
+import {
+  ArrowLeftOnRectangleIcon,
+  BeakerIcon,
+  HeartIcon,
+  ChevronDownIcon,
+  UserCircleIcon,
   Cog6ToothIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+  Squares2X2Icon
 } from '@heroicons/react/24/outline';
 
 const DashboardHeader = () => {
@@ -55,23 +58,23 @@ const DashboardHeader = () => {
               <nav className="flex items-center gap-2">
                 <button
                   onClick={() => router.push('/dashboard-chercheur')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    pathname === '/dashboard-chercheur'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border shadow-sm transition-all flex items-center gap-2 ${pathname === '/dashboard-chercheur'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-500/20'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'
+                    }`}
                 >
-                  Dashboard
+                  <ChartBarIcon className="w-5 h-5" />
+                  <span>Tableau de bord</span>
                 </button>
                 <button
                   onClick={() => router.push('/formulaire')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    pathname.startsWith('/formulaire')
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 text-sm font-semibold rounded-lg border shadow-sm transition-all flex items-center gap-2 ${pathname.startsWith('/formulaire')
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-500/20'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'
+                    }`}
                 >
-                  Formulaires
+                  <ClipboardDocumentListIcon className="w-5 h-5" />
+                  <span>Mes Formulaires</span>
                 </button>
               </nav>
             )}
@@ -81,13 +84,13 @@ const DashboardHeader = () => {
               <nav className="flex items-center gap-2">
                 <button
                   onClick={() => router.push('/dashboard-medecin')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    pathname === '/dashboard-medecin'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 text-sm font-bold rounded-lg border shadow-sm transition-all flex items-center gap-2 ${pathname === '/dashboard-medecin'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-500/20'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'
+                    }`}
                 >
-                  Dashboard
+                  <Squares2X2Icon className="w-5 h-5" />
+                  <span>Tableau de bord</span>
                 </button>
               </nav>
             )}
@@ -126,11 +129,11 @@ const DashboardHeader = () => {
               {isMenuOpen && (
                 <>
                   {/* Overlay pour fermer le menu */}
-                  <div 
-                    className="fixed inset-0 z-10" 
+                  <div
+                    className="fixed inset-0 z-10"
                     onClick={() => setIsMenuOpen(false)}
                   />
-                  
+
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-20">
                     {/* Info utilisateur */}
                     <div className="px-4 py-3 border-b border-gray-100">
@@ -146,26 +149,26 @@ const DashboardHeader = () => {
                     </div>
 
                     {/* Menu items */}
-                    <div className="py-2">
+                    <div className="py-2 px-2 space-y-1">
                       <button
                         onClick={() => {
                           router.push('/parametres');
                           setIsMenuOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors group"
                       >
-                        <Cog6ToothIcon className="w-5 h-5 text-gray-400" />
+                        <Cog6ToothIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                         <span>Paramètres du compte</span>
                       </button>
-                      
+
                       <button
                         onClick={() => {
                           router.push(getDashboardPath());
                           setIsMenuOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors group"
                       >
-                        <UserCircleIcon className="w-5 h-5 text-gray-400" />
+                        <UserCircleIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                         <span>Mon profil</span>
                       </button>
                     </div>
@@ -190,7 +193,7 @@ const DashboardHeader = () => {
           </div>
         </div>
       </div>
-    </header>
+    </header >
   );
 };
 

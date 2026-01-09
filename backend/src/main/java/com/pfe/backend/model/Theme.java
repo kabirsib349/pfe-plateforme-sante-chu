@@ -6,9 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import java.util.ArrayList;
-import java.util.List;
+
 
 @Entity
 public class Theme {
@@ -21,11 +19,7 @@ public class Theme {
 
     private String description;
 
-    // Un thème a plusieurs questions.
-    // CascadeType.ALL: Si on supprime un thème, toutes ses questions sont supprimées.
-    // FetchType.EAGER: Charge les questions en même temps que le thème.
-    @OneToMany(mappedBy = "theme", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    private List<QuestionTheme> questions = new ArrayList<>();
+    // Relationship with QuestionTheme removed as we use frontend hardcoded themes + QuestionPersonnalisee
 
     // --- Getters and Setters ---
 
@@ -53,11 +47,5 @@ public class Theme {
         this.description = description;
     }
 
-    public List<QuestionTheme> getQuestions() {
-        return questions;
-    }
 
-    public void setQuestions(List<QuestionTheme> questions) {
-        this.questions = questions;
-    }
 }

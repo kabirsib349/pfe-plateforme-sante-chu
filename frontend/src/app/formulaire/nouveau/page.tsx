@@ -34,6 +34,8 @@ import { ChampRequest } from "@/src/types";
 import { ThemeSelector } from "@/src/components/formulaire/ThemeSelector";
 import { QuestionTypeSelector } from "@/src/components/formulaire/QuestionTypeSelector";
 import { DeleteConfirmationModal } from "@/src/components/formulaire/DeleteConfirmationModal";
+import { AddCustomQuestionModal } from "@/src/components/formulaire/AddCustomQuestionModal";
+import { useThemes } from "@/src/hooks/useThemes";
 
 export default function NouveauFormulaire() {
   const router = useRouter();
@@ -51,6 +53,16 @@ export default function NouveauFormulaire() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [rechercheTheme, setRechercheTheme] = useState('');
   const [nouveauxChampsIds, setNouveauxChampsIds] = useState<string[]>([]);
+
+  // Custom Themes Logic
+  const { themes, addQuestion, customQuestions, deleteQuestion } = useThemes();
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [themeToCustomize, setThemeToCustomize] = useState<ThemeMedical | null>(null);
+
+  const handleCustomizeTheme = (theme: ThemeMedical) => {
+    setThemeToCustomize(theme);
+    setIsCustomModalOpen(true);
+  };
 
   const ajouterTheme = (theme: ThemeMedical) => {
     // Sauvegarder l'état actuel dans l'historique
@@ -310,10 +322,21 @@ export default function NouveauFormulaire() {
 
         <div className="max-w-4xl mx-auto p-6 space-y-6" onClick={(e) => e.stopPropagation()}>
           <ThemeSelector
+            themes={themes}
             rechercheTheme={rechercheTheme}
             onRechercheChange={setRechercheTheme}
             onThemeSelect={ajouterTheme}
+            onCustomizeTheme={handleCustomizeTheme}
             champsCount={champs.length}
+          />
+
+          <AddCustomQuestionModal
+            isOpen={isCustomModalOpen}
+            onClose={() => setIsCustomModalOpen(false)}
+            onSave={addQuestion}
+            theme={themeToCustomize}
+            existingQuestions={customQuestions}
+            onDelete={deleteQuestion}
           />
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
