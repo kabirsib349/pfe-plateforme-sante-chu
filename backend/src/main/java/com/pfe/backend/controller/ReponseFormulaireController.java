@@ -42,8 +42,9 @@ public class ReponseFormulaireController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Void> sauvegarderReponses(
             @RequestBody ReponseFormulaireRequest request,
+            @RequestParam(defaultValue = "false") boolean brouillon,
             Principal principal) {
-        reponseFormulaireService.sauvegarderReponses(request, principal.getName());
+        reponseFormulaireService.sauvegarderReponses(request, principal.getName(), brouillon);
         return ResponseEntity.ok().build();
     }
 
@@ -92,6 +93,35 @@ public class ReponseFormulaireController {
         );
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{formulaireMedecinId}/statistiques")
+    @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
+    public ResponseEntity<com.pfe.backend.dto.StatistiqueFormulaireDto> getStatistiques(
+            @PathVariable Long formulaireMedecinId) {
+        com.pfe.backend.dto.StatistiqueFormulaireDto stats = reponseFormulaireService.getStatistiques(formulaireMedecinId);
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/{formulaireMedecinId}/drafts")
+    @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
+    public ResponseEntity<List<Map<String, Object>>> getAllDrafts(
+            @PathVariable Long formulaireMedecinId) {
+        List<Map<String, Object>> drafts = reponseFormulaireService.getAllDraftsForFormulaire(formulaireMedecinId);
+        return ResponseEntity.ok(drafts);
+    }
+
+    @GetMapping("/{formulaireMedecinId}/draft/{patientIdentifier}")
+    @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
+    public ResponseEntity<Map<String, Object>> getDraftForPatient(
+            @PathVariable Long formulaireMedecinId,
+            @PathVariable String patientIdentifier) {
+        Map<String, Object> draft = reponseFormulaireService.getDraftForPatient(formulaireMedecinId, patientIdentifier);
+        if (draft == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(draft);
+    }
+
 
     /**
      * Exporte les données d'un formulaire au format CSV.

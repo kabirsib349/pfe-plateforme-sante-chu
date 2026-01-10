@@ -17,6 +17,12 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
             Long formulaireMedecinId,
             String patientIdentifierHash
     );
+
+    List<ReponseFormulaire> findByFormulaireMedecinIdAndPatientIdentifierHashAndDraft(
+            Long formulaireMedecinId,
+            String patientIdentifierHash,
+            boolean draft
+    );
     
     // La méthode findDistinctPatientIdentifiersByFormulaireMedecinId a été supprimée
     // car une requête DISTINCT n'est pas possible sur une colonne chiffrée.
@@ -38,6 +44,7 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
        LEFT JOIN FETCH c.listeValeur lv
        LEFT JOIN FETCH lv.options o
        WHERE r.formulaireMedecin.id = :id
+       AND (r.draft = false OR r.draft IS NULL)
        """)
     List<ReponseFormulaire> findAllWithOptions(@Param("id") Long formulaireMedecinId);
 
@@ -48,5 +55,20 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
        WHERE r.formulaireMedecin.formulaire.id = :formulaireId
        """)
     List<ReponseFormulaire> findByFormulaireIdWithChamp(@Param("formulaireId") Long formulaireId);
+
+    // Compter le nombre de patients distincts ayant des réponses pour un formulaire
+    @Query("SELECT COUNT(DISTINCT r.patientIdentifierHash) FROM ReponseFormulaire r " +
+           "WHERE r.formulaireMedecin.id = :formulaireMedecinId")
+    long countDistinctPatients(@Param("formulaireMedecinId") Long formulaireMedecinId);
+
+    // Récupérer les hashes de patients distincts
+    @Query("SELECT DISTINCT r.patientIdentifierHash FROM ReponseFormulaire r " +
+           "WHERE r.formulaireMedecin.id = :formulaireMedecinId")
+    List<String> findDistinctPatientHashes(@Param("formulaireMedecinId") Long formulaireMedecinId);
+
+    // Récupérer les hashes de patients distincts (brouillons uniquement)
+    @Query("SELECT DISTINCT r.patientIdentifierHash FROM ReponseFormulaire r " +
+           "WHERE r.formulaireMedecin.id = :formulaireMedecinId AND r.draft = true")
+    List<String> findDistinctDraftPatientHashes(@Param("formulaireMedecinId") Long formulaireMedecinId);
 }
 

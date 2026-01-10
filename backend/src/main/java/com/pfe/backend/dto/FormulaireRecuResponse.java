@@ -18,6 +18,7 @@ public class FormulaireRecuResponse {
     private String statut;
     private boolean lu;
     private boolean complete;
+    private int nombreBrouillons;
 
     @Getter
     @Setter

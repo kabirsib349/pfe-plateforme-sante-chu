@@ -42,6 +42,7 @@ public class FormulaireController {
 
     private final FormulaireService formulaireService;
     private final FormulaireMedecinService formulaireMedecinService;
+    private final com.pfe.backend.service.ReponseFormulaireService reponseFormulaireService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -86,7 +87,11 @@ public class FormulaireController {
     public ResponseEntity<List<FormulaireRecuResponse>> getFormulairesRecus(Principal principal) {
         List<FormulaireMedecin> formulairesRecus = formulaireMedecinService.getFormulairesRecus(principal.getName());
         List<FormulaireRecuResponse> response = formulairesRecus.stream()
-                .map(FormulaireRecuResponse::fromEntity)
+                .map(fm -> {
+                    FormulaireRecuResponse dto = FormulaireRecuResponse.fromEntity(fm);
+                    dto.setNombreBrouillons(reponseFormulaireService.countDrafts(fm.getId()));
+                    return dto;
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }

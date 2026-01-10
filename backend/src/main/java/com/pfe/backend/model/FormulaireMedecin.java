@@ -69,7 +69,9 @@ public class FormulaireMedecin {
     @PrePersist
     public void onCreate(){
         dateEnvoi = LocalDateTime.now();
-        statut = StatutFormulaire.PUBLIE;
+        statut = StatutFormulaire.BROUILLON;  // Changement : BROUILLON au lieu de PUBLIE
+        complete = false;  // Initialiser à false
     }
+
 
 }

@@ -56,5 +56,8 @@ public class ReponseFormulaire {
     protected void onCreate() {
         dateSaisie = LocalDateTime.now();
     }
+    
+    @Column(name = "is_draft")
+    private Boolean draft = false;
 }
 

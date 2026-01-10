@@ -5,6 +5,7 @@ import com.pfe.backend.exception.ResourceNotFoundException;
 import com.pfe.backend.model.Champ;
 import com.pfe.backend.model.FormulaireMedecin;
 import com.pfe.backend.model.ReponseFormulaire;
+import com.pfe.backend.model.StatutFormulaire;
 import com.pfe.backend.repository.ChampRepository;
 import com.pfe.backend.repository.FormulaireMedecinRepository;
 import com.pfe.backend.repository.ReponseFormulaireRepository;
@@ -60,10 +61,11 @@ public class ReponseFormulaireService {
      *
      * @param request Données des réponses
      * @param emailMedecin Email de l'utilisateur qui soumet (médecin ou chercheur)
+     * @param enBrouillon true pour sauvegarder en brouillon, false pour soumission finale
      * @throws IllegalArgumentException si non autorisé ou patient déjà existant
      */
     @Transactional
-    public void sauvegarderReponses(ReponseFormulaireRequest request, String emailMedecin) {
+    public void sauvegarderReponses(ReponseFormulaireRequest request, String emailMedecin, boolean enBrouillon) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(request.getFormulaireMedecinId())
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
 
@@ -82,22 +84,53 @@ public class ReponseFormulaireService {
         }
 
         String patientIdentifierHash = hashPatientIdentifier(request.getPatientIdentifier());
-        List<ReponseFormulaire> reponsesExistantes = reponseFormulaireRepository
-                .findByFormulaireMedecinIdAndPatientIdentifierHash(
-                        request.getFormulaireMedecinId(),
-                        patientIdentifierHash
-                );
+        
+        // Vérifier l'unicité du patient seulement lors de la soumission finale
+        if (!enBrouillon) {
+            List<ReponseFormulaire> reponsesFinalesExistantes = reponseFormulaireRepository
+                    .findByFormulaireMedecinIdAndPatientIdentifierHashAndDraft(
+                            request.getFormulaireMedecinId(),
+                            patientIdentifierHash,
+                            false
+                    );
 
-        if (!reponsesExistantes.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Le patient '" + request.getPatientIdentifier() +
-                            "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
-            );
+            if (!reponsesFinalesExistantes.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Le patient '" + request.getPatientIdentifier() +
+                                "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
+                );
+            }
         }
 
+        // Supprimer les anciennes réponses (Brouillon ou anciennes) avant de sauvegarder
+        reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
+                request.getFormulaireMedecinId(),
+                patientIdentifierHash
+        );
+
         // Sauvegarder les nouvelles réponses avec l'identifiant patient
-        if (request.getReponses() == null || request.getReponses().isEmpty()) {
+        // En mode brouillon, on permet de sauvegarder même sans réponses (juste pour marquer le formulaire comme commencé)
+        if (!enBrouillon && (request.getReponses() == null || request.getReponses().isEmpty())) {
             throw new IllegalArgumentException("Aucune réponse fournie");
+        }
+        
+        // Si pas de réponses en mode brouillon, on met juste à jour le statut
+        if (request.getReponses() == null || request.getReponses().isEmpty()) {
+            // Mettre à jour le statut du formulaire
+            formulaireMedecin.setStatut(StatutFormulaire.BROUILLON);
+            formulaireMedecin.setComplete(false);
+            formulaireMedecin.setDateCompletion(null);
+            formulaireMedecinRepository.save(formulaireMedecin);
+            
+            activiteService.enregistrerActivite(
+                    emailMedecin,
+                    "Formulaire sauvegardé en brouillon",
+                    "Formulaire",
+                    formulaireMedecin.getFormulaire().getIdFormulaire(),
+                    "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() +
+                            "' sauvegardé en brouillon pour le patient: " + request.getPatientIdentifier()
+            );
+            return;
         }
 
         for (Map.Entry<?, ?> rawEntry : request.getReponses().entrySet()) {
@@ -123,14 +156,23 @@ public class ReponseFormulaireService {
                 reponse.setChamp(champ);
                 reponse.setValeur(valeur);
                 reponse.setPatientIdentifier(request.getPatientIdentifier());
-                reponse.setPatientIdentifierHash(patientIdentifierHash); // Sauvegarde du hash
+                reponse.setPatientIdentifierHash(patientIdentifierHash);
+                reponse.setDraft(enBrouillon);
 
                 reponseFormulaireRepository.save(reponse);
             }
         }
 
-        formulaireMedecin.setComplete(true);
-        formulaireMedecin.setDateCompletion(LocalDateTime.now());
+        // Mettre à jour le statut selon le mode
+        if (enBrouillon) {
+            formulaireMedecin.setStatut(StatutFormulaire.BROUILLON);
+            formulaireMedecin.setComplete(false);
+            formulaireMedecin.setDateCompletion(null);
+        } else {
+            formulaireMedecin.setStatut(StatutFormulaire.PUBLIE);
+            formulaireMedecin.setComplete(true);
+            formulaireMedecin.setDateCompletion(LocalDateTime.now());
+        }
 
         // Démasquer pour le chercheur si c'était masqué (pour qu'il voie les nouvelles réponses)
         if (formulaireMedecin.isMasquePourChercheur()) {
@@ -139,13 +181,15 @@ public class ReponseFormulaireService {
 
         formulaireMedecinRepository.save(formulaireMedecin);
 
+        String action = enBrouillon ? "Formulaire sauvegardé en brouillon" : "Formulaire rempli";
         activiteService.enregistrerActivite(
                 emailMedecin,
-                "Formulaire rempli",
+                action,
                 "Formulaire",
                 formulaireMedecin.getFormulaire().getIdFormulaire(),
                 "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() +
-                        "' rempli pour le patient: " + request.getPatientIdentifier()
+                        "' " + (enBrouillon ? "sauvegardé en brouillon" : "rempli") + 
+                        " pour le patient: " + request.getPatientIdentifier()
         );
     }
 
@@ -198,6 +242,78 @@ public class ReponseFormulaireService {
         );
     }
 
+    /**
+     * Récupère tous les brouillons pour un FormulaireMedecin.
+     * Retourne une liste de résumés de brouillons (un par patient).
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @return Liste des brouillons avec informations patient
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllDraftsForFormulaire(Long formulaireMedecinId) {
+        FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+        
+        // Récupérer tous les patients distincts ayant des réponses (brouillons uniquement)
+        List<String> patientHashes = reponseFormulaireRepository
+                .findDistinctDraftPatientHashes(formulaireMedecinId);
+        
+        List<Map<String, Object>> drafts = new java.util.ArrayList<>();
+        
+        for (String hash : patientHashes) {
+            List<ReponseFormulaire> reponses = reponseFormulaireRepository
+                    .findByFormulaireMedecinIdAndPatientIdentifierHash(formulaireMedecinId, hash);
+            
+            if (!reponses.isEmpty()) {
+                ReponseFormulaire firstReponse = reponses.get(0);
+                Map<String, Object> draft = new java.util.HashMap<>();
+                draft.put("patientIdentifier", firstReponse.getPatientIdentifier());
+                draft.put("patientHash", hash);
+                draft.put("nombreReponses", reponses.size());
+                draft.put("derniereModification", firstReponse.getDateSaisie());
+                drafts.add(draft);
+            }
+        }
+        
+        return drafts;
+    }
+
+    /**
+     * Récupère le brouillon d'un patient spécifique pour un FormulaireMedecin.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @param patientIdentifier Identifiant du patient
+     * @return Map avec patientIdentifier et liste des réponses, ou null si pas de brouillon
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getDraftForPatient(Long formulaireMedecinId, String patientIdentifier) {
+        String patientHash = hashPatientIdentifier(patientIdentifier);
+        
+        List<ReponseFormulaire> reponses = reponseFormulaireRepository
+                .findByFormulaireMedecinIdAndPatientIdentifierHashAndDraft(formulaireMedecinId, patientHash, true);
+        
+        if (reponses.isEmpty()) {
+            return null;
+        }
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("patientIdentifier", patientIdentifier);
+        result.put("reponses", reponses);
+        
+        return result;
+    }
+
+    /**
+     * Compte le nombre de brouillons (patients uniques) pour un formulaire.
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @return Nombre de brouillons
+     */
+    @Transactional(readOnly = true)
+    public int countDrafts(Long formulaireMedecinId) {
+        return reponseFormulaireRepository.findDistinctDraftPatientHashes(formulaireMedecinId).size();
+    }
+
 
     /**
      * Récupère la liste des identifiants de patients uniques ayant des réponses pour ce formulaire.
@@ -240,6 +356,27 @@ public class ReponseFormulaireService {
                 formulaireMedecinId,
                 patientIdentifierHash
         );
+    }
+
+    /**
+     * Récupère les statistiques d'un formulaire médecin.
+     * 
+     * @param formulaireMedecinId ID de l'assignation
+     * @return DTO avec le nombre de réponses complètes et en cours
+     */
+    @Transactional(readOnly = true)
+    public com.pfe.backend.dto.StatistiqueFormulaireDto getStatistiques(Long formulaireMedecinId) {
+        FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+        
+        // Compter le nombre total de patients distincts
+        long nombreTotal = reponseFormulaireRepository.countDistinctPatients(formulaireMedecinId);
+        
+        // Si le formulaire est complété, toutes les réponses sont soumises
+        long nombreCompletes = fm.isComplete() ? nombreTotal : 0;
+        long nombreEnCours = fm.isComplete() ? 0 : nombreTotal;
+        
+        return new com.pfe.backend.dto.StatistiqueFormulaireDto(nombreCompletes, nombreEnCours);
     }
 }
 
