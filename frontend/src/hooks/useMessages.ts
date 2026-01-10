@@ -18,11 +18,23 @@ export interface UseMessagesReturn {
     unreadCounts: Record<number, number>;
     loading: boolean;
     error: string | null;
+    /**
+     * Sélectionne un contact et charge la conversation.
+     * Marque automatiquement les messages comme lus.
+     */
     selectContact: (contact: User) => void;
     sendMessage: (content: string) => Promise<void>;
     refreshMessages: () => Promise<void>;
 }
 
+/**
+ * Hook de gestion de la messagerie instantanée.
+ * Centralise la récupération des contacts, des messages, et l'envoi.
+ * Gère le polling automatique pour les nouveaux messages.
+ * 
+ * @param userType Type de l'utilisateur connecté ('chercheur' ou 'medecin')
+ * @param onMessagesRead Callback optionnel appelé quand des messages sont marqués comme lus
+ */
 export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: () => void): UseMessagesReturn => {
     const { user, token } = useAuth();
     const [contacts, setContacts] = useState<User[]>([]);
@@ -49,6 +61,8 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
         loadContacts();
     }, [token, userType]);
 
+    // -- POLLING --
+
     // Compter les non-lus
     useEffect(() => {
         if (!user?.id || !token || contacts.length === 0) return;
@@ -69,7 +83,12 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
         loadUnreadCounts();
     }, [contacts, user, token]);
 
-    // Charger conversation et marquer comme lu
+    // -- API CALLS --
+
+    /**
+     * Charge la conversation entre l'utilisateur actuel et le contact sélectionné.
+     * Marque les messages de cette conversation comme lus pour l'utilisateur actuel.
+     */
     const loadMessages = useCallback(async () => {
         if (!selectedContact || !user?.id || !token) return;
 

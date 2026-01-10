@@ -9,6 +9,13 @@ export type ChampBuilder = Champ & {
     id: string; // On force la présence d'un ID (souvent généré temporairement)
 };
 
+/**
+ * Hook personnalisé pour gérer la logique de construction de formulaire.
+ * Gère l'état des champs, l'historique (undo), le drag & drop et la validation.
+ * Agnostique de l'opération API (Création ou Mise à jour).
+ * 
+ * @param initialChamps Liste initiale des champs (pour l'édition)
+ */
 export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
     const [champs, setChamps] = useState<ChampBuilder[]>(initialChamps);
     const [activeChampId, setActiveChampId] = useState<string | null>(null);
@@ -17,6 +24,10 @@ export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
 
     // -- BASIC ACTIONS --
 
+    /**
+     * Ajoute un nouveau champ au formulaire.
+     * @param type Le type de champ à ajouter (TEXTE, NOMBRE, DATE, etc.)
+     */
     const ajouterChamp = useCallback((type: TypeChamp) => {
         const nouveauChamp: ChampBuilder = {
             id: Date.now().toString(),
@@ -63,6 +74,12 @@ export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
 
     // -- THEMES --
 
+    /**
+     * Ajoute tous les champs d'un thème médical pré-défini.
+     * Enregistre l'état actuel dans l'historique avant modification.
+     * @param theme Le thème sélectionné
+     * @returns La liste des IDs des nouveaux champs ajoutés (pour l'animation)
+     */
     const ajouterTheme = useCallback((theme: ThemeMedical) => {
         setHistorique(prev => [...prev, champs]); // Save history
 
@@ -104,6 +121,9 @@ export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
 
     // -- DRAG & DROP --
 
+    /**
+     * Commence l'opération de glisser-déposer.
+     */
     const handleDragStart = useCallback((id: string) => {
         setDraggedItemId(id);
     }, []);
@@ -131,6 +151,11 @@ export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
 
     // -- VALIDATION --
 
+    /**
+     * Valide les données du formulaire avant soumission.
+     * @param titreEtude Le titre de l'étude (obligatoire)
+     * @returns Liste des messages d'erreur (tableau vide si valide)
+     */
     const validateForm = useCallback((titreEtude: string) => {
         const errors: string[] = [];
         if (!titreEtude.trim()) errors.push("Titre de l'étude requis");
