@@ -242,8 +242,16 @@ export async function getPatientIdentifiers(token: string, formulaireMedecinId: 
     return handleResponse<string[]>(response);
 }
 
-export async function submitReponses(token: string, data: ReponseFormulaireRequest): Promise<void> {
-    const response = await fetch(apiUrl('/api/reponses'), {
+export async function submitReponses(
+    token: string,
+    data: ReponseFormulaireRequest,
+    brouillon: boolean = false
+): Promise<void> {
+    const url = brouillon
+        ? apiUrl('/api/reponses?brouillon=true')
+        : apiUrl('/api/reponses?brouillon=false');
+
+    const response = await fetch(url, {
         method: 'POST',
         headers: createHeaders(token),
         body: JSON.stringify(data),
@@ -259,6 +267,53 @@ export async function marquerCommeLu(token: string, formulaireMedecinId: number)
     });
 
     await handleResponse<void>(response);
+}
+
+export async function getStatistiquesFormulaire(
+    token: string,
+    formulaireMedecinId: number
+): Promise<import('@/src/types').StatistiqueFormulaire> {
+    const response = await fetch(
+        apiUrl(`/api/reponses/${formulaireMedecinId}/statistiques`),
+        {
+            headers: createHeaders(token),
+        }
+    );
+
+    return handleResponse<import('@/src/types').StatistiqueFormulaire>(response);
+}
+
+export async function getAllDraftsFormulaire(
+    token: string,
+    formulaireMedecinId: number
+): Promise<import('@/src/types').DraftSummary[]> {
+    const response = await fetch(
+        apiUrl(`/api/reponses/${formulaireMedecinId}/drafts`),
+        {
+            headers: createHeaders(token),
+        }
+    );
+
+    return handleResponse<import('@/src/types').DraftSummary[]>(response);
+}
+
+export async function getDraftForPatient(
+    token: string,
+    formulaireMedecinId: number,
+    patientIdentifier: string
+): Promise<{ patientIdentifier: string; reponses: any[] } | null> {
+    const response = await fetch(
+        apiUrl(`/api/reponses/${formulaireMedecinId}/draft/${encodeURIComponent(patientIdentifier)}`),
+        {
+            headers: createHeaders(token),
+        }
+    );
+
+    if (response.status === 204) {
+        return null; // Pas de brouillon
+    }
+
+    return handleResponse<{ patientIdentifier: string; reponses: any[] }>(response);
 }
 
 // ============= PROFILE API =============

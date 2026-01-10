@@ -1,0 +1,155 @@
+import { User } from './user';
+
+export enum StatutFormulaire {
+    BROUILLON = 'BROUILLON',
+    PUBLIE = 'PUBLIE',
+    ARCHIVE = 'ARCHIVE',
+}
+
+export enum TypeChamp {
+    TEXTE = 'TEXTE',
+    NOMBRE = 'NOMBRE',
+    DATE = 'DATE',
+    CHOIX_MULTIPLE = 'CHOIX_MULTIPLE',
+    CASE_A_COCHER = 'CASE_A_COCHER',
+    CHOIX_UNIQUE = 'CHOIX_UNIQUE',
+    CALCULE = 'CALCULE',
+}
+
+export interface OptionValeur {
+    valeur: string;
+    libelle: string;
+}
+
+export interface ListeValeur {
+    idListeValeur?: number;
+    nom: string;
+    options: OptionValeur[];
+}
+
+export interface Champ {
+    idChamp?: number;
+    label: string;
+    type: TypeChamp | string;
+    obligatoire: boolean;
+    unite?: string;
+    valeurMin?: number;
+    valeurMax?: number;
+    categorie?: string;
+    ordre?: number;
+    listeValeur?: ListeValeur;
+    // Propriété purement frontend pour l'édition
+    options?: OptionValeur[];
+    tempId?: string;
+    // Propriétés pour les questions personnalisées
+    estPerso?: boolean;
+    themeNom?: string;
+    dateMin?: string;
+    dateMax?: string;
+}
+
+export interface QuestionPersonnalisee {
+    id?: number;
+    label: string;
+    type: string;
+    nomVariable: string;
+    options?: string; // JSON string
+    themeNom: string;
+    ordre?: number;
+    dateMin?: string;
+    dateMax?: string;
+}
+
+// Interface "Virtuelle" pour compatibilité Frontend (Shim Backend)
+export interface Etude {
+    titre: string;
+    description?: string;
+}
+
+export interface Formulaire {
+    idFormulaire: number;
+    titre: string;
+    description?: string;
+    statut: StatutFormulaire | string;
+    dateCreation: string;
+    dateModification?: string;
+    chercheur?: User;
+    etude: Etude; // Le Backend renvoie toujours cet objet shim
+    champs: Champ[];
+}
+
+export interface ChampRequest {
+    id?: number;
+    label: string;
+    type: string;
+    obligatoire: boolean;
+    unite?: string;
+    valeurMin?: number;
+    valeurMax?: number;
+    categorie?: string;
+    nomListeValeur?: string;
+    options?: OptionValeur[];
+    dateMin?: string;
+    dateMax?: string;
+}
+
+export interface FormulaireRequest {
+    titre: string;
+    description?: string;
+    statut: string;
+    // Anciens champs, maintenus pour le mapping si nécessaire ou supprimés si le back ne les attend plus
+    // Le backend attend "titreEtude" dans createFormulaire, mais en réalité c'est le titre formulaire
+    titreEtude: string;
+    descriptionEtude?: string;
+    champs: ChampRequest[];
+}
+
+export interface EnvoiFormulaireRequest {
+    emailMedecin: string;
+}
+
+export interface FormulaireMedecin {
+    id: number;
+    formulaire: Formulaire;
+    medecin?: User;
+    chercheur?: User;
+    dateEnvoi: string;
+    statut?: string;
+    lu: boolean;
+    complete: boolean;
+    dateCompletion?: string;
+}
+
+export interface FormulaireRecuResponse {
+    id: number;
+    formulaire: Formulaire;
+    chercheur: User;
+    dateEnvoi: string;
+    statut: string;
+    lu: boolean;
+    complete: boolean;
+    nombreBrouillons?: number;
+}
+
+export interface FormulaireEnvoyeResponse {
+    id: number;
+    formulaire: Formulaire;
+    medecin: User;
+    dateEnvoi: string;
+    lu: boolean;
+    complete: boolean;
+    dateCompletion?: string;
+}
+
+export interface ReponseFormulaire {
+    idReponse: number;
+    valeur: string;
+    dateSaisie: string;
+    champ: Champ;
+}
+
+export interface ReponseFormulaireRequest {
+    formulaireMedecinId: number;
+    patientIdentifier: string;
+    reponses: Record<string, string>; // Map<idChamp, valeur>
+}
