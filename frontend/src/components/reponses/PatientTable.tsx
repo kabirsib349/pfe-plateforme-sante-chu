@@ -112,10 +112,7 @@ export const PatientTable: React.FC<PatientTableProps> = ({
             </div>
 
             {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
-                    <div className="text-sm text-gray-700">
-                        Affichage de {startIndex + 1} à {Math.min(endIndex, patients.length)} sur {patients.length} patient{patients.length > 1 ? 's' : ''}
-                    </div>
+                <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-4">
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => onPageChange(Math.max(1, currentPage - 1))}

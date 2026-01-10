@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useStats } from "@/src/hooks/useStats";
@@ -21,10 +21,18 @@ import {
     SparklesIcon,
     ExclamationCircleIcon
 } from "@heroicons/react/24/outline";
-import { FormulaireRemplirButton } from "@/src/components/formulaires/FormulaireRemplirButton";
+import { FormulaireRemplirButton } from "@/src/components/formulaire/FormulaireRemplirButton";
 import { Formulaire, Champ } from "@/src/types";
 
-export default function Dashboard() {
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement du tableau de bord...</div>}>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+
+function DashboardContent() {
     const router = useRouter();
     const { isAuthenticated, user, isLoading } = useAuth();
     const { stats, isLoading: statsLoading, error: statsError } = useStats();
@@ -127,100 +135,13 @@ export default function Dashboard() {
 
 // --- Composants d'onglets ---
 
-// Aperçu interactif d'un formulaire (preview)
-const FormPreview: React.FC<{ champs: Champ[] }> = ({ champs }) => {
-    if (!champs || champs.length === 0) return <p className="text-gray-500">Aucune question dans ce formulaire</p>;
 
-    return (
-        <form className="space-y-4">
-            {champs.map((champ: Champ, idx: number) => (
-                <div key={champ.idChamp ?? idx} className="p-3 border border-gray-200 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-800">
-                        {idx + 1}. {champ.label}
-                        {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
-                    </label>
-
-                    <div className="mt-2">
-                        {(() => {
-                            const type = (champ.type || '').toLowerCase();
-                            switch (type) {
-                                case 'texte':
-                                    return (
-                                        <input
-                                            type="text"
-                                            placeholder="Réponse"
-                                            className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2"
-                                        />
-                                    );
-                                case 'nombre':
-                                    return (
-                                        <div>
-                                            <input
-                                                type="number"
-                                                min={champ.valeurMin ?? undefined}
-                                                max={champ.valeurMax ?? undefined}
-                                                step="any"
-                                                placeholder="Réponse numérique"
-                                                className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2"
-                                            />
-                                            {((champ.valeurMin !== null && champ.valeurMin !== undefined) || (champ.valeurMax !== null && champ.valeurMax !== undefined) || champ.unite) && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {champ.valeurMin !== null && champ.valeurMin !== undefined && champ.valeurMax !== null && champ.valeurMax !== undefined
-                                                        ? `Entre ${champ.valeurMin} et ${champ.valeurMax}`
-                                                        : champ.valeurMin !== null && champ.valeurMin !== undefined
-                                                            ? `Min: ${champ.valeurMin}`
-                                                            : champ.valeurMax !== null && champ.valeurMax !== undefined
-                                                                ? `Max: ${champ.valeurMax}`
-                                                                : ''}
-                                                    {champ.unite && ` (${champ.unite})`}
-                                                </p>
-                                            )}
-                                        </div>
-                                    );
-                                case 'date':
-                                    return <input type="date" className="mt-1 border border-gray-300 rounded-md px-3 py-2" />;
-                                case 'choix_multiple':
-                                case 'choix_multiple_simple':
-                                case 'choix':
-                                    return (
-                                        <div className="space-y-2">
-                                            {((champ.listeValeur && champ.listeValeur.options) || champ.options || []).map((opt, oi: number) => (
-                                                <label key={oi} className="flex items-center gap-2 text-sm">
-                                                    <input type="checkbox" className="w-4 h-4" />
-                                                    <span>{opt.libelle ?? opt.valeur ?? `Option ${oi + 1}`}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    );
-                                case 'choix_unique':
-                                case 'radio':
-                                    return (
-                                        <div className="space-y-2">
-                                            {((champ.listeValeur && champ.listeValeur.options) || champ.options || []).map((opt, oi: number) => (
-                                                <label key={oi} className="flex items-center gap-2 text-sm">
-                                                    <input type="radio" name={`q_${champ.idChamp ?? idx}`} className="w-4 h-4" />
-                                                    <span>{opt.libelle ?? opt.valeur ?? `Option ${oi + 1}`}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    );
-                                default:
-                                    return <div className="text-sm text-gray-600">Type: {champ.type ?? 'inconnu'}</div>;
-                            }
-                        })()}
-                    </div>
-                </div>
-            ))}
-        </form>
-    );
-};
 
 
 
 const AllFormsTab = () => {
     const router = useRouter();
     const { formulaires, isLoading: isLoadingForms, error } = useFormulaires();
-    const [expandedForm, setExpandedForm] = useState<number | null>(null);
     const { user } = useAuth();
 
     const getStatutColor = (statut: string) => {
@@ -298,15 +219,7 @@ const AllFormsTab = () => {
                         {formulaires.map((formulaire: Formulaire) => (
                             <div key={formulaire.idFormulaire} className="border border-gray-200 rounded-lg overflow-hidden">
                                 {/* En-tête du formulaire */}
-                                <div
-                                    className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                                    onClick={(e: React.MouseEvent) => {
-                                        // Si le clic provient d'un bouton ou d'un lien à l'intérieur, on ignore
-                                        const target = e.target as HTMLElement;
-                                        if (target.closest('button') || target.closest('a')) return;
-                                        setExpandedForm(expandedForm === formulaire.idFormulaire ? null : formulaire.idFormulaire);
-                                    }}
-                                >
+                                <div className="p-4 bg-white">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
@@ -343,30 +256,9 @@ const AllFormsTab = () => {
                                                 <PencilSquareIcon className="w-4 h-4" />
                                                 Modifier
                                             </button>
-                                            <span className="text-gray-400">
-                                                {expandedForm === formulaire.idFormulaire ? '▼' : '▶'}
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Contenu détaillé (questions) */}
-                                {expandedForm === formulaire.idFormulaire && (
-                                    <div className="p-4 bg-white border-t border-gray-200">
-                                        {formulaire.description && (
-                                            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                                                <p className="text-sm text-blue-800">{formulaire.description}</p>
-                                            </div>
-                                        )}
-
-                                        <h4 className="font-semibold text-gray-900 mb-3">Questions du formulaire :</h4>
-
-                                        {/* Rendu d'aperçu interactif des champs */}
-                                        <div className="space-y-3">
-                                            <FormPreview champs={formulaire.champs} />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>

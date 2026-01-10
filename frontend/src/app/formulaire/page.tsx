@@ -205,44 +205,7 @@ export default function Formulaire() {
                     </div>
                 )}
 
-                <div className="bg-white shadow-sm border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-6 py-8">
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                            <div>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                        <ClipboardDocumentListIcon className="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <h1 className="text-2xl font-bold text-gray-900">Mes Formulaires</h1>
-                                </div>
-                                <p className="text-sm text-gray-600 max-w-2xl">
-                                    Gérez vos protocoles et formulaires d'évaluation médicale. Créez, modifiez et suivez l'état de vos documents cliniques.
-                                </p>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-gray-900">{formulaires.length}</div>
-                                    <div className="text-xs text-gray-500">Total</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-emerald-600">
-                                        {formulaires.filter(f => {
-                                            const statut = f.statut.toLowerCase();
-                                            return statut === "envoye" || statut === "envoyé" || statut === "publie" || statut === "publié";
-                                        }).length}
-                                    </div>
-                                    <div className="text-xs text-gray-500">Envoyés</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-slate-600">
-                                        {formulaires.filter(f => f.statut.toLowerCase() === "brouillon").length}
-                                    </div>
-                                    <div className="text-xs text-gray-500">Brouillons</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">

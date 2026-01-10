@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -6,7 +6,8 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { ToastContainer } from "@/src/components/ToastContainer";
 import { ArrowLeftIcon, BookOpenIcon, UserIcon, CalendarDaysIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
-import { getFormulaireRecu, submitReponses, marquerCommeLu } from "@/src/lib/api";
+import { ConfirmationModal } from "@/src/components/ui/ConfirmationModal";
+import { getFormulaireRecu, submitReponses, marquerCommeLu, getDraftForPatient } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
 import { config } from "@/src/lib/config";
 import { parseCalculatedField, calculateFieldValue, formatCalculatedValue } from "@/src/lib/formulaCalculator";
@@ -31,10 +32,14 @@ function RemplirFormulaireContent() {
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [reponses, setReponses] = useState<Record<string, any>>({});
-    const [patientIdentifier, setPatientIdentifier] = useState<string>('');
+    const [patientIdentifier, setPatientIdentifier] = useState<string>(searchParams.get('patient') || '');
     const [champsMap, setChampsMap] = useState<Map<string, string>>(new Map());
+    const [isDraft, setIsDraft] = useState(false);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-    // Rediriger si pas médecin sauf si on vient en tant que chercheur (source=chercheur)
+    // Rediriger si pas mÃ©decin sauf si on vient en tant que chercheur (source=chercheur)
     useEffect(() => {
         const source = searchParams.get('source');
         if (user) {
@@ -47,7 +52,7 @@ function RemplirFormulaireContent() {
     useEffect(() => {
         const fetchFormulaireRecu = async () => {
             if (!formulaireRecuId || !token) {
-                setError('ID de formulaire manquant ou non authentifié');
+                setError('ID de formulaire manquant ou non authentifiÃ©');
                 setIsLoading(false);
                 return;
             }
@@ -65,7 +70,8 @@ function RemplirFormulaireContent() {
                 });
                 setChampsMap(map);
 
-                // Marquer comme lu uniquement si l'utilisateur courant est un médecin
+
+                // Marquer comme lu uniquement si l'utilisateur courant est un mÃ©decin
                 if (user && user.role === 'medecin') {
                     marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
                         if (config.features.enableDebug) {
@@ -88,7 +94,7 @@ function RemplirFormulaireContent() {
         setReponses(prev => {
             const newReponses = { ...prev, [champId]: valeur };
 
-            // Recalculer tous les champs calculés
+            // Recalculer tous les champs calculÃ©s
             formulaireRecu?.formulaire?.champs?.forEach((champ: any) => {
                 const calculatedField = parseCalculatedField(champ.unite);
                 if (calculatedField) {
@@ -103,9 +109,85 @@ function RemplirFormulaireContent() {
         });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Helper pour formater les réponses avant envoi (Tableaux -> String)
+    const formatReponsesForApi = (currentReponses: Record<string, any>) => {
+        const formatted: Record<string, any> = {};
+        Object.keys(currentReponses).forEach(key => {
+            const val = currentReponses[key];
+            formatted[key] = Array.isArray(val) ? val.join(', ') : val;
+        });
+        return formatted;
+    };
 
+    // Sauvegarde manuelle du brouillon
+    const handleSaveDraft = async () => {
+        if (!token || !formulaireRecuId || !patientIdentifier.trim()) {
+            showToast('Veuillez renseigner l\'identifiant patient', 'info');
+            return;
+        }
+
+        if (Object.keys(reponses).length === 0) {
+            showToast('Le formulaire est vide', 'info');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await submitReponses(token, {
+                formulaireMedecinId: parseInt(formulaireRecuId),
+                patientIdentifier: patientIdentifier.trim(),
+                reponses: formatReponsesForApi(reponses)
+            }, true);  // true = brouillon
+
+            setIsDraft(true);
+            showToast('Brouillon sauvegardé avec succès', 'success');
+        } catch (error) {
+            const formattedError = handleError(error, 'SaveDraft');
+            showToast(formattedError.userMessage, 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Charger le brouillon quand l'identifiant patient change
+    useEffect(() => {
+        const loadDraft = async () => {
+            if (!patientIdentifier || !formulaireRecuId || !token) return;
+
+            try {
+                const draft = await getDraftForPatient(
+                    token,
+                    parseInt(formulaireRecuId),
+                    patientIdentifier
+                );
+
+                if (draft && draft.reponses && draft.reponses.length > 0) {
+                    const reponsesMap: Record<string, any> = {};
+                    draft.reponses.forEach((reponse: any) => {
+                        if (reponse.champ && reponse.champ.idChamp) {
+                            reponsesMap[reponse.champ.idChamp.toString()] = reponse.valeur;
+                        }
+                    });
+                    setReponses(reponsesMap);
+                    setIsDraft(true);
+                }
+            } catch (error) {
+                // Nouveau patient, formulaire vierge
+                if (config.features.enableDebug) {
+                    console.log('[FormRemplir] Nouveau patient, pas de brouillon');
+                }
+            }
+        };
+
+        loadDraft();
+    }, [patientIdentifier, formulaireRecuId, token]);
+
+    const handleInitialSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitModalOpen(true);
+    };
+
+    const handleConfirmSubmit = async () => {
         if (!token || !formulaireRecuId) {
             showToast('Erreur: Authentification ou ID manquant', 'error');
             return;
@@ -121,8 +203,8 @@ function RemplirFormulaireContent() {
             await submitReponses(token, {
                 formulaireMedecinId: parseInt(formulaireRecuId),
                 patientIdentifier: patientIdentifier.trim(),
-                reponses: reponses
-            });
+                reponses: formatReponsesForApi(reponses)
+            }, false);  // false = soumission finale
 
             showToast('Formulaire enregistré avec succès pour le patient ' + patientIdentifier, 'success');
             setTimeout(() => {
@@ -137,6 +219,7 @@ function RemplirFormulaireContent() {
             showToast(formattedError.userMessage, 'error');
         } finally {
             setIsSending(false);
+            setIsSubmitModalOpen(false);
         }
     };
 
@@ -157,7 +240,7 @@ function RemplirFormulaireContent() {
                 <div className="text-center">
                     <ExclamationCircleIcon className="w-12 h-12 text-red-600 mx-auto mb-4" />
                     <p className="text-gray-900 font-semibold mb-2">Erreur</p>
-                    <p className="text-gray-600">{error || 'Formulaire non trouvé'}</p>
+                    <p className="text-gray-600">{error || 'Formulaire non trouvÃ©'}</p>
                     <button
                         onClick={() => goBack()}
                         className="mt-4 text-blue-600 hover:text-blue-800"
@@ -171,32 +254,37 @@ function RemplirFormulaireContent() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-4xl mx-auto px-6 py-4">
-                    <button
-                        onClick={() => goBack()}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-                    >
-                        <ArrowLeftIcon className="w-5 h-5" />
-                        <span>Retour au dashboard</span>
-                    </button>
+            {/* Header et Contenu centré */}
+            <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
 
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {/* Bouton Retour */}
+                <button
+                    onClick={() => goBack()}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2 transition-colors"
+                >
+                    <ArrowLeftIcon className="w-5 h-5" />
+                    <span>Retour au dashboard</span>
+                </button>
+
+                <form onSubmit={handleInitialSubmit} className="space-y-6">
+
+                    {/* Carte Titre (Style Google Form) */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 border-t-[10px] border-t-blue-600 p-6">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             {formulaireRecu.formulaire.titre}
                         </h1>
                         {formulaireRecu.formulaire.description && (
-                            <p className="text-gray-600">{formulaireRecu.formulaire.description}</p>
+                            <p className="text-gray-600 mb-6 text-base">{formulaireRecu.formulaire.description}</p>
                         )}
-                        <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+
+                        <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                                 <BookOpenIcon className="w-4 h-4" />
                                 {formulaireRecu.formulaire.etude?.titre || 'N/A'}
                             </span>
                             <span className="flex items-center gap-1">
                                 <UserIcon className="w-4 h-4" />
-                                Envoyé par {formulaireRecu.formulaire.chercheur?.nom || 'N/A'}
+                                Par {formulaireRecu.formulaire.chercheur?.nom || 'N/A'}
                             </span>
                             <span className="flex items-center gap-1">
                                 <CalendarDaysIcon className="w-4 h-4" />
@@ -204,35 +292,32 @@ function RemplirFormulaireContent() {
                             </span>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Formulaire */}
-            <div className="max-w-4xl mx-auto px-6 py-8">
-                <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    {/* Champ Identifiant Patient */}
-                    <div className="mb-8 pb-6 border-b-2 border-blue-100 bg-blue-50/30 -m-6 p-6 rounded-t-lg">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            <UserIcon className="w-5 h-5 inline-block mr-2" />
+                    {/* Carte Identifiant Patient */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <label className="block text-base font-semibold text-gray-900 mb-3">
                             Identifiant Patient <span className="text-red-600">*</span>
                         </label>
-                        <input
-                            type="text"
-                            value={patientIdentifier}
-                            onChange={(e) => setPatientIdentifier(e.target.value)}
-                            placeholder="Ex: P-2024-001, Dossier-12345, Patient-A..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
-                        <p className="mt-2 text-sm text-gray-600">
-                            Saisissez un identifiant unique pour ce patient. Vous pourrez remplir ce formulaire plusieurs fois avec des identifiants différents.
+                        <div className="relative">
+                            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                value={patientIdentifier}
+                                onChange={(e) => setPatientIdentifier(e.target.value)}
+                                placeholder="Ex: P-2024-001"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                required
+                            />
+                        </div>
+                        <p className="mt-2 text-sm text-gray-500">
+                            Identifiant unique du patient pour cette étude.
                         </p>
                     </div>
 
                     <div className="space-y-6 mt-6">
                         {formulaireRecu.formulaire.champs && formulaireRecu.formulaire.champs.length > 0 ? (
                             formulaireRecu.formulaire.champs.map((champ: any, index: number) => (
-                                <div key={champ.idChamp} className="border-b border-gray-100 pb-6 last:border-0">
+                                <div key={champ.idChamp} className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
                                     <label className="block text-sm font-medium text-gray-900 mb-2">
                                         {index + 1}. {champ.label}
                                         {champ.obligatoire && <span className="text-red-600 ml-1">*</span>}
@@ -242,7 +327,7 @@ function RemplirFormulaireContent() {
                                         const isCalculated = parseCalculatedField(champ.unite);
 
                                         if (isCalculated) {
-                                            // Champ calculé - lecture seule
+                                            // Champ calculÃ© - lecture seule
                                             return (
                                                 <div>
                                                     <div className="relative">
@@ -251,7 +336,7 @@ function RemplirFormulaireContent() {
                                                             value={reponses[champ.idChamp] || ''}
                                                             readOnly
                                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
-                                                            placeholder="Calculé automatiquement"
+                                                            placeholder="CalculÃ© automatiquement"
                                                         />
                                                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                                             <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +348,7 @@ function RemplirFormulaireContent() {
                                                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                                         </svg>
-                                                        Calculé automatiquement : {isCalculated.formula}
+                                                        CalculÃ© automatiquement : {isCalculated.formula}
                                                     </p>
                                                 </div>
                                             );
@@ -276,7 +361,7 @@ function RemplirFormulaireContent() {
                                                 maxLength={500}
                                                 rows={3}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                placeholder="Votre réponse (max 500 caractères)"
+                                                placeholder="(max 500 caractÃ¨res)"
                                                 onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
                                             />
                                         );
@@ -291,7 +376,7 @@ function RemplirFormulaireContent() {
                                                 max={champ.valeurMax ?? undefined}
                                                 step="any"
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Votre réponse"
+                                                placeholder="Votre reponse"
                                                 onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
                                             />
                                             {(champ.valeurMin !== null && champ.valeurMin !== undefined) || (champ.valeurMax !== null && champ.valeurMax !== undefined) ? (
@@ -304,7 +389,7 @@ function RemplirFormulaireContent() {
                                                     {champ.unite && ` ${champ.unite}`}
                                                 </p>
                                             ) : champ.unite ? (
-                                                <p className="text-xs text-gray-500 mt-1">Unité: {champ.unite}</p>
+                                                <p className="text-xs text-gray-500 mt-1">UnitÃ©: {champ.unite}</p>
                                             ) : null}
                                         </div>
                                     )}
@@ -318,28 +403,65 @@ function RemplirFormulaireContent() {
                                         />
                                     )}
 
-                                    {champ.type?.toUpperCase() === 'CHOIX_MULTIPLE' && (
-                                        <div className="space-y-2 mt-2">
+                                    {(champ.type?.toUpperCase() === 'CHOIX_UNIQUE' || champ.type?.toUpperCase() === 'RADIO') && (
+                                        <div className="space-y-1 mt-2">
                                             {champ.listeValeur?.options?.map((option: any, index: number) => (
-                                                <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name={`champ_${champ.idChamp}`}
-                                                        value={option.libelle}
-                                                        required={champ.obligatoire}
-                                                        onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
-                                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                                    />
-                                                    <span className="text-gray-800">{option.libelle}</span>
+                                                <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-100 transition-colors cursor-pointer group">
+                                                    <div className="relative flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name={`champ_${champ.idChamp}`}
+                                                            value={option.libelle}
+                                                            checked={reponses[champ.idChamp] === option.libelle}
+                                                            required={champ.obligatoire}
+                                                            onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
+                                                            className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <span className="text-gray-700 group-hover:text-gray-900">{option.libelle}</span>
                                                 </label>
                                             ))}
                                         </div>
-                                    )}                                </div>
+                                    )}
+
+                                    {(champ.type?.toUpperCase() === 'CASE_A_COCHER' || champ.type?.toUpperCase() === 'CHECKBOX' || champ.type?.toUpperCase() === 'CHOIX_MULTIPLE') && (
+                                        <div className="space-y-1 mt-2">
+                                            {champ.listeValeur?.options?.map((option: any, index: number) => {
+                                                const currentValues = Array.isArray(reponses[champ.idChamp]) ? reponses[champ.idChamp] : [];
+                                                const isChecked = currentValues.includes(option.libelle);
+
+                                                return (
+                                                    <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-100 transition-colors cursor-pointer group">
+                                                        <div className="relative flex items-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                name={`champ_${champ.idChamp}`}
+                                                                value={option.libelle}
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    const newValues = e.target.checked
+                                                                        ? [...currentValues, val]
+                                                                        : currentValues.filter((v: string) => v !== val);
+                                                                    handleReponseChange(champ.idChamp, newValues);
+                                                                }}
+                                                                className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                            />
+                                                        </div>
+                                                        <span className="text-gray-700 group-hover:text-gray-900">{option.libelle}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             ))
                         ) : (
                             <p className="text-gray-500 text-center py-8">Aucune question dans ce formulaire</p>
                         )}
                     </div>
+
+
 
                     <div className="mt-8 flex justify-end gap-4">
                         <button
@@ -349,16 +471,41 @@ function RemplirFormulaireContent() {
                         >
                             Annuler
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={handleSaveDraft}
+                            disabled={isSending || isSaving}
+                            className="inline-flex items-center gap-2 px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            {isSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
+                        </button>
+
                         <button
                             type="submit"
                             disabled={isSending}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSending ? (user?.role === 'chercheur' ? 'Enregistrement...' : 'Envoi en cours...') : (user?.role === 'chercheur' ? 'Enregistrer' : 'Envoyer les réponses')}
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {isSending ? 'Envoi en cours...' : 'Soumettre'}
                         </button>
                     </div>
                 </form>
             </div>
+            <ConfirmationModal
+                isOpen={isSubmitModalOpen}
+                onClose={() => setIsSubmitModalOpen(false)}
+                onConfirm={handleConfirmSubmit}
+                title="Confirmer la soumission"
+                message="Êtes-vous sûr de vouloir soumettre ce formulaire ? Une fois soumis, vous ne pourrez plus le modifier."
+                confirmText="Soumettre"
+                variant="info"
+            />
             <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         </div>
     );

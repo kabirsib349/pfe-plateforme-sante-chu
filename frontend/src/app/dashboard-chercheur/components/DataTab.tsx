@@ -195,21 +195,6 @@ export const DataTab: React.FC = React.memo(() => {
                           </h3>
                           <Badge color="green">Complété</Badge>
                         </div>
-
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <BookOpenIcon className="w-4 h-4" />
-                            <span>{item.formulaire.etude?.titre || 'N/A'}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <UserIcon className="w-4 h-4" />
-                            <span>Patients: {item.patientsCount}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <CalendarDaysIcon className="w-4 h-4" />
-                            <span>Réponses totales: {item.totalResponses}</span>
-                          </span>
-                        </div>
                       </div>
 
                       <button

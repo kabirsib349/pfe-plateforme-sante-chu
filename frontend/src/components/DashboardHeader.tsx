@@ -11,7 +11,6 @@ import {
   UserCircleIcon,
   Cog6ToothIcon,
   AcademicCapIcon,
-  ChartBarIcon,
   ClipboardDocumentListIcon,
   Squares2X2Icon
 } from '@heroicons/react/24/outline';
@@ -63,7 +62,7 @@ const DashboardHeader = () => {
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'
                     }`}
                 >
-                  <ChartBarIcon className="w-5 h-5" />
+                  <Squares2X2Icon className="w-5 h-5" />
                   <span>Tableau de bord</span>
                 </button>
                 <button
