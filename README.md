@@ -113,7 +113,9 @@ Le projet suit une architecture classique en couches :
 
 *   **frontend/** : Contient l'interface utilisateur.
     *   `src/app` : Pages et routage (Next.js App Router).
-    *   `src/components` : Composants React réutilisables.
+    *   `src/components` : Composants React atomiques et réutilisables.
+    *   `src/hooks` : Logique métier (Custom Hooks).
+    *   `src/types` : Définitions de types TypeScript modulaires.
     *   `src/lib` : Utilitaires et appels API.
 
 ## Membres de l'Équipe
