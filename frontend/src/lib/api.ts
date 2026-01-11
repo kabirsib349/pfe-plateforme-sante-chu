@@ -244,10 +244,14 @@ export async function getPatientIdentifiers(token: string, formulaireMedecinId: 
 
 export async function submitReponses(
     token: string,
-    data: ReponseFormulaireRequest,
-    brouillon: boolean = false
+    data: {
+        formulaireMedecinId: number;
+        patientIdentifier: string;
+        reponses: Record<string, string>;
+    },
+    enBrouillon: boolean = false
 ): Promise<void> {
-    const url = brouillon
+    const url = enBrouillon
         ? apiUrl('/api/reponses?brouillon=true')
         : apiUrl('/api/reponses?brouillon=false');
 
@@ -256,6 +260,55 @@ export async function submitReponses(
         headers: createHeaders(token),
         body: JSON.stringify(data),
     });
+
+    await handleResponse<void>(response);
+}
+
+export async function deleteAllReponses(
+    token: string,
+    formulaireMedecinId: number
+): Promise<void> {
+    const response = await fetch(apiUrl(`/api/reponses/${formulaireMedecinId}`), {
+        method: 'DELETE',
+        headers: createHeaders(token),
+    });
+
+    await handleResponse<void>(response);
+}
+
+/**
+ * Supprime les réponses d'un patient spécifique
+ */
+export async function deletePatientReponses(
+    token: string,
+    formulaireMedecinId: number,
+    patientIdentifier: string
+): Promise<void> {
+    const response = await fetch(
+        apiUrl(`/api/reponses/${formulaireMedecinId}/patient/${encodeURIComponent(patientIdentifier)}`),
+        {
+            method: 'DELETE',
+            headers: createHeaders(token),
+        }
+    );
+
+    await handleResponse<void>(response);
+}
+
+/**
+ * Supprime un FormulaireMedecin complet avec toutes ses réponses
+ */
+export async function deleteFormulaireMedecin(
+    token: string,
+    formulaireMedecinId: number
+): Promise<void> {
+    const response = await fetch(
+        apiUrl(`/api/formulaires/formulaire-medecin/${formulaireMedecinId}`),
+        {
+            method: 'DELETE',
+            headers: createHeaders(token),
+        }
+    );
 
     await handleResponse<void>(response);
 }
