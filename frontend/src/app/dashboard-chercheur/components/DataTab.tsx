@@ -3,21 +3,31 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/hooks/useAuth';
 import { Card } from '@/src/components/Card';
 import { Badge } from '@/src/components/Badge';
-import { ChartBarIcon, BookOpenIcon, UserIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, BookOpenIcon, UserIcon, CalendarDaysIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { EmptyState, LoadingState } from '@/src/components/ui';
-import { getFormulairesEnvoyes, getPatientIdentifiers, getReponses } from '@/src/lib/api';
+import { getFormulairesEnvoyes, getPatientIdentifiers, getReponses, deleteAllReponses, deletePatientReponses, deleteFormulaireMedecin } from '@/src/lib/api';
 import { handleError } from '@/src/lib/errorHandler';
+import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
+import { useToast } from '@/src/hooks/useToast';
+import { ToastContainer } from '@/src/components/ToastContainer';
 
 const ITEMS_PER_PAGE = 5;
 
 export const DataTab: React.FC = React.memo(() => {
   const router = useRouter();
   const { token } = useAuth();
+  const { showToast, toasts, removeToast } = useToast();
   const [formulairesEnvoyes, setFormulairesEnvoyes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [aggregated, setAggregated] = useState<any[]>([]); // aggregated per formulaire
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [formulaireToDelete, setFormulaireToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteType, setDeleteType] = useState<'responses' | 'formulaire'>('responses');
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [selectedFormulaireMedecinId, setSelectedFormulaireMedecinId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchFormulairesEnvoyes = async () => {
@@ -134,6 +144,80 @@ export const DataTab: React.FC = React.memo(() => {
     fetchFormulairesEnvoyes();
   }, [token]);
 
+  const handleDelete = async () => {
+    if (!token || !formulaireToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // Trouver tous les FormulaireMedecin IDs pour ce formulaire
+      const formulaireMedecinIds = formulairesEnvoyes
+        .filter(fe => fe.formulaire.idFormulaire === formulaireToDelete.formulaire.idFormulaire)
+        .map(fe => fe.id);
+
+      if (deleteType === 'formulaire') {
+        // Supprimer tous les FormulaireMedecin complets
+        await Promise.all(
+          formulaireMedecinIds.map(id => deleteFormulaireMedecin(token, id))
+        );
+        showToast('Formulaire supprimé avec succès', 'success');
+      } else {
+        // Supprimer uniquement les réponses
+        await Promise.all(
+          formulaireMedecinIds.map(id => deleteAllReponses(token, id))
+        );
+        showToast('Toutes les réponses ont été supprimées', 'success');
+      }
+
+      // Rafraîchir les données
+      const data = await getFormulairesEnvoyes(token);
+      setFormulairesEnvoyes(data);
+
+      // Recalculer l'agrégation
+      const map = new Map<number, { formulaire: any; patientIds: Set<string>; totalResponses: number; latestTimestamp: number }>();
+      for (const fe of data) {
+        const fid = fe.formulaire.idFormulaire;
+        const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
+        if (!map.has(fid)) {
+          map.set(fid, { formulaire: fe.formulaire, patientIds: new Set(), totalResponses: 0, latestTimestamp: ts });
+        }
+      }
+
+      const agg = Array.from(map.values()).map(v => ({
+        formulaire: v.formulaire,
+        patientsCount: v.patientIds.size,
+        totalResponses: v.totalResponses,
+        latestTimestamp: v.latestTimestamp || 0
+      }));
+
+      agg.sort((a, b) => (b.latestTimestamp || 0) - (a.latestTimestamp || 0));
+      setAggregated(agg);
+
+    } catch (error) {
+      const err = handleError(error, 'DeleteReponses');
+      showToast(err.userMessage, 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setFormulaireToDelete(null);
+    }
+  };
+
+  const handleDeletePatient = async (patientId: string) => {
+    if (!token || !selectedFormulaireMedecinId) return;
+
+    try {
+      await deletePatientReponses(token, selectedFormulaireMedecinId, patientId);
+      showToast('Patient supprimé avec succès', 'success');
+
+      // Refresh data
+      const data = await getFormulairesEnvoyes(token);
+      setFormulairesEnvoyes(data);
+    } catch (error) {
+      const err = handleError(error, 'DeletePatient');
+      showToast(err.userMessage, 'error');
+    }
+  };
+
   const formulairesCompletes = formulairesEnvoyes.filter((f) => f.complete);
 
   // Filter aggregated by formulaire titre / etude
@@ -151,91 +235,148 @@ export const DataTab: React.FC = React.memo(() => {
   );
 
   return (
-    <Card
-      title="Formulaires complétés"
-      subtitle={`${formulairesCompletes.length} formulaire${formulairesCompletes.length !== 1 ? 's' : ''} rempli${formulairesCompletes.length !== 1 ? 's' : ''}`}
-    >
-      {isLoading ? (
-        <LoadingState />
-      ) : (
-        <>
-          {/* --- Barre de recherche --- */}
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Rechercher un formulaire, une étude ou un médecin..."
-              value={search}
-              onChange={(e) => {
-                setPage(1);
-                setSearch(e.target.value);
-              }}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-            />
-          </div>
+    <>
+      <Card
+        title="Formulaires complétés"
+        subtitle={`${formulairesCompletes.length} formulaire${formulairesCompletes.length !== 1 ? 's' : ''} rempli${formulairesCompletes.length !== 1 ? 's' : ''}`}
+      >
+        {isLoading ? (
+          <LoadingState />
+        ) : (
+          <>
+            {/* --- Barre de recherche --- */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Rechercher un formulaire, une étude ou un médecin..."
+                value={search}
+                onChange={(e) => {
+                  setPage(1);
+                  setSearch(e.target.value);
+                }}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
 
-          {paginatedItems.length === 0 ? (
-            <EmptyState
-              icon={<ChartBarIcon className="w-10 h-10 text-gray-400" />}
-              title="Aucun résultat"
-              description="Aucun formulaire trouvé pour cette recherche."
-            />
-          ) : (
-            <>
-              <div className="space-y-4">
-                {paginatedItems.map((item) => (
-                  <div
-                    key={item.formulaire.idFormulaire}
-                    className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50/30 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {item.formulaire.titre}
-                          </h3>
-                          <Badge color="green">Complété</Badge>
+            {paginatedItems.length === 0 ? (
+              <EmptyState
+                icon={<ChartBarIcon className="w-10 h-10 text-gray-400" />}
+                title="Aucun résultat"
+                description="Aucun formulaire trouvé pour cette recherche."
+              />
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {paginatedItems.map((item) => (
+                    <div
+                      key={item.formulaire.idFormulaire}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {item.formulaire.titre}
+                            </h3>
+                            <Badge color="green">Complété</Badge>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => router.push(`/formulaire/reponses?formulaireId=${item.formulaire.idFormulaire}`)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                          >
+                            <ChartBarIcon className="w-5 h-5" />
+                            Voir les réponses
+                          </button>
+
+                          <div className="relative group">
+                            <button
+                              onClick={() => {
+                                setFormulaireToDelete(item);
+                                setDeleteType('responses');
+                                setDeleteModalOpen(true);
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                            >
+                              <TrashIcon className="w-5 h-5" />
+                              Supprimer
+                            </button>
+
+                            {/* Dropdown menu */}
+                            <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                              <button
+                                onClick={() => {
+                                  setFormulaireToDelete(item);
+                                  setDeleteType('responses');
+                                  setDeleteModalOpen(true);
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-t-lg"
+                              >
+                                Supprimer les réponses
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setFormulaireToDelete(item);
+                                  setDeleteType('formulaire');
+                                  setDeleteModalOpen(true);
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 font-medium rounded-b-lg border-t"
+                              >
+                                Supprimer le formulaire complet
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => router.push(`/formulaire/reponses?formulaireId=${item.formulaire.idFormulaire}`)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ml-4 flex items-center gap-2"
-                      >
-                        <ChartBarIcon className="w-5 h-5" />
-                        Voir les réponses
-                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              {/* --- Pagination --- */}
-              <div className="flex justify-center items-center gap-4 mt-6">
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage(page - 1)}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  Précédent
-                </button>
+                {/* --- Pagination --- */}
+                <div className="flex justify-center items-center gap-4 mt-6">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                  >
+                    Précédent
+                  </button>
 
-                <span>
-                  Page {page} / {totalPages}
-                </span>
+                  <span>
+                    Page {page} / {totalPages}
+                  </span>
 
-                <button
-                  disabled={page === totalPages}
-                  onClick={() => setPage(page + 1)}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  Suivant
-                </button>
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </Card>
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                  >
+                    Suivant
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </Card>
+
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setFormulaireToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Supprimer les réponses"
+        message={`Êtes-vous sûr de vouloir supprimer toutes les réponses du formulaire "${formulaireToDelete?.formulaire?.titre}" ? Cette action est irréversible.`}
+        confirmText={isDeleting ? "Suppression..." : "Supprimer"}
+        variant="danger"
+      />
+
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+    </>
   );
 });
 
