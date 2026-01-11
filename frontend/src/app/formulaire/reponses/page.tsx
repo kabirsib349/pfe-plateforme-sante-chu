@@ -3,8 +3,10 @@
 import React, { Suspense, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useToast } from "@/src/hooks/useToast";
+import { ToastContainer } from "@/src/components/ToastContainer";
 import { ArrowLeftIcon, UserIcon, CalendarDaysIcon, CheckCircleIcon, BookOpenIcon, ArrowDownTrayIcon, ClipboardDocumentListIcon, EyeIcon, MagnifyingGlassIcon, XMarkIcon, ExclamationCircleIcon, DocumentTextIcon, UserGroupIcon } from "@heroicons/react/24/outline";
-import { getFormulairesEnvoyes, getFormulaireById, getReponses } from "@/src/lib/api";
+import { getFormulairesEnvoyes, getFormulaireById, getReponses, deletePatientReponses } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
 import { config } from "@/src/lib/config";
 import ExportCsvButton from "@/src/components/export/ExportCsvButton";
@@ -19,6 +21,7 @@ function ReponsesFormulaireContent() {
     const { token, user } = useAuth();
     const formulaireMedecinId = searchParams.get('id');
     const formulaireIdParam = searchParams.get('formulaireId');
+    const { showToast, toasts, removeToast } = useToast();
 
     const [formulaireData, setFormulaireData] = useState<any>(null);
     const [reponses, setReponses] = useState<any[]>([]);
@@ -28,6 +31,8 @@ function ReponsesFormulaireContent() {
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [selectedFormulaireMedecinId, setSelectedFormulaireMedecinId] = useState<number | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
     /**
      * Redirect non-researcher users to medecin dashboard
@@ -93,7 +98,11 @@ function ReponsesFormulaireContent() {
                     }
 
                     // fetch all responses for each FormulaireMedecin and merge
-                    const allResponsesArrays = await Promise.all(related.map((r: any) => getReponses(token, r.id).catch(() => [])));
+                    const allResponsesArrays = await Promise.all(related.map((r: any) =>
+                        getReponses(token, r.id)
+                            .then(res => res.map((item: any) => ({ ...item, formulaireMedecinId: r.id })))
+                            .catch(() => [])
+                    ));
                     const merged = ([] as any[]).concat(...allResponsesArrays);
                     setReponses(merged);
                 } else {
@@ -109,7 +118,7 @@ function ReponsesFormulaireContent() {
 
         fetchReponses();
 
-    }, [formulaireMedecinId, formulaireIdParam, token]);
+    }, [formulaireMedecinId, formulaireIdParam, token, refreshTrigger]);
 
     /**
      * Group responses by patient identifier with submission date
@@ -143,6 +152,25 @@ function ReponsesFormulaireContent() {
             reponses: reponsesParPatient[patientId].reponses
         }));
     }, [reponsesParPatient]);
+
+    const handleDeletePatient = async (patientId: string) => {
+        if (!token) return;
+
+        try {
+            const formulaireMedecinIdToUse = formulaireMedecinId ? parseInt(formulaireMedecinId) : selectedFormulaireMedecinId;
+
+            if (!formulaireMedecinIdToUse) return;
+
+            await deletePatientReponses(token, formulaireMedecinIdToUse, patientId);
+
+            const data = await getReponses(token, formulaireMedecinIdToUse);
+            setReponses(data);
+            setIsModalOpen(false);
+        } catch (error) {
+            const err = handleError(error, 'DeletePatient');
+            setError(err.userMessage);
+        }
+    };
 
     // Filtrer les patients selon le terme de recherche (useMemo)
     const filteredPatients = useMemo(() => {
@@ -360,6 +388,31 @@ function ReponsesFormulaireContent() {
                     patientId={selectedPatient!}
                     patientData={selectedPatientData!}
                     formulaireChamps={formulaireData.formulaire.champs}
+                    onDeletePatient={handleDeletePatient}
+                    token={token || undefined}
+                    formulaireMedecinId={
+                        // Use explicitly known ID (single view) OR derive from patient's first response (aggregated view)
+                        formulaireMedecinId
+                            ? parseInt(formulaireMedecinId)
+                            : (selectedPatientData && selectedPatientData.reponses.length > 0)
+                                ? (selectedPatientData.reponses[0] as any).formulaireMedecinId
+                                : selectedFormulaireMedecinId
+                    }
+                    onUpdate={() => {
+                        // Refresh data
+                        setIsModalOpen(false); // Close modal on success? Or keep open? User might want to verify.
+                        // Ideally we keep it open and just refresh data, but re-fetching all might close it if state resets.
+                        // The simplest is to close and refresh.
+                        // To refresh, we can toggle a reload flag or just re-call fetchReponses if we extracted it.
+                        // Since fetchReponses is in useEffect, we can trigger it?
+                        // Actually, we can just reload the page or navigate similarly.
+                        // For now, let's close the modal and trigger a reload by updating a dummy state or just calling fetch logic if extracted.
+                        // Easier: just reload window for full refresh or let the user click refresh. 
+                        // But better: call `fetchReponses` logic again.
+                        // I'll make fetchReponses depend on a 'refreshTrigger' state.
+                        setRefreshTrigger(prev => prev + 1);
+                    }}
+                    showToast={showToast}
                 />
 
                 {/* Actions */}
@@ -378,6 +431,7 @@ function ReponsesFormulaireContent() {
                     )}
                 </div>
             </div>
+            <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         </div>
     );
 }
