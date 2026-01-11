@@ -84,15 +84,24 @@ export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
         setHistorique(prev => [...prev, champs]); // Save history
 
         const nouveauxChamps = theme.champs.map((champ: ChampTemplate) => ({
+            // Start with all properties from the template
             ...champ,
-            // Mapping ChampTemplate -> ChampBuilder
+            // Add builder-specific properties
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             label: champ.question,
             type: champ.type.toUpperCase(),
             categorie: theme.nom,
-            // Legacy props support
+            // Legacy props support (keep original values)
             question: champ.question,
-            nomVariable: champ.nomVariable
+            nomVariable: champ.nomVariable,
+            // Explicitly preserve all optional fields from template
+            options: champ.options || undefined,
+            unite: champ.unite || undefined,
+            valeurMin: champ.valeurMin,
+            valeurMax: champ.valeurMax,
+            formuleCalcul: champ.formuleCalcul || undefined,
+            champsRequis: champ.champsRequis || undefined,
+            obligatoire: champ.obligatoire
         }));
 
         // Cast for compatibility
