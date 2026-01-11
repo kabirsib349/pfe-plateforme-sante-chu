@@ -200,9 +200,16 @@ public class FormulaireService {
         champ.setCategorie(request.getCategorie());
         champ.setType(TypeChamp.valueOf(request.getType().toUpperCase()));
 
-        if (TypeChamp.CHOIX_MULTIPLE.name().equalsIgnoreCase(request.getType())) {
+        if (TypeChamp.CHOIX_MULTIPLE.name().equalsIgnoreCase(request.getType()) ||
+            TypeChamp.CHOIX_UNIQUE.name().equalsIgnoreCase(request.getType())) {
             ListeValeur listeValeur = champ.getListeValeur() != null ? champ.getListeValeur() : new ListeValeur();
-            listeValeur.setNom(request.getNomListeValeur());
+            
+            // Générer un nom par défaut si non fourni
+            String nomListe = request.getNomListeValeur();
+            if (nomListe == null || nomListe.trim().isEmpty()) {
+                nomListe = "LISTE_" + request.getLabel().toUpperCase().replace(" ", "_");
+            }
+            listeValeur.setNom(nomListe);
 
             if (listeValeur.getOptions() == null) {
                 listeValeur.setOptions(new ArrayList<>());
