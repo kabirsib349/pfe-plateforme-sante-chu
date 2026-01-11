@@ -214,4 +214,38 @@ public class FormulaireMedecinService {
         // Supprimer l'assignation
         formulaireMedecinRepository.delete(fm);
     }
+
+    /**
+     * Supprime un FormulaireMedecin et toutes ses réponses associées.
+     * Accessible uniquement au chercheur propriétaire du formulaire.
+     *
+     * @param formulaireMedecinId ID du FormulaireMedecin à supprimer
+     * @param emailChercheur Email du chercheur demandeur
+     */
+    @Transactional
+    public void supprimerFormulaireMedecin(Long formulaireMedecinId, String emailChercheur) {
+        FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
+                .orElseThrow(() -> new ResourceNotFoundException("FormulaireMedecin non trouvé"));
+
+        // Vérifier que l'utilisateur est le chercheur propriétaire
+        if (!formulaireMedecin.getFormulaire().getChercheur().getEmail().equals(emailChercheur)) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
+        }
+
+        // Supprimer d'abord toutes les réponses associées
+        reponseFormulaireRepository.deleteByFormulaireMedecinId(formulaireMedecinId);
+
+        // Puis supprimer le FormulaireMedecin
+        formulaireMedecinRepository.delete(formulaireMedecin);
+
+        // Enregistrer l'activité
+        activiteService.enregistrerActivite(
+                emailChercheur,
+                "Suppression formulaire rempli",
+                "FormulaireMedecin",
+                formulaireMedecinId,
+                "FormulaireMedecin '" + formulaireMedecin.getFormulaire().getTitre() + 
+                "' supprimé avec toutes ses réponses"
+        );
+    }
 }
