@@ -147,4 +147,15 @@ public class FormulaireController {
         formulaireMedecinService.masquerPourMedecin(formulaireMedecinId, principal.getName());
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Supprime un FormulaireMedecin (formulaire rempli) avec toutes ses réponses.
+     * Accessible uniquement au chercheur propriétaire.
+     */
+    @DeleteMapping("/formulaire-medecin/{id}")
+    @PreAuthorize("hasAuthority('chercheur')")
+    public ResponseEntity<Void> deleteFormulaireMedecin(@PathVariable Long id, Principal principal) {
+        formulaireMedecinService.supprimerFormulaireMedecin(id, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
 }
