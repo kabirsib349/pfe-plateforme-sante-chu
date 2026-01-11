@@ -161,18 +161,18 @@ export default function ModifierFormulaire() {
       descriptionEtude: description,
       champs: champs.map((champ: any) => {
         // Same mapping logic
-        if (champ.type === 'calcule') {
+        if (champ.type.toUpperCase() === 'CALCULE') {
           return {
             label: champ.question,
-            type: 'TEXTE',
+            type: 'CALCULE',
             obligatoire: champ.obligatoire,
             unite: `CALCULE:${champ.formuleCalcul}|${champ.champsRequis?.join(',')}`,
           };
         }
-        if (champ.type === 'choix_unique') {
+        if (champ.type.toUpperCase() === 'CHOIX_UNIQUE') {
           return {
             label: champ.question,
-            type: 'CHOIX_MULTIPLE',
+            type: 'CHOIX_UNIQUE',
             obligatoire: champ.obligatoire,
             nomListeValeur: champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
             options: champ.options,
@@ -189,7 +189,7 @@ export default function ModifierFormulaire() {
         if (champ.valeurMax !== undefined && champ.valeurMax !== null && champ.valeurMax >= 0) champData.valeurMax = champ.valeurMax;
         if (champ.unite) champData.unite = champ.unite;
 
-        if (champ.type === 'choix_multiple' && champ.nomVariable) {
+        if (champ.type.toUpperCase() === 'CHOIX_MULTIPLE' && champ.nomVariable) {
           champData.nomListeValeur = `LISTE_${champ.nomVariable}`;
           champData.options = champ.options;
         }

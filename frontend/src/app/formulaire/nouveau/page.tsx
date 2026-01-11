@@ -118,18 +118,21 @@ export default function NouveauFormulaire() {
       titreEtude: titreEtude,
       descriptionEtude: description,
       champs: champs.map((champ: any) => {
-        if (champ.type === 'calcule') {
+        // Handle calcule fields - send as CALCULE with formula in unite
+        if (champ.type.toUpperCase() === 'CALCULE') {
           return {
             label: champ.question,
-            type: 'TEXTE',
+            type: 'CALCULE',
             obligatoire: champ.obligatoire,
             unite: `CALCULE:${champ.formuleCalcul}|${champ.champsRequis?.join(',')}`,
           };
         }
-        if (champ.type === 'choix_unique') {
+        // Handle choix_unique with options
+        // Handle choix_unique with options
+        if (champ.type.toUpperCase() === 'CHOIX_UNIQUE') {
           return {
             label: champ.question,
-            type: 'CHOIX_MULTIPLE',
+            type: 'CHOIX_UNIQUE',
             obligatoire: champ.obligatoire,
             nomListeValeur: champ.nomVariable ? `LISTE_${champ.nomVariable}` : undefined,
             options: champ.options,
@@ -146,7 +149,7 @@ export default function NouveauFormulaire() {
         if (champ.valeurMax !== undefined && champ.valeurMax !== null && champ.valeurMax >= 0) champData.valeurMax = champ.valeurMax;
         if (champ.unite) champData.unite = champ.unite;
 
-        if (champ.type === 'choix_multiple' && champ.nomVariable) {
+        if (champ.type.toUpperCase() === 'CHOIX_MULTIPLE' && champ.nomVariable) {
           champData.nomListeValeur = `LISTE_${champ.nomVariable}`;
           champData.options = champ.options;
         }
