@@ -39,7 +39,7 @@ function RemplirFormulaireContent() {
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-    // Rediriger si pas mÃ©decin sauf si on vient en tant que chercheur (source=chercheur)
+    // Rediriger si pas médecin sauf si on vient en tant que chercheur (source=chercheur)
     useEffect(() => {
         const source = searchParams.get('source');
         if (user) {
@@ -52,7 +52,7 @@ function RemplirFormulaireContent() {
     useEffect(() => {
         const fetchFormulaireRecu = async () => {
             if (!formulaireRecuId || !token) {
-                setError('ID de formulaire manquant ou non authentifiÃ©');
+                setError('ID de formulaire manquant ou non authentifié');
                 setIsLoading(false);
                 return;
             }
@@ -71,7 +71,7 @@ function RemplirFormulaireContent() {
                 setChampsMap(map);
 
 
-                // Marquer comme lu uniquement si l'utilisateur courant est un mÃ©decin
+                // Marquer comme lu uniquement si l'utilisateur courant est un médecin
                 if (user && user.role === 'medecin') {
                     marquerCommeLu(token, parseInt(formulaireRecuId)).catch(err => {
                         if (config.features.enableDebug) {
@@ -94,7 +94,7 @@ function RemplirFormulaireContent() {
         setReponses(prev => {
             const newReponses = { ...prev, [champId]: valeur };
 
-            // Recalculer tous les champs calculÃ©s
+            // Recalculer tous les champs calculés
             formulaireRecu?.formulaire?.champs?.forEach((champ: any) => {
                 const calculatedField = parseCalculatedField(champ.unite);
                 if (calculatedField) {
@@ -109,14 +109,64 @@ function RemplirFormulaireContent() {
         });
     };
 
-    // Helper pour formater les réponses avant envoi (Tableaux -> String)
+    // Helper pour formater les réponses avant envoi (Map<String, String>)
     const formatReponsesForApi = (currentReponses: Record<string, any>) => {
-        const formatted: Record<string, any> = {};
-        Object.keys(currentReponses).forEach(key => {
-            const val = currentReponses[key];
-            formatted[key] = Array.isArray(val) ? val.join(', ') : val;
+        const reponsesMap: Record<string, string> = {};
+
+        // Champs normaux
+        Object.keys(currentReponses).forEach(champId => {
+            reponsesMap[champId] = Array.isArray(currentReponses[champId])
+                ? JSON.stringify(currentReponses[champId])
+                : currentReponses[champId]?.toString() || '';
         });
-        return formatted;
+
+        // Add calculated field values
+        formulaireRecu?.formulaire?.champs?.forEach((champ: any) => {
+            if (champ.type?.toUpperCase() === 'CALCULE') {
+                const uniteData = champ.unite?.split(':')[1] || '';
+                const [formule, champsRequisStr] = uniteData.split('|');
+                const champsRequis = champsRequisStr?.split(',') || [];
+
+                // Get values for required fields
+                const valeursChamps: Record<string, number> = {};
+                let tousRemplis = true;
+
+                champsRequis.forEach((nomVar: string) => {
+                    const champRequis = formulaireRecu.formulaire.champs.find(
+                        (c: any) => c.label.toUpperCase().replace(/\s+/g, '_') === nomVar
+                    );
+                    if (champRequis && currentReponses[champRequis.idChamp]) {
+                        valeursChamps[nomVar] = parseFloat(currentReponses[champRequis.idChamp]);
+                    } else {
+                        tousRemplis = false;
+                    }
+                });
+
+                // Calculate if all required fields are filled
+                if (tousRemplis && formule) {
+                    try {
+                        let formuleEvaluable = formule;
+                        Object.keys(valeursChamps).forEach(nomVar => {
+                            formuleEvaluable = formuleEvaluable.replace(
+                                new RegExp(nomVar, 'g'),
+                                valeursChamps[nomVar].toString()
+                            );
+                        });
+                        formuleEvaluable = formuleEvaluable.replace(/\^/g, '**');
+                        const resultat = eval(formuleEvaluable);
+
+                        if (!isNaN(resultat)) {
+                            const valeurCalculee = Math.round(resultat * 100) / 100;
+                            reponsesMap[champ.idChamp.toString()] = valeurCalculee.toString();
+                        }
+                    } catch (error) {
+                        console.error('Erreur calcul pour sauvegarde:', error);
+                    }
+                }
+            }
+        });
+
+        return reponsesMap;
     };
 
     // Sauvegarde manuelle du brouillon
@@ -149,10 +199,11 @@ function RemplirFormulaireContent() {
         }
     };
 
-    // Charger le brouillon quand l'identifiant patient change
+    // Charger le brouillon quand l'identifiant patient change (uniquement pour les médecins)
     useEffect(() => {
         const loadDraft = async () => {
-            if (!patientIdentifier || !formulaireRecuId || !token) return;
+            // Le mode brouillon n'est disponible que pour les médecins
+            if (!patientIdentifier || !formulaireRecuId || !token || user?.role !== 'medecin') return;
 
             try {
                 const draft = await getDraftForPatient(
@@ -180,7 +231,7 @@ function RemplirFormulaireContent() {
         };
 
         loadDraft();
-    }, [patientIdentifier, formulaireRecuId, token]);
+    }, [patientIdentifier, formulaireRecuId, token, user]);
 
     const handleInitialSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -240,7 +291,7 @@ function RemplirFormulaireContent() {
                 <div className="text-center">
                     <ExclamationCircleIcon className="w-12 h-12 text-red-600 mx-auto mb-4" />
                     <p className="text-gray-900 font-semibold mb-2">Erreur</p>
-                    <p className="text-gray-600">{error || 'Formulaire non trouvÃ©'}</p>
+                    <p className="text-gray-600">{error || 'Formulaire non trouvé'}</p>
                     <button
                         onClick={() => goBack()}
                         className="mt-4 text-blue-600 hover:text-blue-800"
@@ -327,7 +378,7 @@ function RemplirFormulaireContent() {
                                         const isCalculated = parseCalculatedField(champ.unite);
 
                                         if (isCalculated) {
-                                            // Champ calculÃ© - lecture seule
+                                            // Champ calculé - lecture seule
                                             return (
                                                 <div>
                                                     <div className="relative">
@@ -336,7 +387,7 @@ function RemplirFormulaireContent() {
                                                             value={reponses[champ.idChamp] || ''}
                                                             readOnly
                                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
-                                                            placeholder="CalculÃ© automatiquement"
+                                                            placeholder="Calculé automatiquement"
                                                         />
                                                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                                             <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +399,7 @@ function RemplirFormulaireContent() {
                                                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                                         </svg>
-                                                        CalculÃ© automatiquement : {isCalculated.formula}
+                                                        Calculé automatiquement : {isCalculated.formula}
                                                     </p>
                                                 </div>
                                             );
@@ -361,7 +412,7 @@ function RemplirFormulaireContent() {
                                                 maxLength={500}
                                                 rows={3}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                placeholder="(max 500 caractÃ¨res)"
+                                                placeholder="(max 500 caractères)"
                                                 onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
                                             />
                                         );
@@ -389,10 +440,81 @@ function RemplirFormulaireContent() {
                                                     {champ.unite && ` ${champ.unite}`}
                                                 </p>
                                             ) : champ.unite ? (
-                                                <p className="text-xs text-gray-500 mt-1">UnitÃ©: {champ.unite}</p>
+                                                <p className="text-xs text-gray-500 mt-1">Unité: {champ.unite}</p>
                                             ) : null}
                                         </div>
                                     )}
+
+                                    {champ.type?.toUpperCase() === 'CALCULE' && (() => {
+                                        // Parse formula and required fields from unite
+                                        const uniteData = champ.unite?.split(':')[1] || '';
+                                        const [formule, champsRequisStr] = uniteData.split('|');
+                                        const champsRequis = champsRequisStr?.split(',') || [];
+
+                                        // Get values for required fields
+                                        const valeursChamps: Record<string, number> = {};
+                                        let tousRemplis = true;
+
+                                        // Find the required fields and get their values
+                                        champsRequis.forEach((nomVar: string) => {
+                                            const champRequis = formulaireRecu?.formulaire?.champs?.find(
+                                                (c: any) => c.label.toUpperCase().replace(/\s+/g, '_') === nomVar
+                                            );
+                                            if (champRequis && reponses[champRequis.idChamp]) {
+                                                valeursChamps[nomVar] = parseFloat(reponses[champRequis.idChamp]);
+                                            } else {
+                                                tousRemplis = false;
+                                            }
+                                        });
+
+                                        // Calculate the value if all required fields are filled
+                                        let valeurCalculee: number | null = null;
+                                        if (tousRemplis && formule) {
+                                            try {
+                                                // Simple formula evaluation for POIDS/(TAILLE^2)
+                                                // Replace variable names with their values
+                                                let formuleEvaluable = formule;
+                                                Object.keys(valeursChamps).forEach(nomVar => {
+                                                    formuleEvaluable = formuleEvaluable.replace(
+                                                        new RegExp(nomVar, 'g'),
+                                                        valeursChamps[nomVar].toString()
+                                                    );
+                                                });
+
+                                                // Replace ^ with ** for JavaScript
+                                                formuleEvaluable = formuleEvaluable.replace(/\^/g, '**');
+
+                                                // Evaluate the formula
+                                                const resultat = eval(formuleEvaluable);
+
+                                                // Round to 2 decimal places
+                                                if (!isNaN(resultat)) {
+                                                    valeurCalculee = Math.round(resultat * 100) / 100;
+                                                }
+                                            } catch (error) {
+                                                console.error('Erreur de calcul:', error);
+                                            }
+                                        }
+
+                                        return (
+                                            <div className="bg-blue-50 border-2 border-blue-400 rounded-lg px-4 py-3">
+                                                <p className="text-sm text-blue-800 mb-2 font-semibold">
+                                                    Champ calculé automatiquement
+                                                </p>
+                                                {valeurCalculee !== null ? (
+                                                    <div className="bg-white border border-blue-300 rounded px-3 py-2">
+                                                        <p className="text-2xl font-bold text-blue-900">
+                                                            {valeurCalculee}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-blue-600">
+                                                        Remplissez les champs requis : {champsRequis.join(', ')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
 
                                     {champ.type?.toUpperCase() === 'DATE' && (
                                         <input
@@ -472,17 +594,20 @@ function RemplirFormulaireContent() {
                             Annuler
                         </button>
 
-                        <button
-                            type="button"
-                            onClick={handleSaveDraft}
-                            disabled={isSending || isSaving}
-                            className="inline-flex items-center gap-2 px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                            </svg>
-                            {isSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
-                        </button>
+                        {/* Bouton brouillon uniquement pour les médecins */}
+                        {user?.role === 'medecin' && (
+                            <button
+                                type="button"
+                                onClick={handleSaveDraft}
+                                disabled={isSending || isSaving}
+                                className="inline-flex items-center gap-2 px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                </svg>
+                                {isSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
+                            </button>
+                        )}
 
                         <button
                             type="submit"
