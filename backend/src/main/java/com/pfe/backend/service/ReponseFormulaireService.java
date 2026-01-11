@@ -72,20 +72,30 @@ public class ReponseFormulaireService {
         // Vérifier l'autorisation :
         // - si un médecin est assigné, seul ce médecin peut remplir
         // - si aucun médecin n'est assigné (envoi créé par le chercheur), seul le chercheur qui a créé l'envoi peut remplir
-        if (formulaireMedecin.getMedecin() != null) {
-            if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
-                throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
-            }
-        } else {
-            // Aucun médecin assigné → vérifier que c'est bien le chercheur qui a créé l'envoi
-            if (formulaireMedecin.getChercheur() == null || !formulaireMedecin.getChercheur().getEmail().equals(emailMedecin)) {
-                throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ce formulaire");
-            }
+        // Vérifier l'autorisation :
+        // - le médecin assigné peut remplir
+        // - le chercheur créateur du formulaire peut aussi modifier/remplir (pouvoir de correction)
+        boolean estMedecinAssigne = formulaireMedecin.getMedecin() != null && 
+                                    formulaireMedecin.getMedecin().getEmail().equals(emailMedecin);
+        
+        boolean estChercheurCreateur = formulaireMedecin.getFormulaire().getChercheur() != null && 
+                                       formulaireMedecin.getFormulaire().getChercheur().getEmail().equals(emailMedecin);
+
+        // Cas spécial : si aucun médecin n'est assigné (envoi créé par le chercheur pour lui-même ou test)
+        boolean estChercheurSansMedecin = formulaireMedecin.getMedecin() == null && 
+                                          formulaireMedecin.getChercheur() != null && 
+                                          formulaireMedecin.getChercheur().getEmail().equals(emailMedecin);
+
+        if (!estMedecinAssigne && !estChercheurCreateur && !estChercheurSansMedecin) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ou modifier ce formulaire");
         }
 
         String patientIdentifierHash = hashPatientIdentifier(request.getPatientIdentifier());
         
         // Vérifier l'unicité du patient seulement lors de la soumission finale
+        // NOTE: On autorise la mise à jour (overwrite), donc on ne bloque plus si le patient existe déjà.
+        // La méthode supprime les anciennes réponses juste après.
+        /*
         if (!enBrouillon) {
             List<ReponseFormulaire> reponsesFinalesExistantes = reponseFormulaireRepository
                     .findByFormulaireMedecinIdAndPatientIdentifierHashAndDraft(
@@ -101,6 +111,7 @@ public class ReponseFormulaireService {
                 );
             }
         }
+        */
 
         // Supprimer les anciennes réponses (Brouillon ou anciennes) avant de sauvegarder
         reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
@@ -337,17 +348,22 @@ public class ReponseFormulaireService {
 
     /**
      * Supprime toutes les réponses d'un patient donné pour un formulaire.
+     * Accessible au médecin assigné OU au chercheur propriétaire du formulaire.
      *
      * @param formulaireMedecinId ID de l'assignation
      * @param patientIdentifier Identifiant du patient
-     * @param emailMedecin Email du médecin demandeur (sécurité)
+     * @param emailUtilisateur Email de l'utilisateur demandeur (médecin ou chercheur)
      */
     @Transactional
-    public void supprimerReponsesPatient(Long formulaireMedecinId, String patientIdentifier, String emailMedecin) {
+    public void supprimerReponsesPatient(Long formulaireMedecinId, String patientIdentifier, String emailUtilisateur) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
 
-        if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
+        // Vérifier que l'utilisateur est soit le médecin assigné, soit le chercheur propriétaire
+        boolean estMedecin = formulaireMedecin.getMedecin().getEmail().equals(emailUtilisateur);
+        boolean estChercheur = formulaireMedecin.getFormulaire().getChercheur().getEmail().equals(emailUtilisateur);
+        
+        if (!estMedecin && !estChercheur) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ces réponses");
         }
 
@@ -355,6 +371,45 @@ public class ReponseFormulaireService {
         reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
                 formulaireMedecinId,
                 patientIdentifierHash
+        );
+    }
+
+    /**
+     * Supprime toutes les réponses d'un FormulaireMedecin.
+     * Accessible aux médecins (pour leurs formulaires) et aux chercheurs (pour leurs envois).
+     *
+     * @param formulaireMedecinId ID de l'assignation
+     * @param emailUtilisateur Email de l'utilisateur demandeur (médecin ou chercheur)
+     */
+    @Transactional
+    public void supprimerToutesReponsesFormulaire(Long formulaireMedecinId, String emailUtilisateur) {
+        FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
+                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+
+        // Vérifier l'autorisation : médecin assigné OU chercheur créateur
+        boolean estMedecinAutorise = formulaireMedecin.getMedecin() != null && 
+                                      formulaireMedecin.getMedecin().getEmail().equals(emailUtilisateur);
+        boolean estChercheurAutorise = formulaireMedecin.getChercheur() != null && 
+                                        formulaireMedecin.getChercheur().getEmail().equals(emailUtilisateur);
+
+        if (!estMedecinAutorise && !estChercheurAutorise) {
+            throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ces réponses");
+        }
+
+        // Supprimer toutes les réponses
+        reponseFormulaireRepository.deleteByFormulaireMedecinId(formulaireMedecinId);
+
+        // Réinitialiser le statut du FormulaireMedecin
+        formulaireMedecin.setComplete(false);
+        formulaireMedecin.setDateCompletion(null);
+        formulaireMedecinRepository.save(formulaireMedecin);
+
+        activiteService.enregistrerActivite(
+                emailUtilisateur,
+                "Suppression de réponses",
+                "Formulaire",
+                formulaireMedecin.getFormulaire().getIdFormulaire(),
+                "Toutes les réponses du formulaire '" + formulaireMedecin.getFormulaire().getTitre() + "' ont été supprimées"
         );
     }
 
