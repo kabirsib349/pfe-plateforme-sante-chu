@@ -80,18 +80,35 @@ public class ReponseFormulaireController {
         return ResponseEntity.ok(patients);
     }
     
+
+
+    @DeleteMapping("/{formulaireMedecinId}")
+    @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
+    public ResponseEntity<Void> supprimerToutesReponses(
+            @PathVariable Long formulaireMedecinId,
+            Principal principal) {
+        reponseFormulaireService.supprimerToutesReponsesFormulaire(
+                formulaireMedecinId,
+                principal.getName()
+        );
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Supprime les réponses d'un patient spécifique.
+     */
     @DeleteMapping("/{formulaireMedecinId}/patient/{patientIdentifier}")
-    @PreAuthorize("hasAuthority('medecin')")
+    @PreAuthorize("hasAnyAuthority('medecin','chercheur')")
     public ResponseEntity<Void> supprimerReponsesPatient(
             @PathVariable Long formulaireMedecinId,
             @PathVariable String patientIdentifier,
             Principal principal) {
         reponseFormulaireService.supprimerReponsesPatient(
-                formulaireMedecinId, 
-                patientIdentifier, 
+                formulaireMedecinId,
+                patientIdentifier,
                 principal.getName()
         );
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{formulaireMedecinId}/statistiques")
