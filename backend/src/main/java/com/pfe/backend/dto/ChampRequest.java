@@ -22,8 +22,8 @@ public class ChampRequest {
     private String label;
     
     @NotBlank(message = "Le type est obligatoire")
-    @Pattern(regexp = "TEXTE|NOMBRE|DATE|CHOIX_MULTIPLE", 
-             message = "Le type doit être TEXTE, NOMBRE, DATE ou CHOIX_MULTIPLE")
+    @Pattern(regexp = "TEXTE|NOMBRE|DATE|CHOIX_UNIQUE|CHOIX_MULTIPLE|CALCULE", 
+             message = "Le type doit être TEXTE, NOMBRE, DATE, CHOIX_UNIQUE, CHOIX_MULTIPLE ou CALCULE")
     private String type;
     
     @Size(max = 50, message = "L'unité ne peut pas dépasser 50 caractères")
