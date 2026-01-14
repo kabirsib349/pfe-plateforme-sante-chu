@@ -31,10 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
-# Environment variables
+# Environment variables (contains secrets - NEVER commit)
 .env
 .env.local
 .env.*.local
 
-# Application properties with sensitive data
-src/main/resources/application.properties
+# Application properties is NOW versioned (secrets moved to .env)
+# src/main/resources/application.properties

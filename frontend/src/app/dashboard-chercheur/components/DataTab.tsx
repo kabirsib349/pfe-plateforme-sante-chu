@@ -1,196 +1,96 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/hooks/useAuth';
+import { useAggregatedFormulaires } from '@/src/hooks/useAggregatedFormulaires';
+import { usePagination } from '@/src/hooks/usePagination';
 import { Card } from '@/src/components/Card';
 import { Badge } from '@/src/components/Badge';
-import { ChartBarIcon, BookOpenIcon, UserIcon, CalendarDaysIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { EmptyState, LoadingState } from '@/src/components/ui';
-import { getFormulairesEnvoyes, getPatientIdentifiers, getReponses, deleteAllReponses, deletePatientReponses, deleteFormulaireMedecin } from '@/src/lib/api';
+import { deleteAllReponses, deleteFormulaireMedecin, getFormulairesEnvoyes } from '@/src/lib/api';
 import { handleError } from '@/src/lib/errorHandler';
 import { ConfirmationModal } from '@/src/components/ui/ConfirmationModal';
 import { useToast } from '@/src/hooks/useToast';
 import { ToastContainer } from '@/src/components/ToastContainer';
+import type { AggregatedFormulaire } from '@/src/hooks/useAggregatedFormulaires';
 
 const ITEMS_PER_PAGE = 5;
 
+/**
+ * DataTab component for displaying collected form data.
+ * Refactored to use useAggregatedFormulaires and usePagination hooks.
+ */
 export const DataTab: React.FC = React.memo(() => {
   const router = useRouter();
   const { token } = useAuth();
   const { showToast, toasts, removeToast } = useToast();
-  const [formulairesEnvoyes, setFormulairesEnvoyes] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [aggregated, setAggregated] = useState<any[]>([]); // aggregated per formulaire
+
+  // Use the new aggregation hook
+  const {
+    aggregated,
+    formulairesEnvoyes,
+    isLoading,
+    completedCount,
+    refresh
+  } = useAggregatedFormulaires({ token });
+
+  // Use the new pagination hook
+  const {
+    page,
+    setPage,
+    totalPages,
+    paginatedItems,
+    search,
+    setSearch,
+    prevPage,
+    nextPage,
+    hasPrevPage,
+    hasNextPage
+  } = usePagination<AggregatedFormulaire>({
+    items: aggregated,
+    itemsPerPage: ITEMS_PER_PAGE,
+    filterFn: (item, query) => {
+      const q = query.toLowerCase();
+      const titre = (item.formulaire?.titre || "").toLowerCase();
+      const etudeTitre = (item.formulaire?.etude?.titre || "").toLowerCase();
+      return titre.includes(q) || etudeTitre.includes(q);
+    }
+  });
+
+  // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [formulaireToDelete, setFormulaireToDelete] = useState<any>(null);
+  const [formulaireToDelete, setFormulaireToDelete] = useState<AggregatedFormulaire | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteType, setDeleteType] = useState<'responses' | 'formulaire'>('responses');
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [selectedFormulaireMedecinId, setSelectedFormulaireMedecinId] = useState<number | null>(null);
-
-  useEffect(() => {
-    const fetchFormulairesEnvoyes = async () => {
-      if (!token) return;
-
-      try {
-        const data = await getFormulairesEnvoyes(token);
-        setFormulairesEnvoyes(data);
-
-        // Aggregate by formulaire.idFormulaire, tracking latest timestamp per formulaire
-        const map = new Map<number, { formulaire: any; patientIds: Set<string>; totalResponses: number; latestTimestamp: number }>();
-        for (const fe of data) {
-          const fid = fe.formulaire.idFormulaire;
-          const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
-          if (!map.has(fid)) {
-            map.set(fid, { formulaire: fe.formulaire, patientIds: new Set(), totalResponses: 0, latestTimestamp: ts });
-          } else {
-            const curr = map.get(fid)!;
-            if (ts > (curr.latestTimestamp || 0)) curr.latestTimestamp = ts;
-          }
-        }
-
-        // For each FormulaireMedecin entry, try to fetch patient identifiers; if not available, fetch full responses and derive identifiers
-        await Promise.all(data.map(async (fe: any) => {
-          try {
-            const entry = map.get(fe.formulaire.idFormulaire);
-            if (!entry) return;
-
-            let ids: string[] = [];
-            try {
-              ids = await getPatientIdentifiers(token, fe.id);
-            } catch (e) {
-              // endpoint may not exist or fail — we'll fallback to fetching responses
-            }
-
-            if (!ids || ids.length === 0) {
-              // fallback: fetch responses and extract patientIdentifier from multiple possible keys
-              try {
-                const reps = await getReponses(token, fe.id);
-                // helper to pick patient id from a response object
-                const extractPatientId = (r: any): string | null => {
-                  if (!r) return null;
-                  const candidates = [
-                    r.patientIdentifier,
-                    r.patientId,
-                    r.patient?.id,
-                    r.patient?.identifier,
-                    r.patient?.identifierValue,
-                    r.patient_identifier,
-                    r.patient_identifier_value,
-                    r.identifier,
-                    r.patientIdentifierValue,
-                  ];
-                  for (const c of candidates) {
-                    if (c !== undefined && c !== null && String(c).trim() !== '') return String(c);
-                  }
-                  // try if response has a champ named IDENTIFIANT or similar
-                  if (r.champ && r.champ.nomVariable) {
-                    const v = r.valeur;
-                    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v);
-                  }
-                  return null;
-                };
-
-                const extractedSet = new Set<string>();
-                reps.forEach((r: any) => {
-                  const pid = extractPatientId(r);
-                  if (pid) extractedSet.add(pid);
-                });
-
-                if (extractedSet.size > 0) {
-                  extractedSet.forEach(id => entry.patientIds.add(id));
-                } else {
-                  // No patient identifiers found inside responses: count this FormulaireMedecin as one patient
-                  entry.patientIds.add(`fm-${fe.id}`);
-                }
-
-                entry.totalResponses += reps.length;
-              } catch (err) {
-                // if even this fails, as a last resort count the envoi as one patient
-                entry.patientIds.add(`fm-${fe.id}`);
-              }
-            } else {
-              ids.forEach((id) => entry.patientIds.add(id));
-              entry.totalResponses += ids.length;
-            }
-
-            const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
-            if (ts > (entry.latestTimestamp || 0)) entry.latestTimestamp = ts;
-          } catch (e) {
-            // ignore individual failures
-          }
-        }));
-
-        const agg = Array.from(map.values()).map(v => ({
-          formulaire: v.formulaire,
-          patientsCount: v.patientIds.size,
-          totalResponses: v.totalResponses,
-          latestTimestamp: v.latestTimestamp || 0
-        }));
-
-        // Sort by latestTimestamp descending (most recent first)
-        agg.sort((a, b) => (b.latestTimestamp || 0) - (a.latestTimestamp || 0));
-
-        setAggregated(agg);
-
-      } catch (error) {
-        handleError(error, 'FetchFormulairesEnvoyes');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFormulairesEnvoyes();
-  }, [token]);
 
   const handleDelete = async () => {
     if (!token || !formulaireToDelete) return;
 
     setIsDeleting(true);
     try {
-      // Trouver tous les FormulaireMedecin IDs pour ce formulaire
+      // Find all FormulaireMedecin IDs for this formulaire
       const formulaireMedecinIds = formulairesEnvoyes
         .filter(fe => fe.formulaire.idFormulaire === formulaireToDelete.formulaire.idFormulaire)
         .map(fe => fe.id);
 
       if (deleteType === 'formulaire') {
-        // Supprimer tous les FormulaireMedecin complets
+        // Delete complete FormulaireMedecin entries
         await Promise.all(
           formulaireMedecinIds.map(id => deleteFormulaireMedecin(token, id))
         );
         showToast('Formulaire supprimé avec succès', 'success');
       } else {
-        // Supprimer uniquement les réponses
+        // Delete only responses
         await Promise.all(
           formulaireMedecinIds.map(id => deleteAllReponses(token, id))
         );
         showToast('Toutes les réponses ont été supprimées', 'success');
       }
 
-      // Rafraîchir les données
-      const data = await getFormulairesEnvoyes(token);
-      setFormulairesEnvoyes(data);
-
-      // Recalculer l'agrégation
-      const map = new Map<number, { formulaire: any; patientIds: Set<string>; totalResponses: number; latestTimestamp: number }>();
-      for (const fe of data) {
-        const fid = fe.formulaire.idFormulaire;
-        const ts = fe.dateCompletion ? new Date(fe.dateCompletion).getTime() : (fe.dateEnvoi ? new Date(fe.dateEnvoi).getTime() : 0);
-        if (!map.has(fid)) {
-          map.set(fid, { formulaire: fe.formulaire, patientIds: new Set(), totalResponses: 0, latestTimestamp: ts });
-        }
-      }
-
-      const agg = Array.from(map.values()).map(v => ({
-        formulaire: v.formulaire,
-        patientsCount: v.patientIds.size,
-        totalResponses: v.totalResponses,
-        latestTimestamp: v.latestTimestamp || 0
-      }));
-
-      agg.sort((a, b) => (b.latestTimestamp || 0) - (a.latestTimestamp || 0));
-      setAggregated(agg);
+      // Refresh data
+      await refresh();
 
     } catch (error) {
       const err = handleError(error, 'DeleteReponses');
@@ -202,58 +102,29 @@ export const DataTab: React.FC = React.memo(() => {
     }
   };
 
-  const handleDeletePatient = async (patientId: string) => {
-    if (!token || !selectedFormulaireMedecinId) return;
-
-    try {
-      await deletePatientReponses(token, selectedFormulaireMedecinId, patientId);
-      showToast('Patient supprimé avec succès', 'success');
-
-      // Refresh data
-      const data = await getFormulairesEnvoyes(token);
-      setFormulairesEnvoyes(data);
-    } catch (error) {
-      const err = handleError(error, 'DeletePatient');
-      showToast(err.userMessage, 'error');
-    }
+  const openDeleteModal = (item: AggregatedFormulaire, type: 'responses' | 'formulaire') => {
+    setFormulaireToDelete(item);
+    setDeleteType(type);
+    setDeleteModalOpen(true);
   };
-
-  const formulairesCompletes = formulairesEnvoyes.filter((f) => f.complete);
-
-  // Filter aggregated by formulaire titre / etude
-  const filtered = aggregated.filter((a) => {
-    const q = search.toLowerCase();
-    const titre = (a.formulaire?.titre || "").toLowerCase();
-    const etudeTitre = (a.formulaire?.etude?.titre || "").toLowerCase();
-    return titre.includes(q) || etudeTitre.includes(q);
-  });
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedItems = filtered.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
 
   return (
     <>
       <Card
         title="Formulaires complétés"
-        subtitle={`${formulairesCompletes.length} formulaire${formulairesCompletes.length !== 1 ? 's' : ''} rempli${formulairesCompletes.length !== 1 ? 's' : ''}`}
+        subtitle={`${completedCount} formulaire${completedCount !== 1 ? 's' : ''} rempli${completedCount !== 1 ? 's' : ''}`}
       >
         {isLoading ? (
           <LoadingState />
         ) : (
           <>
-            {/* --- Barre de recherche --- */}
+            {/* Search bar */}
             <div className="mb-4">
               <input
                 type="text"
                 placeholder="Rechercher un formulaire, une étude ou un médecin..."
                 value={search}
-                onChange={(e) => {
-                  setPage(1);
-                  setSearch(e.target.value);
-                }}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
               />
             </div>
@@ -293,11 +164,7 @@ export const DataTab: React.FC = React.memo(() => {
 
                           <div className="relative group">
                             <button
-                              onClick={() => {
-                                setFormulaireToDelete(item);
-                                setDeleteType('responses');
-                                setDeleteModalOpen(true);
-                              }}
+                              onClick={() => openDeleteModal(item, 'responses')}
                               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
                             >
                               <TrashIcon className="w-5 h-5" />
@@ -307,21 +174,13 @@ export const DataTab: React.FC = React.memo(() => {
                             {/* Dropdown menu */}
                             <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                               <button
-                                onClick={() => {
-                                  setFormulaireToDelete(item);
-                                  setDeleteType('responses');
-                                  setDeleteModalOpen(true);
-                                }}
+                                onClick={() => openDeleteModal(item, 'responses')}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700 rounded-t-lg"
                               >
                                 Supprimer les réponses
                               </button>
                               <button
-                                onClick={() => {
-                                  setFormulaireToDelete(item);
-                                  setDeleteType('formulaire');
-                                  setDeleteModalOpen(true);
-                                }}
+                                onClick={() => openDeleteModal(item, 'formulaire')}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600 font-medium rounded-b-lg border-t"
                               >
                                 Supprimer le formulaire complet
@@ -334,11 +193,11 @@ export const DataTab: React.FC = React.memo(() => {
                   ))}
                 </div>
 
-                {/* --- Pagination --- */}
+                {/* Pagination */}
                 <div className="flex justify-center items-center gap-4 mt-6">
                   <button
-                    disabled={page === 1}
-                    onClick={() => setPage(page - 1)}
+                    disabled={!hasPrevPage}
+                    onClick={prevPage}
                     className="px-3 py-1 border rounded disabled:opacity-50"
                   >
                     Précédent
@@ -349,8 +208,8 @@ export const DataTab: React.FC = React.memo(() => {
                   </span>
 
                   <button
-                    disabled={page === totalPages}
-                    onClick={() => setPage(page + 1)}
+                    disabled={!hasNextPage}
+                    onClick={nextPage}
                     className="px-3 py-1 border rounded disabled:opacity-50"
                   >
                     Suivant
@@ -369,8 +228,12 @@ export const DataTab: React.FC = React.memo(() => {
           setFormulaireToDelete(null);
         }}
         onConfirm={handleDelete}
-        title="Supprimer les réponses"
-        message={`Êtes-vous sûr de vouloir supprimer toutes les réponses du formulaire "${formulaireToDelete?.formulaire?.titre}" ? Cette action est irréversible.`}
+        title={deleteType === 'formulaire' ? 'Supprimer le formulaire' : 'Supprimer les réponses'}
+        message={
+          deleteType === 'formulaire'
+            ? `Êtes-vous sûr de vouloir supprimer le formulaire "${formulaireToDelete?.formulaire?.titre}" et toutes ses réponses ? Cette action est irréversible.`
+            : `Êtes-vous sûr de vouloir supprimer toutes les réponses du formulaire "${formulaireToDelete?.formulaire?.titre}" ? Cette action est irréversible.`
+        }
         confirmText={isDeleting ? "Suppression..." : "Supprimer"}
         variant="danger"
       />
