@@ -21,8 +21,9 @@ const DashboardHeader = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Ne pas afficher le header sur les pages de login/register
-  if (!user || pathname === '/login' || pathname === '/register') {
+  // Ne pas afficher le header sur les pages publiques (login/register/accueil)
+  const publicPaths = ['/', '/login', '/register'];
+  if (!user || publicPaths.includes(pathname)) {
     return null;
   }
 

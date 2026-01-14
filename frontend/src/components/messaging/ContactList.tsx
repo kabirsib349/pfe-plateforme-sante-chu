@@ -90,7 +90,7 @@ export const ContactList = ({
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-gray-800 truncate">{contact.nom}</p>
-                                <p className="text-xs text-gray-500">{contact.email}</p>
+
                             </div>
                         </div>
                         {unreadCounts[contact.id] > 0 && (

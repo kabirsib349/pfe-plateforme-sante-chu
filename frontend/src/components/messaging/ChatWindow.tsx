@@ -59,7 +59,6 @@ export const ChatWindow = ({
                     </div>
                     <div>
                         <p className="font-semibold text-gray-800">{selectedContact.nom}</p>
-                        <p className="text-xs text-gray-500">{selectedContact.email}</p>
                     </div>
                 </div>
             </div>
