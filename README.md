@@ -35,7 +35,7 @@ La plateforme vise à remplacer les processus manuels ou non sécurisés par une
 
 ### Backend
 *   **Langage** : Java 17+
-*   **Framework** : Spring Boot 3
+*   **Framework** : Spring Boot 3.5.3 (Compatible Java 17+)
 *   **Sécurité** : Spring Security, JWT (JSON Web Tokens)
 *   **Base de Données** : PostgreSQL
 *   **ORM** : Spring Data JPA, Hibernate
@@ -66,14 +66,23 @@ Le backend est situé dans le répertoire `backend`.
     cd backend
     ```
 
-2.  Configurez la base de données :
-    *   Ouvrez le fichier `src/main/resources/application.properties`.
-    *   Modifiez les paramètres de connexion (URL, username, password) pour correspondre à votre instance PostgreSQL locale.
+    2.  Configurez les variables d'environnement :
+    *   Créez un fichier `.env` dans le dossier `backend` (ou à la racine du projet).
+    *   Ajoutez les variables requises (voir le fichier `.env.example` si disponible ou basés sur les besoins) :
     ```properties
-    spring.datasource.url=jdbc:postgresql://localhost:5432/votre_base
-    spring.datasource.username=votre_utilisateur
-    spring.datasource.password=votre_mot_de_passe
+    # Configuration Base de Données
+    DB_URL=jdbc:postgresql://localhost:5432/nom_de_votre_base
+    DB_USERNAME=votre_utilisateur
+    DB_PASSWORD=votre_mot_de_passe
+
+    # Sécurité JWT (Obligatoire)
+    JWT_SECRET_KEY=votre_clé_secrète_très_longue_et_sécurisée_pour_chiffrement
+    ENCRYPTION_KEY=votre_clé_chiffrement_données
+    
+    # CORS
+    CORS_ALLOWED_ORIGINS=http://localhost:3000
     ```
+    *Note : L'application charge automatiquement ce fichier `.env` au démarrage.*
 
 3.  Compilez et lancez l'application :
     ```bash
