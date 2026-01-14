@@ -1,4 +1,6 @@
-# Plateforme de Collecte de Données de Santé - CHU
+# MedDataCollect - Plateforme de Collecte de Données de Santé
+
+[![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/summary/new_code?id=kabirsib349_pfe-plateforme-sante-chu)
 
 ## Description du Projet
 Ce projet de fin d'étude (PFE) a pour objectif de développer une plateforme web sécurisée, intuitive et conforme au RGPD. Elle permet aux chercheurs et aux médecins hospitaliers de collaborer efficacement pour la création de formulaires d'étude, la collecte de données médicales auprès des patients et l'exportation standardisée de ces données pour la recherche.
@@ -40,10 +42,11 @@ La plateforme vise à remplacer les processus manuels ou non sécurisés par une
 *   **Outils** : Maven, Lombok
 
 ### Frontend
-*   **Framework** : Next.js 15 (React)
-*   **Langage** : TypeScript
-*   **Styles** : Tailwind CSS
-*   **Composants** : Headless UI, Heroicons
+*   **Framework** : Next.js 15.5 (React 19)
+*   **Langage** : TypeScript 5
+*   **Styles** : Tailwind CSS 4
+*   **Animations** : Framer Motion
+*   **Composants** : Heroicons
 
 ## Prérequis
 Avant de lancer le projet, assurez-vous de disposer des outils suivants :
@@ -124,5 +127,4 @@ Le projet suit une architecture classique en couches :
 *   **Quality Manager** : KABIR SALEH Ibrahim
 *   **Test Manager** : YIMGA Samuelle
 
----
-*Ce projet a été réalisé dans le cadre du cursus d'ingénierie.*
+
