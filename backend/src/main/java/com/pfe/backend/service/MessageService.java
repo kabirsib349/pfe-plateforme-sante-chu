@@ -114,8 +114,6 @@ public class MessageService {
         return messageRepository.countByDestinataireIdAndLuFalse(chercheurId);
     }
 
-
-
     /**
      * Compte les messages non lus envoyés par emetteurId vers destinataireId.
      */
@@ -127,8 +125,23 @@ public class MessageService {
         return messageRepository.countByDestinataireIdAndLuFalse(idMedecin);
     }
 
+    /**
+     * Supprime un message si l'utilisateur est bien l'émetteur.
+     *
+     * @param messageId ID du message à supprimer
+     * @param userId ID de l'utilisateur qui demande la suppression
+     * @throws RuntimeException si le message n'existe pas
+     * @throws AccessDeniedException si l'utilisateur n'est pas l'émetteur
+     */
+    public void supprimerMessage(Long messageId, Long userId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message non trouvé"));
 
+        if (!message.getEmetteur().getId().equals(userId)) {
+            throw new AccessDeniedException("Vous ne pouvez supprimer que vos propres messages");
+        }
 
-
+        messageRepository.delete(message);
+    }
 
 }

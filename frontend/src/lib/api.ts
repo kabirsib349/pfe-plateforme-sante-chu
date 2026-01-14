@@ -475,6 +475,18 @@ export async function countMessagesNonLusMedecin(token: string, medecinId: numbe
     return handleResponse<number>(response);
 }
 
+/**
+ * Supprime un message (seul l'émetteur peut supprimer son propre message)
+ */
+export async function deleteMessage(token: string, messageId: number, userId: number): Promise<void> {
+    const response = await fetch(apiUrl(`/api/messages/${messageId}?userId=${userId}`), {
+        method: 'DELETE',
+        headers: createHeaders(token),
+    });
+
+    await handleResponse<void>(response);
+}
+
 // ============= CUSTOM QUESTIONS API =============
 
 export async function getCustomQuestions(token: string): Promise<QuestionPersonnalisee[]> {

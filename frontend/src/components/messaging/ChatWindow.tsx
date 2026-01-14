@@ -1,9 +1,10 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { User, Message } from "@/src/types";
 import { getInitials, groupMessagesByDay, formatTime } from "@/src/utils/messaging";
 import {
     PaperAirplaneIcon,
-    ChatBubbleLeftRightIcon
+    ChatBubbleLeftRightIcon,
+    TrashIcon
 } from "@heroicons/react/24/outline";
 
 interface ChatWindowProps {
@@ -14,6 +15,7 @@ interface ChatWindowProps {
     newMessage: string;
     onNewMessageChange: (val: string) => void;
     onSendMessage: () => void;
+    onDeleteMessage?: (messageId: number) => Promise<void>;
 }
 
 export const ChatWindow = ({
@@ -23,10 +25,12 @@ export const ChatWindow = ({
     loading,
     newMessage,
     onNewMessageChange,
-    onSendMessage
+    onSendMessage,
+    onDeleteMessage
 }: ChatWindowProps) => {
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -80,14 +84,39 @@ export const ChatWindow = ({
                             </div>
                             {group.items.map((msg) => {
                                 const isMe = msg.emetteur.id === currentUser?.id;
+                                const isDeleting = deletingId === msg.id;
+
+                                const handleDelete = async () => {
+                                    if (!onDeleteMessage) return;
+
+                                    setDeletingId(msg.id);
+                                    try {
+                                        await onDeleteMessage(msg.id);
+                                    } finally {
+                                        setDeletingId(null);
+                                    }
+                                };
+
                                 return (
-                                    <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fadeIn`}>
-                                        <div className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${isMe
+                                    <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fadeIn group`}>
+                                        <div className={`relative max-w-[75%] px-4 py-3 rounded-2xl shadow-sm ${isMe
                                             ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-sm"
                                             : "bg-white border border-gray-200 rounded-bl-sm"
-                                            }`}>
+                                            } ${isDeleting ? "opacity-50" : ""}`}>
                                             <p className="text-sm leading-relaxed">{msg.contenu}</p>
                                             <p className={`text-xs mt-1.5 ${isMe ? "text-blue-100" : "text-gray-400"}`}>{formatTime(msg.dateEnvoi)}</p>
+
+                                            {/* Bouton supprimer */}
+                                            {isMe && onDeleteMessage && (
+                                                <button
+                                                    onClick={handleDelete}
+                                                    disabled={isDeleting}
+                                                    className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white shadow-md border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 disabled:cursor-not-allowed"
+                                                    title="Supprimer ce message"
+                                                >
+                                                    <TrashIcon className={`w-4 h-4 ${isDeleting ? "text-gray-300" : "text-red-500"}`} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );

@@ -5,14 +5,18 @@ import com.pfe.backend.model.Utilisateur;
 import com.pfe.backend.service.MessageService;
 import com.pfe.backend.service.UtilisateurService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -174,6 +178,31 @@ public class MessageController {
     public ResponseEntity<Long> getNombreNonLusPourMedecin(@PathVariable Long idMedecin) {
         long count = messageService.countMessagesNonLusPourMedecin(idMedecin);
         return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Supprime un message.
+     * Seul l'émetteur du message peut le supprimer.
+     *
+     * @param id identifiant du message
+     * @param userId identifiant de l'utilisateur qui demande la suppression
+     * @return message de confirmation ou erreur
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> supprimerMessage(
+            @PathVariable Long id,
+            @RequestParam Long userId
+    ) {
+        try {
+            messageService.supprimerMessage(id, userId);
+            return ResponseEntity.ok(Map.of("message", "Message supprimé avec succès."));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Erreur lors de la suppression : " + e.getMessage()));
+        }
     }
 
 }

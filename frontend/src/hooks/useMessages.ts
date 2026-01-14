@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/src/hooks/useAuth";
 import {
     getMedecins,
@@ -7,7 +7,8 @@ import {
     sendMessage as apiSendMessage,
     marquerMessagesLusChercheur,
     marquerMessagesLusMedecin,
-    countMessagesNonLus
+    countMessagesNonLus,
+    deleteMessage as apiDeleteMessage
 } from "@/src/lib/api";
 import { User, Message } from "@/src/types";
 
@@ -24,13 +25,13 @@ export interface UseMessagesReturn {
      */
     selectContact: (contact: User) => void;
     sendMessage: (content: string) => Promise<void>;
+    deleteMessage: (messageId: number) => Promise<void>;
     refreshMessages: () => Promise<void>;
 }
 
 /**
  * Hook de gestion de la messagerie instantanée.
  * Centralise la récupération des contacts, des messages, et l'envoi.
- * Gère le polling automatique pour les nouveaux messages.
  * 
  * @param userType Type de l'utilisateur connecté ('chercheur' ou 'medecin')
  * @param onMessagesRead Callback optionnel appelé quand des messages sont marqués comme lus
@@ -44,7 +45,11 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Charger les contacts
+    // Utiliser useRef pour éviter les re-renders à cause de onMessagesRead
+    const onMessagesReadRef = useRef(onMessagesRead);
+    onMessagesReadRef.current = onMessagesRead;
+
+    // Charger les contacts (une seule fois au montage ou quand token/userType change)
     useEffect(() => {
         const loadContacts = async () => {
             if (!token) return;
@@ -61,17 +66,14 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
         loadContacts();
     }, [token, userType]);
 
-    // -- POLLING --
-
-    // Compter les non-lus
+    // Compter les non-lus (une seule fois quand les contacts sont chargés)
     useEffect(() => {
         if (!user?.id || !token || contacts.length === 0) return;
+
         const loadUnreadCounts = async () => {
             const counts: Record<number, number> = {};
             for (const contact of contacts) {
                 try {
-                    // Note: L'API countMessagesNonLus prend (destinataire, emetteur)
-                    // On veut savoir combien de messages non lus ce contact nous a envoyé
                     const count = await countMessagesNonLus(token, user.id!, contact.id);
                     counts[contact.id] = count;
                 } catch (e) {
@@ -81,9 +83,8 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
             setUnreadCounts(counts);
         };
         loadUnreadCounts();
-    }, [contacts, user, token]);
-
-    // -- API CALLS --
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contacts.length, user?.id, token]);
 
     /**
      * Charge la conversation entre l'utilisateur actuel et le contact sélectionné.
@@ -110,7 +111,8 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
             // Mise à jour locale du compteur
             setUnreadCounts(prev => ({ ...prev, [selectedContact.id]: 0 }));
 
-            if (onMessagesRead) onMessagesRead();
+            // Appeler le callback via ref (ne déclenche pas de re-render)
+            if (onMessagesReadRef.current) onMessagesReadRef.current();
 
         } catch (err) {
             console.error("Erreur conversation", err);
@@ -118,18 +120,19 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
         } finally {
             setLoading(false);
         }
-    }, [selectedContact, user?.id, token, userType, onMessagesRead]);
+    }, [selectedContact?.id, user?.id, token, userType]);
 
-    // Recharger quand le contact change
+    // Recharger quand le contact change (dépendance stable: selectedContact.id)
     useEffect(() => {
         if (selectedContact) {
             loadMessages();
         } else {
             setMessages([]);
         }
-    }, [selectedContact, loadMessages]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedContact?.id]);
 
-    const sendMessage = async (content: string) => {
+    const sendMessage = useCallback(async (content: string) => {
         if (!content.trim() || !user?.id || !selectedContact || !token) return;
 
         try {
@@ -143,7 +146,19 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
             console.error("Erreur envoi", err);
             throw err;
         }
-    };
+    }, [user?.id, selectedContact?.id, token, loadMessages]);
+
+    const deleteMessage = useCallback(async (messageId: number) => {
+        if (!user?.id || !token) return;
+
+        try {
+            await apiDeleteMessage(token, messageId, user.id);
+            await loadMessages(); // Rafraîchir la conversation
+        } catch (err) {
+            console.error("Erreur suppression", err);
+            throw err;
+        }
+    }, [user?.id, token, loadMessages]);
 
     return {
         contacts,
@@ -154,6 +169,7 @@ export const useMessages = (userType: "chercheur" | "medecin", onMessagesRead?: 
         error,
         selectContact: setSelectedContact,
         sendMessage,
+        deleteMessage,
         refreshMessages: loadMessages
     };
 };
