@@ -160,17 +160,6 @@ const DashboardHeader = () => {
                         <Cog6ToothIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                         <span>Paramètres du compte</span>
                       </button>
-
-                      <button
-                        onClick={() => {
-                          router.push(getDashboardPath());
-                          setIsMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors group"
-                      >
-                        <UserCircleIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                        <span>Mon profil</span>
-                      </button>
                     </div>
 
                     {/* Déconnexion */}
