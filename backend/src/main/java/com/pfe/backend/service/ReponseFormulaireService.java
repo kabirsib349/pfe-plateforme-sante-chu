@@ -17,12 +17,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Service de gestion des réponses aux formulaires.
@@ -36,14 +33,12 @@ public class ReponseFormulaireService {
     private final FormulaireMedecinRepository formulaireMedecinRepository;
     private final ChampRepository champRepository;
     private final ActiviteService activiteService;
+    private final PatientIdentifierCounterService patientIdentifierCounterService;
 
     // Constants for error messages and activity logging
     private static final String FORMULAIRE_MEDECIN_NOT_FOUND = "Formulaire médecin non trouvé";
     private static final String FORMULAIRE_ENTITY = "Formulaire";
     private static final String FORMULAIRE_PREFIX = "Formulaire '";
-
-    // Pattern pour extraire le compteur final sur 4 chiffres
-    private static final Pattern PATIENT_COUNTER_PATTERN = Pattern.compile("-(\\d{4})$");
 
     // Méthode utilitaire pour hacher l'identifiant du patient
     private String hashPatientIdentifier(String identifier) {
@@ -97,20 +92,10 @@ public class ReponseFormulaireService {
 
         String etudeSlug = slugifyTitreEtude(formulaireMedecin.getFormulaire().getTitre());
 
-        // Recuperer toutes les reponses existantes pour ce formulaireMedecin pour calculer le compteur
-        List<ReponseFormulaire> existantes = reponseFormulaireRepository.findByFormulaireMedecinId(formulaireMedecin.getId());
+        // Utiliser un compteur atomique en base pour éviter les doublons en cas de concurrence
+        Long formulaireId = formulaireMedecin.getFormulaire().getIdFormulaire();
+        int nextCounter = patientIdentifierCounterService.getNextCounterForFormulaire(formulaireId);
 
-        int maxCounter = existantes.stream()
-                .map(ReponseFormulaire::getPatientIdentifier)
-                .filter(pi -> pi != null && !pi.isEmpty())
-                .map(PATIENT_COUNTER_PATTERN::matcher)
-                .filter(Matcher::find)
-                .map(m -> m.group(1))
-                .mapToInt(Integer::parseInt)
-                .max()
-                .orElse(0);
-
-        int nextCounter = maxCounter + 1;
         String counterStr = String.format("%04d", nextCounter);
 
         return nomInitial + "-" + prenomInitial + "-" + etudeSlug + "-" + counterStr;
@@ -447,7 +432,7 @@ public class ReponseFormulaireService {
         boolean estMedecinAutorise = formulaireMedecin.getMedecin() != null && 
                                       formulaireMedecin.getMedecin().getEmail().equals(emailUtilisateur);
         boolean estChercheurAutorise = formulaireMedecin.getChercheur() != null && 
-                                        formulaireMedecin.getChercheur().getEmail().equals(emailUtilisateur);
+                                        formulaireMedecin.getFormulaire().getChercheur().getEmail().equals(emailUtilisateur);
 
         if (!estMedecinAutorise && !estChercheurAutorise) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ces réponses");

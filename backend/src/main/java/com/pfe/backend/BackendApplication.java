@@ -29,7 +29,6 @@ public class BackendApplication {
                 processEnvLine(line);
             }
         } catch (java.io.FileNotFoundException e) {
-            // Should not happen as we checked exists(), but ignore
         }
     }
     

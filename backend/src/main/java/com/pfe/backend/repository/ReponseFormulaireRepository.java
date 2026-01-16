@@ -70,5 +70,8 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
     @Query("SELECT DISTINCT r.patientIdentifierHash FROM ReponseFormulaire r " +
            "WHERE r.formulaireMedecin.id = :formulaireMedecinId AND r.draft = true")
     List<String> findDistinctDraftPatientHashes(@Param("formulaireMedecinId") Long formulaireMedecinId);
-}
 
+    // Nouveauté: récupérer les ids distincts de formulaire (utilisé pour init compteur)
+    @Query("SELECT DISTINCT r.formulaireMedecin.formulaire.id FROM ReponseFormulaire r")
+    List<Long> findDistinctFormulaireIds();
+}
