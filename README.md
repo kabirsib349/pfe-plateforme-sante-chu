@@ -68,7 +68,7 @@ Le backend est situé dans le répertoire `backend`.
 
     2.  Configurez les variables d'environnement :
     *   Créez un fichier `.env` dans le dossier `backend` (ou à la racine du projet).
-    *   Ajoutez les variables requises (voir le fichier `.env.example` si disponible ou basés sur les besoins) :
+    *   Ajoutez les variables requises (voir le fichier `.env.example`) :
     ```properties
     # Configuration Base de Données
     DB_URL=jdbc:postgresql://localhost:5432/nom_de_votre_base
