@@ -56,10 +56,13 @@ public class FormulaireMedecinService {
         Utilisateur chercheur = utilisateurRepository.findByEmail(emailChercheur)
                 .orElseThrow(() -> new ResourceNotFoundException("Chercheur non trouvé avec l'email: " + emailChercheur));
 
-        // Vérifier si le formulaire a déjà été envoyé à ce médecin
+        // Vérifier si le formulaire a déjà été envoyé à ce médecin (et n'est pas masqué)
         formulaireMedecinRepository.findByFormulaireIdFormulaireAndMedecinEmail(formulaireId, emailMedecin)
                 .ifPresent(fm -> {
-                    throw new IllegalArgumentException("Ce formulaire a déjà été envoyé au Dr. " + medecin.getNom() + ". Le médecin peut le remplir plusieurs fois pour différents patients.");
+                    // Permettre le renvoi si le formulaire a été supprimé (masqué) par le médecin ou le chercheur
+                    if (!fm.getMasquePourMedecin() && !fm.getMasquePourChercheur()) {
+                        throw new IllegalArgumentException("Ce formulaire a déjà été envoyé au Dr. " + medecin.getNom() + ". Le médecin peut le remplir plusieurs fois pour différents patients.");
+                    }
                 });
 
         // Mettre à jour le statut du formulaire à PUBLIE lors du premier envoi
@@ -194,6 +197,9 @@ public class FormulaireMedecinService {
     }
 
     private void masquer(FormulaireMedecin fm, boolean pourMedecin) {
+        String action = pourMedecin ? "Suppression formulaire (médecin)" : "Suppression formulaire (chercheur)";
+        String email = pourMedecin ? fm.getMedecin().getEmail() : fm.getChercheur().getEmail();
+        
         if (pourMedecin) {
             fm.setMasquePourMedecin(true);
         } else {
@@ -201,9 +207,18 @@ public class FormulaireMedecinService {
         }
 
         formulaireMedecinRepository.save(fm);
+        
+        // Enregistrer l'activité
+        activiteService.enregistrerActivite(
+            email,
+            action,
+            "FormulaireMedecin",
+            fm.getId(),
+            "Formulaire '" + fm.getFormulaire().getTitre() + "' supprimé du dashboard"
+        );
 
         // Supprimer définitivement si masqué des deux côtés
-        if (fm.isMasquePourMedecin() && fm.isMasquePourChercheur()) {
+        if (fm.getMasquePourMedecin() && fm.getMasquePourChercheur()) {
             supprimerDefinitivement(fm);
         }
     }

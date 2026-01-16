@@ -148,6 +148,15 @@ public class FormulaireController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/envoyes/{formulaireMedecinId}")
+    @PreAuthorize("hasAuthority('chercheur')")
+    public ResponseEntity<Void> supprimerPourChercheur(
+            @PathVariable Long formulaireMedecinId,
+            Principal principal) {
+        formulaireMedecinService.masquerPourChercheur(formulaireMedecinId, principal.getName());
+        return ResponseEntity.ok().build();
+    }
+
     /**
      * Supprime un FormulaireMedecin (formulaire rempli) avec toutes ses réponses.
      * Accessible uniquement au chercheur propriétaire.
