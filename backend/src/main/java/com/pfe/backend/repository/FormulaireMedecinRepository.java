@@ -1,9 +1,7 @@
 package com.pfe.backend.repository;
 
 import com.pfe.backend.model.FormulaireMedecin;
-import com.pfe.backend.model.Utilisateur;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
