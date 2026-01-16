@@ -42,8 +42,8 @@ public class FormulaireEnvoyeResponse {
         FormulaireEnvoyeResponse response = new FormulaireEnvoyeResponse();
         response.setId(fm.getId());
         response.setDateEnvoi(fm.getDateEnvoi());
-        response.setLu(fm.isLu());
-        response.setComplete(fm.isComplete());
+        response.setLu(fm.getLu());
+        response.setComplete(fm.getComplete());
         response.setDateCompletion(fm.getDateCompletion());
 
         // Médecin

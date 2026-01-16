@@ -48,23 +48,23 @@ public class FormulaireMedecin {
     @Column(name="statut")
     private StatutFormulaire statut;
 
-    @Column(name="lu", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean lu = false;
+    @Column(name="lu", nullable = false)
+    private Boolean lu = false;
 
     @Column(name="date_lecture")
     private LocalDateTime dateLecture;
 
-    @Column(name="complete", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean complete = false;
+    @Column(name="complete", nullable = false)
+    private Boolean complete = false;
 
     @Column(name="date_completion")
     private LocalDateTime dateCompletion;
 
-    @Column(name="masque_pour_medecin", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean masquePourMedecin = false;
+    @Column(name="masque_pour_medecin", nullable = false)
+    private Boolean masquePourMedecin = false;
 
-    @Column(name="masque_pour_chercheur", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean masquePourChercheur = false;
+    @Column(name="masque_pour_chercheur", nullable = false)
+    private Boolean masquePourChercheur = false;
 
     @PrePersist
     public void onCreate(){

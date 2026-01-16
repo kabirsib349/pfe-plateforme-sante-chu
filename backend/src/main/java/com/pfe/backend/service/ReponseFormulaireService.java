@@ -186,7 +186,7 @@ public class ReponseFormulaireService {
         }
 
         // Démasquer pour le chercheur si c'était masqué (pour qu'il voie les nouvelles réponses)
-        if (formulaireMedecin.isMasquePourChercheur()) {
+        if (formulaireMedecin.getMasquePourChercheur()) {
             formulaireMedecin.setMasquePourChercheur(false);
         }
 
@@ -219,7 +219,7 @@ public class ReponseFormulaireService {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à accéder à ce formulaire");
         }
 
-        if (!formulaireMedecin.isLu()) {
+        if (!formulaireMedecin.getLu()) {
             formulaireMedecin.setLu(true);
             formulaireMedecin.setDateLecture(LocalDateTime.now());
             formulaireMedecinRepository.save(formulaireMedecin);
@@ -428,8 +428,8 @@ public class ReponseFormulaireService {
         long nombreTotal = reponseFormulaireRepository.countDistinctPatients(formulaireMedecinId);
         
         // Si le formulaire est complété, toutes les réponses sont soumises
-        long nombreCompletes = fm.isComplete() ? nombreTotal : 0;
-        long nombreEnCours = fm.isComplete() ? 0 : nombreTotal;
+        long nombreCompletes = fm.getComplete() ? nombreTotal : 0;
+        long nombreEnCours = fm.getComplete() ? 0 : nombreTotal;
         
         return new com.pfe.backend.dto.StatistiqueFormulaireDto(nombreCompletes, nombreEnCours);
     }

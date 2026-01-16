@@ -59,8 +59,8 @@ public class FormulaireRecuResponse {
         response.setId(fm.getId());
         response.setDateEnvoi(fm.getDateEnvoi());
         response.setStatut(fm.getStatut() != null ? fm.getStatut().name() : null);
-        response.setLu(fm.isLu());
-        response.setComplete(fm.isComplete());
+        response.setLu(fm.getLu());
+        response.setComplete(fm.getComplete());
 
         // Chercheur
         if (fm.getChercheur() != null) {
