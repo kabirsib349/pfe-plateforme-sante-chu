@@ -15,72 +15,85 @@ import java.util.stream.Collectors;
 @Service
 public class CsvExportService {
 
+    // Category name constants
+    private static final String CAT_IDENTITE_PATIENT = "IDENTITE PATIENT";
+    private static final String CAT_ANTECEDENTS = "ANTECEDENTS";
+    private static final String CAT_SEJOUR_HOPITAL = "SEJOUR HOPITAL";
+    private static final String CAT_CONSULTATION = "CONSULTATION";
+    private static final String CAT_BILAN_PRE_OP = "BILAN PRE OPERATOIRE";
+    private static final String CAT_PER_OP = "PER OPERATOIRE";
+    private static final String CAT_POST_OP = "POST OPERATOIRE";
+    private static final String CAT_TRANSFUSION = "TRANSFUSION";
+    private static final String CAT_RECUPERATION = "RECUPERATION";
+    private static final String CAT_COMPLICATIONS = "COMPLICATIONS";
+    private static final String CAT_AUTRE = "AUTRE";
+
     private static final Map<String, String> CATEGORY_MAPPING = Map.ofEntries(
-            Map.entry("Sexe", "IDENTITE PATIENT"),
-            Map.entry("Age", "IDENTITE PATIENT"),
-            Map.entry("Taille", "IDENTITE PATIENT"),
-            Map.entry("Poids", "IDENTITE PATIENT"),
-            Map.entry("IMC", "IDENTITE PATIENT"),
-            Map.entry("ASA", "IDENTITE PATIENT"),
-            Map.entry("Type de chirurgie prevue", "IDENTITE PATIENT"),
+            Map.entry("Sexe", CAT_IDENTITE_PATIENT),
+            Map.entry("Age", CAT_IDENTITE_PATIENT),
+            Map.entry("Taille", CAT_IDENTITE_PATIENT),
+            Map.entry("Poids", CAT_IDENTITE_PATIENT),
+            Map.entry("IMC", CAT_IDENTITE_PATIENT),
+            Map.entry("ASA", CAT_IDENTITE_PATIENT),
+            Map.entry("Type de chirurgie prevue", CAT_IDENTITE_PATIENT),
 
-            Map.entry("Traitement antiplaquettaire", "ANTECEDENTS"),
-            Map.entry("Nom du traitement antiplaquettaire le cas échéant", "ANTECEDENTS"),
-            Map.entry("Traitement Beta-bloquant", "ANTECEDENTS"),
-            Map.entry("Nom du traitement beta-bloquant le cas échéant", "ANTECEDENTS"),
-            Map.entry("Chimiothérapie", "ANTECEDENTS"),
-            Map.entry("Nom de la chimiothérapie le cas échéant", "ANTECEDENTS"),
-            Map.entry("Autres traitements habituels", "ANTECEDENTS"),
-            Map.entry("Nom des autres traitements le cas échéant", "ANTECEDENTS"),
-            Map.entry("Antécédents cardiovasculaires", "ANTECEDENTS"),
+            Map.entry("Traitement antiplaquettaire", CAT_ANTECEDENTS),
+            Map.entry("Nom du traitement antiplaquettaire le cas échéant", CAT_ANTECEDENTS),
+            Map.entry("Traitement Beta-bloquant", CAT_ANTECEDENTS),
+            Map.entry("Nom du traitement beta-bloquant le cas échéant", CAT_ANTECEDENTS),
+            Map.entry("Chimiothérapie", CAT_ANTECEDENTS),
+            Map.entry("Nom de la chimiothérapie le cas échéant", CAT_ANTECEDENTS),
+            Map.entry("Autres traitements habituels", CAT_ANTECEDENTS),
+            Map.entry("Nom des autres traitements le cas échéant", CAT_ANTECEDENTS),
+            Map.entry("Antécédents cardiovasculaires", CAT_ANTECEDENTS),
 
-            Map.entry("Lieu avant le séjour à l'hôpital", "SEJOUR HOPITAL"),
-            Map.entry("Date d'entrée à l'hôpital", "SEJOUR HOPITAL"),
-            Map.entry("Lieu après le séjour à l'hôpital", "SEJOUR HOPITAL"),
-            Map.entry("Parcours RAAC", "SEJOUR HOPITAL"),
+            Map.entry("Lieu avant le séjour à l'hôpital", CAT_SEJOUR_HOPITAL),
+            Map.entry("Date d'entrée à l'hôpital", CAT_SEJOUR_HOPITAL),
+            Map.entry("Lieu après le séjour à l'hôpital", CAT_SEJOUR_HOPITAL),
+            Map.entry("Parcours RAAC", CAT_SEJOUR_HOPITAL),
 
-            Map.entry("Consultation de chirurgie", "CONSULTATION"),
-            Map.entry("Consultation d'anesthésie", "CONSULTATION"),
+            Map.entry("Consultation de chirurgie", CAT_CONSULTATION),
+            Map.entry("Consultation d'anesthésie", CAT_CONSULTATION),
 
-            Map.entry("Bilan", "BILAN PRE OPERATOIRE"),
-            Map.entry("Ferritine", "BILAN PRE OPERATOIRE"),
-            Map.entry("Fréquence cardiaque", "BILAN PRE OPERATOIRE"),
-            Map.entry("Température corporelle", "BILAN PRE OPERATOIRE"),
-            Map.entry("Échelle de douleur", "BILAN PRE OPERATOIRE"),
+            Map.entry("Bilan", CAT_BILAN_PRE_OP),
+            Map.entry("Ferritine", CAT_BILAN_PRE_OP),
+            Map.entry("Fréquence cardiaque", CAT_BILAN_PRE_OP),
+            Map.entry("Température corporelle", CAT_BILAN_PRE_OP),
+            Map.entry("Échelle de douleur", CAT_BILAN_PRE_OP),
 
-            Map.entry("Type d'anesthésie", "PER OPERATOIRE"),
-            Map.entry("Durée de l'intervention", "PER OPERATOIRE"),
-            Map.entry("Complications per-opératoires", "PER OPERATOIRE"),
+            Map.entry("Type d'anesthésie", CAT_PER_OP),
+            Map.entry("Durée de l'intervention", CAT_PER_OP),
+            Map.entry("Complications per-opératoires", CAT_PER_OP),
 
-            Map.entry("Date de sortie de salle de réveil", "POST OPERATOIRE"),
-            Map.entry("Score de douleur à la sortie", "POST OPERATOIRE"),
-            Map.entry("Antalgiques administrés", "POST OPERATOIRE"),
+            Map.entry("Date de sortie de salle de réveil", CAT_POST_OP),
+            Map.entry("Score de douleur à la sortie", CAT_POST_OP),
+            Map.entry("Antalgiques administrés", CAT_POST_OP),
 
-            Map.entry("Transfusion per-opératoire", "TRANSFUSION"),
-            Map.entry("Nombre de culots globulaires", "TRANSFUSION"),
-            Map.entry("Transfusion post-opératoire", "TRANSFUSION"),
+            Map.entry("Transfusion per-opératoire", CAT_TRANSFUSION),
+            Map.entry("Nombre de culots globulaires", CAT_TRANSFUSION),
+            Map.entry("Transfusion post-opératoire", CAT_TRANSFUSION),
 
-            Map.entry("Date correspondant au J1 de la chirurgie", "RECUPERATION"),
-            Map.entry("Date de fin du traitement antiplaquettaire", "RECUPERATION"),
-            Map.entry("Distance marchée au J3", "RECUPERATION"),
+            Map.entry("Date correspondant au J1 de la chirurgie", CAT_RECUPERATION),
+            Map.entry("Date de fin du traitement antiplaquettaire", CAT_RECUPERATION),
+            Map.entry("Distance marchée au J3", CAT_RECUPERATION),
 
-            Map.entry("Complications infectieuses", "COMPLICATIONS"),
-            Map.entry("Complications thromboemboliques", "COMPLICATIONS"),
-            Map.entry("Réadmission sous 30 jours", "COMPLICATIONS")
+            Map.entry("Complications infectieuses", CAT_COMPLICATIONS),
+            Map.entry("Complications thromboemboliques", CAT_COMPLICATIONS),
+            Map.entry("Réadmission sous 30 jours", CAT_COMPLICATIONS)
     );
 
     private static final List<String> CATEGORY_ORDER = List.of(
-            "IDENTITE PATIENT",
-            "ANTECEDENTS",
-            "SEJOUR HOPITAL",
-            "CONSULTATION",
-            "BILAN PRE OPERATOIRE",
-            "PER OPERATOIRE",
-            "POST OPERATOIRE",
-            "TRANSFUSION",
-            "RECUPERATION",
-            "COMPLICATIONS",
-            "AUTRE"
+            CAT_IDENTITE_PATIENT,
+            CAT_ANTECEDENTS,
+            CAT_SEJOUR_HOPITAL,
+            CAT_CONSULTATION,
+            CAT_BILAN_PRE_OP,
+            CAT_PER_OP,
+            CAT_POST_OP,
+            CAT_TRANSFUSION,
+            CAT_RECUPERATION,
+            CAT_COMPLICATIONS,
+            CAT_AUTRE
     );
 
     /**
@@ -125,7 +138,7 @@ public class CsvExportService {
     }
 
     private String getCategory(ReponseFormulaire reponse) {
-        return CATEGORY_MAPPING.getOrDefault(reponse.getChamp().getLabel(), "AUTRE");
+        return CATEGORY_MAPPING.getOrDefault(reponse.getChamp().getLabel(), CAT_AUTRE);
     }
 
     private void appendCategoryHeader(StringBuilder csv, List<ReponseFormulaire> tousLesChamps) {
