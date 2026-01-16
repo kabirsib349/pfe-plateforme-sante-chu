@@ -105,8 +105,6 @@ public class GlobalExceptionHandler {
     // Gère toutes les autres erreurs inattendues
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, WebRequest request) {
-        // En production, il est crucial de logger cette erreur pour le débogage
-        // logger.error("Erreur inattendue : ", ex);
         Map<String, Object> body = new HashMap<>();
         body.put(TIMESTAMP_KEY, new Date());
         body.put(STATUS_KEY, HttpStatus.INTERNAL_SERVER_ERROR.value());
