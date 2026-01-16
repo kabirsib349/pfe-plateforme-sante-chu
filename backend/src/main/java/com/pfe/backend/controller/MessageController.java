@@ -41,7 +41,7 @@ public class MessageController {
      * @return le message envoyé ou une erreur
      */
     @PostMapping("/envoyer")
-    public ResponseEntity<?> envoyerMessage(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Object> envoyerMessage(@RequestBody Map<String, String> request) {
         try {
             Long emetteurId = Long.parseLong(request.get("emetteurId"));
             Long destinataireId = Long.parseLong(request.get("destinataireId"));
@@ -118,7 +118,7 @@ public class MessageController {
      * Marque comme lus les messages dont le destinataire est le chercheur.
      */
     @PutMapping("/conversation/lire/chercheur/{chercheurId}/{medecinId}")
-    public ResponseEntity<?> marquerCommeLusPourChercheur(
+    public ResponseEntity<String> marquerCommeLusPourChercheur(
             @PathVariable Long chercheurId,
             @PathVariable Long medecinId
     ) {
@@ -129,7 +129,7 @@ public class MessageController {
      * Marque comme lus les messages dont le destinataire est le médecin.
      */
     @PutMapping("/conversation/lire/medecin/{chercheurId}/{medecinId}")
-    public ResponseEntity<?> marquerCommeLusPourMedecin(
+    public ResponseEntity<String> marquerCommeLusPourMedecin(
             @PathVariable Long chercheurId,
             @PathVariable Long medecinId
     ) {
@@ -189,7 +189,7 @@ public class MessageController {
      * @return message de confirmation ou erreur
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> supprimerMessage(
+    public ResponseEntity<Object> supprimerMessage(
             @PathVariable Long id,
             @RequestParam Long userId
     ) {
