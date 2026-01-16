@@ -17,32 +17,51 @@ public class BackendApplication {
 
     private static void loadEnvFile(String path) {
         java.io.File file = new java.io.File(path);
-        if (file.exists()) {
-            try (java.util.Scanner scanner = new java.util.Scanner(file)) {
-                while (scanner.hasNextLine()) {
-                    String line = scanner.nextLine().trim();
-                    // Basic parsing: ignore comments and empty lines
-                    if (!line.startsWith("#") && line.contains("=")) {
-                        String[] parts = line.split("=", 2);
-                        String key = parts[0].trim();
-                        String value = parts[1].trim();
-                        
-                        // Remove quotes if present
-                        if (value.startsWith("\"") && value.endsWith("\"")) {
-                            value = value.substring(1, value.length() - 1);
-                        } else if (value.startsWith("'") && value.endsWith("'")) {
-                            value = value.substring(1, value.length() - 1);
-                        }
-                        
-                        // Set system property if not already set (preserve existing env vars)
-                        if (System.getProperty(key) == null) {
-                            System.setProperty(key, value);
-                        }
-                    }
-                }
-            } catch (java.io.FileNotFoundException e) {
-                // Should not happen as we checked exists(), but ignore
+        if (!file.exists()) {
+            return; // Early return to avoid nesting
+        }
+        
+        try (java.util.Scanner scanner = new java.util.Scanner(file)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine().trim();
+                processEnvLine(line);
             }
+        } catch (java.io.FileNotFoundException e) {
+            // Should not happen as we checked exists(), but ignore
+        }
+    }
+    
+    private static void processEnvLine(String line) {
+        if (!isValidEnvLine(line)) {
+            return; // Early return for invalid lines
+        }
+        
+        String[] parts = line.split("=", 2);
+        String key = parts[0].trim();
+        String value = parts[1].trim();
+        
+        value = removeQuotes(value);
+        setSystemPropertyIfNotExists(key, value);
+    }
+    
+    private static boolean isValidEnvLine(String line) {
+        return !line.startsWith("#") && line.contains("=");
+    }
+    
+    private static String removeQuotes(String value) {
+        if (isWrappedInQuotes(value, "\"") || isWrappedInQuotes(value, "'")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+    
+    private static boolean isWrappedInQuotes(String value, String quote) {
+        return value.startsWith(quote) && value.endsWith(quote);
+    }
+    
+    private static void setSystemPropertyIfNotExists(String key, String value) {
+        if (System.getProperty(key) == null) {
+            System.setProperty(key, value);
         }
     }
 }
