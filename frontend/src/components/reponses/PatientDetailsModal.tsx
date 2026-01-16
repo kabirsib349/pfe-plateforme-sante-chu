@@ -199,7 +199,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                                                 >
                                                     <option value="">Sélectionner...</option>
                                                     {champ.listeValeur?.options?.map((opt, i) => (
-                                                        <option key={i} value={opt.libelle}>{opt.libelle}</option>
+                                                        <option key={i} value={opt.valeur || opt.libelle}>{opt.libelle}</option>
                                                     ))}
                                                 </select>
                                             )}
@@ -283,7 +283,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                                         {champType === 'CHOIX_UNIQUE' && (
                                             <div className="space-y-2">
                                                 {champ.listeValeur?.options?.map((option, optIndex) => {
-                                                    const isSelected = reponseValue === option.libelle;
+                                                    const isSelected = reponseValue === (option.valeur || option.libelle);
                                                     return (
                                                         <div
                                                             key={optIndex}
@@ -347,7 +347,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                                                             isSelected: selectedValues.includes(option.libelle)
                                                         });
 
-                                                        const isSelected = selectedValues.includes(option.libelle);
+                                                        const isSelected = selectedValues.includes(option.valeur || option.libelle);
                                                         return (
                                                             <div
                                                                 key={optIndex}
