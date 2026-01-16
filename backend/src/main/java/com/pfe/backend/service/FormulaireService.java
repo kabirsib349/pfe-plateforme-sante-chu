@@ -101,7 +101,7 @@ public class FormulaireService {
         List<ListeValeur> listes = formulaires.stream()
                 .flatMap(f -> f.getChamps().stream())
                 .map(Champ::getListeValeur)
-                .filter(lv -> lv != null)
+                .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
         if (!listes.isEmpty()) {
@@ -123,7 +123,7 @@ public class FormulaireService {
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
         List<ListeValeur> listes = formulaire.getChamps().stream()
                 .map(Champ::getListeValeur)
-                .filter(lv -> lv != null)
+                .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
         if (!listes.isEmpty()) {

@@ -4,7 +4,7 @@ import com.pfe.backend.dto.EnvoiFormulaireRequest;
 import com.pfe.backend.dto.FormulaireMedecinCreatedResponse;
 import com.pfe.backend.dto.FormulaireEnvoyeResponse;
 import com.pfe.backend.dto.FormulaireRecuResponse;
-import com.pfe.backend.dto.FormulaireRecuResponse;
+
 import com.pfe.backend.dto.FormulaireRequest;
 import com.pfe.backend.dto.FormulaireResponse;
 import com.pfe.backend.model.Formulaire;

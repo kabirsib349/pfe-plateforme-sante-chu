@@ -146,7 +146,7 @@ public class FormulaireMedecinService {
         // Hydratation explicite des collections pour éviter les problèmes de Lazy Loading
         List<ListeValeur> listes = formulaire.getChamps().stream()
                 .map(Champ::getListeValeur)
-                .filter(lv -> lv != null)
+                .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
 
