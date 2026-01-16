@@ -49,8 +49,8 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
     }, [isOpen, token, showToast]);
 
     const toggleMedecin = (email: string) => {
-        setMedecinsSelectionnes(prev => 
-            prev.includes(email) 
+        setMedecinsSelectionnes(prev =>
+            prev.includes(email)
                 ? prev.filter(e => e !== email)
                 : [...prev, email]
         );
@@ -94,7 +94,7 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
 
         if (successCount > 0) {
             showToast(
-                `Formulaire envoyé à ${successCount} médecin${successCount > 1 ? 's' : ''}`, 
+                `Formulaire envoyé à ${successCount} médecin${successCount > 1 ? 's' : ''}`,
                 'success'
             );
             onSuccess();
@@ -102,7 +102,7 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
 
         if (errorCount > 0) {
             showToast(
-                `${errorCount} erreur${errorCount > 1 ? 's' : ''}: ${errors[0]}`, 
+                `${errorCount} erreur${errorCount > 1 ? 's' : ''}: ${errors[0]}`,
                 'error'
             );
         }
@@ -175,10 +175,7 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
                                             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                                                 <UserIcon className="w-5 h-5 text-blue-600" />
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900">{medecin.nom}</p>
-                                                <p className="text-xs text-gray-500">{medecin.email}</p>
-                                            </div>
+                                            <p className="font-medium text-gray-900">{medecin.nom}</p>
                                         </div>
                                     </label>
                                 ))}
@@ -200,8 +197,8 @@ export default function ModalEnvoiFormulaire({ isOpen, onClose, formulaireId, fo
                         disabled={isLoading || medecinsSelectionnes.length === 0}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                     >
-                        {isLoading 
-                            ? 'Envoi en cours...' 
+                        {isLoading
+                            ? 'Envoi en cours...'
                             : `Envoyer${medecinsSelectionnes.length > 0 ? ` (${medecinsSelectionnes.length})` : ''}`
                         }
                     </button>

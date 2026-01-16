@@ -26,7 +26,7 @@ export const VariableNameInput: React.FC<VariableNameInputProps> = ({
     return (
         <div className="mt-4">
             <label className="block text-sm font-medium text-gray-800 mb-1">
-                Nom de la variable (unique, majuscules)
+                Nom de la variable
             </label>
             <div className="relative">
                 <input
@@ -35,8 +35,8 @@ export const VariableNameInput: React.FC<VariableNameInputProps> = ({
                     onChange={handleChange}
                     placeholder={placeholder}
                     className={`w-full bg-gray-50 px-3 py-2 border rounded-lg focus:ring-1 text-sm font-mono ${validationError
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                            : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
                         }`}
                     maxLength={25}
                 />
