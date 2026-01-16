@@ -1,21 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useToast } from "@/src/hooks/useToast";
 import { useStatsRefresh } from "@/src/hooks/useStatsRefresh";
-import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon, XMarkIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { Menu, Transition } from '@headlessui/react';
+import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, EyeIcon, ClipboardDocumentListIcon, UserGroupIcon, CalendarDaysIcon, CheckCircleIcon, ClockIcon, DocumentIcon, ExclamationCircleIcon, UserIcon, XMarkIcon, SparklesIcon, EllipsisVerticalIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { MESSAGES } from "@/src/constants/messages";
 import { ToastContainer } from "@/src/components/ToastContainer";
 import ModalEnvoiFormulaire from '@/src/components/ModalEnvoiFormulaire';
 import { getFormulaires, deleteFormulaire } from "@/src/lib/api";
 import { handleError } from "@/src/lib/errorHandler";
 import type { Formulaire } from "@/src/types";
-
-// Type mis à jour pour correspondre à la réponse de l'API backend
-// Interface supprimée car remplacée par le type global importé
-
 
 export default function Formulaire() {
     const router = useRouter();
@@ -28,6 +25,7 @@ export default function Formulaire() {
             router.push('/dashboard-medecin');
         }
     }, [user, isAuthLoading, router]);
+
     const { triggerStatsRefresh } = useStatsRefresh();
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -55,7 +53,6 @@ export default function Formulaire() {
         }
     };
 
-    // Fonction pour ouvrir le modal d'envoi
     const handleOpenModalEnvoi = (formulaire: Formulaire) => {
         setFormulaireSelectionne({ id: formulaire.idFormulaire, titre: formulaire.titre });
         setModalEnvoiOpen(true);
@@ -75,7 +72,6 @@ export default function Formulaire() {
         fetchFormulaires();
     }, [token]);
 
-
     // Filtrage des formulaires
     const filteredFormulaires = formulaires.filter((formulaire) => {
         const statutNormalized = formulaire.statut.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -86,7 +82,6 @@ export default function Formulaire() {
         return matchesSearch && matchesStatus;
     });
 
-    // Fonctions d'action
     const handleView = (id: number) => {
         router.push(`/formulaire/apercu?id=${id}`);
     };
@@ -142,16 +137,14 @@ export default function Formulaire() {
         }
     };
 
-    // Déduit une palette de couleur simple à partir du titre de l'étude (sans dépendre d'un tableau externe)
     const getEtudeColor = (etudeTitre: string) => {
-        if (!etudeTitre) return "bg-gray-50 text-gray-700 border border-gray-200";
+        if (!etudeTitre) return "bg-gray-100 text-gray-700";
         const t = etudeTitre.toLowerCase();
-        if (t.includes('cardio')) return "bg-rose-50 text-rose-700 border border-rose-200";
-        if (t.includes('chirurg')) return "bg-indigo-50 text-indigo-700 border border-indigo-200";
-        if (t.includes('endocrin')) return "bg-cyan-50 text-cyan-700 border border-cyan-200";
-        if (t.includes('urgence')) return "bg-orange-50 text-orange-700 border border-orange-200";
-        // fallback neutre
-        return "bg-gray-50 text-gray-700 border border-gray-200";
+        if (t.includes('cardio')) return "bg-rose-100 text-rose-700";
+        if (t.includes('chirurg')) return "bg-indigo-100 text-indigo-700";
+        if (t.includes('endocrin')) return "bg-cyan-100 text-cyan-700";
+        if (t.includes('urgence')) return "bg-orange-100 text-orange-700";
+        return "bg-purple-100 text-purple-700";
     };
 
     const getStatutIcon = (statut: string) => {
@@ -160,13 +153,13 @@ export default function Formulaire() {
             case "envoyé":
             case "publie":
             case "publié":
-                return <CheckCircleIcon className="w-5 h-5 text-emerald-600" />;
+                return <CheckCircleIcon className="w-4 h-4" />;
             case "en_attente":
-                return <ClockIcon className="w-5 h-5 text-amber-600" />;
+                return <ClockIcon className="w-4 h-4" />;
             case "brouillon":
-                return <DocumentIcon className="w-5 h-5 text-slate-600" />;
+                return <DocumentIcon className="w-4 h-4" />;
             default:
-                return <ExclamationCircleIcon className="w-5 h-5 text-blue-600" />;
+                return <ExclamationCircleIcon className="w-4 h-4" />;
         }
     };
 
@@ -176,8 +169,8 @@ export default function Formulaire() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-100">
-                {/* Bannière de confirmation de suppression */}
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+                {/* Modal de confirmation de suppression */}
                 {isDeleteModalOpen && (
                     <div className="fixed top-5 left-1/2 -translate-x-1/2 w-full max-w-md z-50">
                         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
@@ -205,9 +198,8 @@ export default function Formulaire() {
                     </div>
                 )}
 
-
-
                 <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Barre de recherche et filtres */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
                         <div className="flex flex-col lg:flex-row gap-4">
                             <div className="relative flex-1">
@@ -238,85 +230,130 @@ export default function Formulaire() {
                                 Nouveau formulaire
                             </button>
                         </div>
+                        {filteredFormulaires.length > 0 && (
+                            <p className="text-sm text-gray-500 mt-4">
+                                {filteredFormulaires.length} formulaire{filteredFormulaires.length > 1 ? 's' : ''} trouvé{filteredFormulaires.length > 1 ? 's' : ''}
+                            </p>
+                        )}
                     </div>
 
+                    {/* Grille de cartes */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filteredFormulaires.map((formulaire) => (
                             <div
                                 key={formulaire.idFormulaire}
-                                className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden"
+                                className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden group"
                             >
+                                {/* En-tête de la carte */}
                                 <div className="p-6 border-b border-gray-100">
                                     <div className="flex items-start justify-between mb-3">
-                                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1 pr-2">
                                             {formulaire.titre}
                                         </h3>
-                                        <span className="text-lg">{getStatutIcon(formulaire.statut)}</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
 
-                                        <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getStatutColor(formulaire.statut)}`}>
-                                            {formulaire.statut.toLowerCase()}
+                                        {/* Menu dropdown */}
+                                        <Menu as="div" className="relative">
+                                            <Menu.Button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                                                <EllipsisVerticalIcon className="w-5 h-5 text-gray-500" />
+                                            </Menu.Button>
+                                            <Transition
+                                                as={Fragment}
+                                                enter="transition ease-out duration-100"
+                                                enterFrom="transform opacity-0 scale-95"
+                                                enterTo="transform opacity-100 scale-100"
+                                                leave="transition ease-in duration-75"
+                                                leaveFrom="transform opacity-100 scale-100"
+                                                leaveTo="transform opacity-0 scale-95"
+                                            >
+                                                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                                    <div className="py-1">
+                                                        <Menu.Item>
+                                                            {({ active }) => (
+                                                                <button
+                                                                    onClick={() => handleView(formulaire.idFormulaire)}
+                                                                    className={`${active ? 'bg-gray-50' : ''} flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700`}
+                                                                >
+                                                                    <EyeIcon className="w-4 h-4" />
+                                                                    Aperçu
+                                                                </button>
+                                                            )}
+                                                        </Menu.Item>
+                                                        <Menu.Item>
+                                                            {({ active }) => (
+                                                                <button
+                                                                    onClick={() => handleEdit(formulaire.idFormulaire)}
+                                                                    className={`${active ? 'bg-gray-50' : ''} flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700`}
+                                                                >
+                                                                    <PencilIcon className="w-4 h-4" />
+                                                                    Modifier
+                                                                </button>
+                                                            )}
+                                                        </Menu.Item>
+                                                        <div className="border-t border-gray-100"></div>
+                                                        <Menu.Item>
+                                                            {({ active }) => (
+                                                                <button
+                                                                    onClick={() => openDeleteModal(formulaire.idFormulaire)}
+                                                                    className={`${active ? 'bg-red-50' : ''} flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600`}
+                                                                >
+                                                                    <TrashIcon className="w-4 h-4" />
+                                                                    Supprimer
+                                                                </button>
+                                                            )}
+                                                        </Menu.Item>
+                                                    </div>
+                                                </Menu.Items>
+                                            </Transition>
+                                        </Menu>
+                                    </div>
+
+                                    {/* Description de l'étude */}
+                                    {formulaire.description && (
+                                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                                            {formulaire.description}
+                                        </p>
+                                    )}
+
+                                    {/* Badges */}
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${getEtudeColor(formulaire.etude.titre)}`}>
+                                            {formulaire.etude.titre}
+                                        </span>
+                                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1 ${getStatutColor(formulaire.statut)}`}>
+                                            {getStatutIcon(formulaire.statut)}
+                                            {formulaire.statut}
                                         </span>
                                     </div>
                                 </div>
 
+                                {/* Corps de la carte */}
                                 <div className="p-6">
-                                    <div className="space-y-3 mb-6">
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                                            <UserIcon className="w-4 h-4" />
-                                            <span>Créé par {formulaire.chercheur?.nom}</span>
+                                    {/* Métadonnées */}
+                                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                                        <div className="flex items-center gap-1.5">
+                                            <CalendarDaysIcon className="w-3.5 h-3.5" />
+                                            <span>{new Date(formulaire.dateCreation).toLocaleDateString('fr-FR')}</span>
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                                            <CalendarDaysIcon className="w-4 h-4" />
-                                            <span>Créé le {new Date(formulaire.dateCreation).toLocaleDateString('fr-FR')}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                                            <UserGroupIcon className="w-4 h-4" />
-                                            <span>{formulaire.champs.length} champs de données</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <ClipboardDocumentListIcon className="w-3.5 h-3.5" />
+                                            <span>{formulaire.champs.length} champs</span>
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleView(formulaire.idFormulaire)}
-                                            className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 ..."
-                                            title="Aperçu du formulaire"
-                                        >
-                                            <EyeIcon className="w-4 h-4" />
-                                            Aperçu
-                                        </button>
-                                        <button
-                                            onClick={() => handleEdit(formulaire.idFormulaire)}
-                                            className="flex-1 px-3 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 ..."
-                                            title="Modifier le formulaire"
-                                        >
-                                            <PencilIcon className="w-4 h-4" />
-                                            Modifier
-                                        </button>
-                                        <button
-                                            onClick={() => handleOpenModalEnvoi(formulaire)}
-                                            className="flex-1 px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
-                                            title="Envoyer à un médecin"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                            </svg>
-                                            Envoyer
-                                        </button>
-                                        <button
-                                            onClick={() => openDeleteModal(formulaire.idFormulaire)}
-                                            className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 ..."
-                                            title="Supprimer le formulaire"
-                                        >
-                                            <TrashIcon className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                    {/* Bouton d'action principal */}
+                                    <button
+                                        onClick={() => handleOpenModalEnvoi(formulaire)}
+                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
+                                    >
+                                        <PaperAirplaneIcon className="w-4 h-4" />
+                                        Envoyer à un médecin
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
 
+                    {/* État vide */}
                     {!isLoading && filteredFormulaires.length === 0 && (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                             <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -350,7 +387,7 @@ export default function Formulaire() {
                 <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
             </div>
 
-            {/* Modal d'envoi rendu en dehors de la div principale */}
+            {/* Modal d'envoi */}
             {formulaireSelectionne && (
                 <ModalEnvoiFormulaire
                     isOpen={modalEnvoiOpen}
@@ -363,5 +400,4 @@ export default function Formulaire() {
             )}
         </>
     );
-
 }
