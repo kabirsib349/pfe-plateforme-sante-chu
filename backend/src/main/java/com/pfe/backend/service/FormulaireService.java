@@ -43,6 +43,11 @@ public class FormulaireService {
     private final FormulaireMedecinRepository formulaireMedecinRepository;
     private final ReponseFormulaireRepository reponseFormulaireRepository;
 
+    // Constants for error messages and activity logging
+    private static final String USER_NOT_FOUND_PREFIX = "Utilisateur non trouvé avec l'email: ";
+    private static final String FORMULAIRE_ENTITY = "Formulaire";
+    private static final String FORMULAIRE_PREFIX = "Formulaire '";
+
     /**
      * Crée un nouveau formulaire et son étude associée.
      *
@@ -53,7 +58,7 @@ public class FormulaireService {
     @Transactional
     public Formulaire createFormulaire(FormulaireRequest request, String userEmail) {
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé avec l'email: " + userEmail));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_PREFIX + userEmail));
 
         Formulaire formulaire = new Formulaire();
         formulaire.setTitre(request.getTitre());
@@ -75,8 +80,8 @@ public class FormulaireService {
 
         Formulaire savedFormulaire = formulaireRepository.save(formulaire);
 
-        activiteService.enregistrerActivite(userEmail, "Création de formulaire", "Formulaire",
-                savedFormulaire.getIdFormulaire(), "Formulaire '" + savedFormulaire.getTitre() + "' créé");
+        activiteService.enregistrerActivite(userEmail, "Création de formulaire", FORMULAIRE_ENTITY,
+                savedFormulaire.getIdFormulaire(), FORMULAIRE_PREFIX + savedFormulaire.getTitre() + "' créé");
 
         return savedFormulaire;
     }
@@ -142,7 +147,7 @@ public class FormulaireService {
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
 
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé avec l'email: " + userEmail));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_PREFIX + userEmail));
 
         if (!formulaire.getChercheur().getId().equals(chercheur.getId())) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à modifier ce formulaire");
@@ -156,8 +161,8 @@ public class FormulaireService {
 
         Formulaire savedFormulaire = formulaireRepository.save(formulaire);
 
-        activiteService.enregistrerActivite(userEmail, "Modification de formulaire", "Formulaire",
-                savedFormulaire.getIdFormulaire(), "Formulaire '" + savedFormulaire.getTitre() + "' modifié");
+        activiteService.enregistrerActivite(userEmail, "Modification de formulaire", FORMULAIRE_ENTITY,
+                savedFormulaire.getIdFormulaire(), FORMULAIRE_PREFIX + savedFormulaire.getTitre() + "' modifié");
 
         return savedFormulaire;
     }
@@ -269,7 +274,7 @@ public class FormulaireService {
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
         
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé avec l'email: " + userEmail));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_PREFIX + userEmail));
         
         if (!formulaire.getChercheur().getId().equals(chercheur.getId())) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à supprimer ce formulaire");
@@ -291,6 +296,6 @@ public class FormulaireService {
         
         // Enregistrer l'activité après la suppression réussie
         activiteService.enregistrerActivite(userEmail, "Suppression de formulaire",
-                "Formulaire", id, "Formulaire '" + formulaire.getTitre() + "' supprimé");
+                FORMULAIRE_ENTITY, id, FORMULAIRE_PREFIX + formulaire.getTitre() + "' supprimé");
     }
 }

@@ -33,6 +33,9 @@ public class FormulaireMedecinService {
     private final ReponseFormulaireRepository reponseFormulaireRepository;
     private final ListeValeurRepository listeValeurRepository;
 
+    // Constants for activity messages
+    private static final String FORMULAIRE_PREFIX = "Formulaire '";
+
     /**
      * Envoie un formulaire à un médecin spécifique.
      * Le statut du formulaire passe à PUBLIE s'il était en BROUILLON.
@@ -80,7 +83,7 @@ public class FormulaireMedecinService {
         FormulaireMedecin saved = formulaireMedecinRepository.save(assignment);
         // Enregistrer l'activité
         activiteService.enregistrerActivite(emailChercheur, "Envoi formulaire", "Formulaire",
-                formulaireId, "Formulaire '" + formulaire.getTitre() + "' envoyé à " + medecin.getNom());
+                formulaireId, FORMULAIRE_PREFIX + formulaire.getTitre() + "' envoyé à " + medecin.getNom());
         return saved;
     }
 
@@ -109,7 +112,7 @@ public class FormulaireMedecinService {
 
         // Enregistrer l'activité
         activiteService.enregistrerActivite(emailChercheur, "Création envoi (chercheur)", "Formulaire",
-                formulaireId, "Formulaire '" + formulaire.getTitre() + "' préparé pour remplissage par le chercheur");
+                formulaireId, FORMULAIRE_PREFIX + formulaire.getTitre() + "' préparé pour remplissage par le chercheur");
 
         return saved;
     }
@@ -214,7 +217,7 @@ public class FormulaireMedecinService {
             action,
             "FormulaireMedecin",
             fm.getId(),
-            "Formulaire '" + fm.getFormulaire().getTitre() + "' supprimé du dashboard"
+            FORMULAIRE_PREFIX + fm.getFormulaire().getTitre() + "' supprimé du dashboard"
         );
 
         // Supprimer définitivement si masqué des deux côtés
