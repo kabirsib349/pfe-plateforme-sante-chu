@@ -286,9 +286,11 @@ public class FormulaireService {
             formulaireMedecinRepository.delete(fm);
         }
         
+        // Supprimer le formulaire d'abord
+        formulaireRepository.deleteById(id);
+        
+        // Enregistrer l'activité après la suppression réussie
         activiteService.enregistrerActivite(userEmail, "Suppression de formulaire",
                 "Formulaire", id, "Formulaire '" + formulaire.getTitre() + "' supprimé");
-        
-        formulaireRepository.deleteById(id);
     }
 }
