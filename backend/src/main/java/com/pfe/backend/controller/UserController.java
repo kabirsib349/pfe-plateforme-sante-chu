@@ -65,7 +65,7 @@ public class UserController {
         List<Utilisateur> medecins = formulaireMedecinService.getMedecins();
         List<UserResponse> response = medecins.stream()
                 .map(medecin -> new UserResponse(medecin.getId(), medecin.getNom(), medecin.getEmail(), medecin.getRole().getNom()))
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -79,7 +79,7 @@ public class UserController {
         List<UtilisateurDto> chercheurs = utilisateurService.getChercheurs();
         List<UserResponse> response = chercheurs.stream()
                 .map(c -> new UserResponse(c.id, c.nom, c.email, c.role))
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(response);
     }
 

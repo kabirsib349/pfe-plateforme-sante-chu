@@ -78,7 +78,7 @@ public class FormulaireController {
         List<Formulaire> formulaires = formulaireService.getFormulairesByChercheurEmail(principal.getName());
         List<FormulaireResponse> response = formulaires.stream()
                 .map(FormulaireResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -92,7 +92,7 @@ public class FormulaireController {
                     dto.setNombreBrouillons(reponseFormulaireService.countDrafts(fm.getId()));
                     return dto;
                 })
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -109,7 +109,7 @@ public class FormulaireController {
         List<FormulaireMedecin> formulairesEnvoyes = formulaireMedecinService.getFormulairesEnvoyes(principal.getName());
         List<FormulaireEnvoyeResponse> response = formulairesEnvoyes.stream()
                 .map(FormulaireEnvoyeResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(response);
     }
 
