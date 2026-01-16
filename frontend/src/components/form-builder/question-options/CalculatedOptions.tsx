@@ -33,7 +33,7 @@ export const CalculatedOptions: React.FC<CalculatedOptionsProps> = ({
                     type="text"
                     value={formuleCalcul || ''}
                     onChange={(e) => onFormuleChange(e.target.value)}
-                    placeholder="Ex: POIDS/(TAILLE^2) pour l'IMC"
+                    placeholder="Ex: POIDS/((TAILLE/100)^2) pour l'IMC (taille en cm)"
                     className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
                 />
             </div>

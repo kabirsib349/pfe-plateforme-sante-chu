@@ -98,7 +98,7 @@ const Question: React.FC<QuestionProps> = ({
   const commonFields = (
     <>
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-800 mb-1">Nom de la variable (unique, majuscules)</label>
+        <label className="block text-sm font-medium text-gray-800 mb-1">Nom de la variable</label>
         <div className="relative">
           <input
             type="text"
@@ -286,7 +286,7 @@ const Question: React.FC<QuestionProps> = ({
                 type="text"
                 value={champ.formuleCalcul || ''}
                 onChange={(e) => onUpdate(champ.id, { formuleCalcul: e.target.value })}
-                placeholder="Ex: POIDS/(TAILLE^2) pour l'IMC"
+                placeholder="Ex: POIDS/((TAILLE/100)^2) pour l'IMC (taille en cm)"
                 className="w-full bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
               />
             </div>

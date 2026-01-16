@@ -56,7 +56,7 @@ export const useFormulaireBuilder = (initialChamps: ChampBuilder[] = []) => {
                 ...nouveauChamp,
                 question: '',
                 nomVariable: '',
-                formuleCalcul: type === TypeChamp.CALCULE ? 'POIDS/(TAILLE^2)' : undefined,
+                formuleCalcul: type === TypeChamp.CALCULE ? 'POIDS/((TAILLE/100)^2)' : undefined,
                 champsRequis: type === TypeChamp.CALCULE ? ['POIDS', 'TAILLE'] : undefined
             } as any]; // Cast as any pour flexibilité temporaire pendant refactor UI
             setActiveChampId(nouveauChamp.id);

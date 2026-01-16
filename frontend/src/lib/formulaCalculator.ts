@@ -29,7 +29,7 @@ export const parseCalculatedField = (unite: string | undefined): CalculatedField
 
 /**
  * Évalue une formule mathématique avec les valeurs fournies
- * Exemple: "POIDS/(TAILLE^2)" avec {POIDS: 70, TAILLE: 1.75}
+ * Exemple: "POIDS/((TAILLE/100)^2)" avec {POIDS: 70, TAILLE: 175}
  */
 export const evaluateFormula = (
   formula: string,
@@ -38,7 +38,7 @@ export const evaluateFormula = (
   try {
     // Remplacer les variables par leurs valeurs
     let expression = formula;
-    
+
     for (const [variable, value] of Object.entries(values)) {
       if (value === undefined || value === null || isNaN(value)) {
         return null;
@@ -74,18 +74,18 @@ export const calculateFieldValue = (
   champsMap: Map<string, string> // Map de label -> nomVariable
 ): number | null => {
   const calculatedField = parseCalculatedField(unite);
-  
+
   if (!calculatedField) {
     return null;
   }
 
   // Récupérer les valeurs des champs requis
   const values: Record<string, number> = {};
-  
+
   for (const requiredField of calculatedField.requiredFields) {
     // Trouver le champId correspondant à la variable
     let foundValue: number | null = null;
-    
+
     for (const [champId, response] of Object.entries(allResponses)) {
       const nomVariable = champsMap.get(champId);
       if (nomVariable === requiredField) {

@@ -68,7 +68,7 @@ export const themesMedicaux: ThemeMedical[] = [
         question: 'IMC',
         nomVariable: 'IMC',
         obligatoire: true,
-        formuleCalcul: 'POIDS/(TAILLE^2)',
+        formuleCalcul: 'POIDS/((TAILLE/100)^2)',
         champsRequis: ['POIDS', 'TAILLE']
       },
       {
