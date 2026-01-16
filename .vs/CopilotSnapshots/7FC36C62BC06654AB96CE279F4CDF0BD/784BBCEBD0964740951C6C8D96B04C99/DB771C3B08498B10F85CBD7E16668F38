@@ -1,4 +1,4 @@
-package com.pfe.backend.service;
+﻿package com.pfe.backend.service;
 
 import com.pfe.backend.dto.ReponseFormulaireRequest;
 import com.pfe.backend.exception.ResourceNotFoundException;
@@ -17,12 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Service de gestion des réponses aux formulaires.
@@ -41,9 +37,6 @@ public class ReponseFormulaireService {
     private static final String FORMULAIRE_MEDECIN_NOT_FOUND = "Formulaire médecin non trouvé";
     private static final String FORMULAIRE_ENTITY = "Formulaire";
     private static final String FORMULAIRE_PREFIX = "Formulaire '";
-
-    // Pattern pour extraire le compteur final sur 4 chiffres
-    private static final Pattern PATIENT_COUNTER_PATTERN = Pattern.compile("-(\\d{4})$");
 
     // Méthode utilitaire pour hacher l'identifiant du patient
     private String hashPatientIdentifier(String identifier) {
@@ -67,55 +60,6 @@ public class ReponseFormulaireService {
         }
     }
 
-    // Slugify simple du titre d'etude (formulaire.titre)
-    private String slugifyTitreEtude(String titre) {
-        if (titre == null) {
-            return "etude";
-        }
-        String slug = titre.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+", "")
-                .replaceAll("-+$", "");
-        return slug.isEmpty() ? "etude" : slug;
-    }
-
-    // Genere ou retourne l identifiant patient complet a partir des donnees de la requete
-    private String resolveOrGeneratePatientIdentifier(ReponseFormulaireRequest request, FormulaireMedecin formulaireMedecin) {
-        // Si le front fournit deja un identifiant complet, on le conserve pour compatibilite
-        if (request.getPatientIdentifier() != null && !request.getPatientIdentifier().trim().isEmpty()
-                && (request.getPatientNomInitial() == null || request.getPatientNomInitial().isBlank())
-                && (request.getPatientPrenomInitial() == null || request.getPatientPrenomInitial().isBlank())) {
-            return request.getPatientIdentifier().trim();
-        }
-
-        String nomInitial = Optional.ofNullable(request.getPatientNomInitial()).orElse("").trim().toUpperCase();
-        String prenomInitial = Optional.ofNullable(request.getPatientPrenomInitial()).orElse("").trim().toUpperCase();
-
-        if (nomInitial.isEmpty() || prenomInitial.isEmpty()) {
-            throw new IllegalArgumentException("Les initiales du patient sont obligatoires (nom et prénom)");
-        }
-
-        String etudeSlug = slugifyTitreEtude(formulaireMedecin.getFormulaire().getTitre());
-
-        // Recuperer toutes les reponses existantes pour ce formulaireMedecin pour calculer le compteur
-        List<ReponseFormulaire> existantes = reponseFormulaireRepository.findByFormulaireMedecinId(formulaireMedecin.getId());
-
-        int maxCounter = existantes.stream()
-                .map(ReponseFormulaire::getPatientIdentifier)
-                .filter(pi -> pi != null && !pi.isEmpty())
-                .map(PATIENT_COUNTER_PATTERN::matcher)
-                .filter(Matcher::find)
-                .map(m -> m.group(1))
-                .mapToInt(Integer::parseInt)
-                .max()
-                .orElse(0);
-
-        int nextCounter = maxCounter + 1;
-        String counterStr = String.format("%04d", nextCounter);
-
-        return nomInitial + "-" + prenomInitial + "-" + etudeSlug + "-" + counterStr;
-    }
-
     /**
      * Sauvegarde les réponses d'un formulaire pour un patient donné.
      * Vérifie les droits d'accès et l'unicité du patient pour ce formulaire.
@@ -132,11 +76,7 @@ public class ReponseFormulaireService {
 
         verifierAutorisation(formulaireMedecin, emailMedecin);
 
-        // Construire ou reutiliser l identifiant patient
-        String patientIdentifier = resolveOrGeneratePatientIdentifier(request, formulaireMedecin);
-        request.setPatientIdentifier(patientIdentifier);
-
-        String patientIdentifierHash = hashPatientIdentifier(patientIdentifier);
+        String patientIdentifierHash = hashPatientIdentifier(request.getPatientIdentifier());
         
         // Supprimer les anciennes réponses avant de sauvegarder
         reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
@@ -151,7 +91,7 @@ public class ReponseFormulaireService {
         
         // Cas spécial : brouillon vide
         if (request.getReponses() == null || request.getReponses().isEmpty()) {
-            sauvegarderBrouillonVide(formulaireMedecin, emailMedecin, patientIdentifier);
+            sauvegarderBrouillonVide(formulaireMedecin, emailMedecin, request.getPatientIdentifier());
             return;
         }
 
@@ -159,7 +99,7 @@ public class ReponseFormulaireService {
         sauvegarderReponsesPourPatient(request, formulaireMedecin, patientIdentifierHash, enBrouillon);
 
         // Mettre à jour le statut et enregistrer l'activité
-        mettreAJourStatutFormulaire(formulaireMedecin, enBrouillon, emailMedecin, patientIdentifier);
+        mettreAJourStatutFormulaire(formulaireMedecin, enBrouillon, emailMedecin, request.getPatientIdentifier());
     }
 
     private void verifierAutorisation(FormulaireMedecin formulaireMedecin, String emailMedecin) {

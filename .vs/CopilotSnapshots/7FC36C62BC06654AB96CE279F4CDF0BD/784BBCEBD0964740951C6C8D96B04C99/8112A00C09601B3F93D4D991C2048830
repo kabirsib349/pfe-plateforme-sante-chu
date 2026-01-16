@@ -1,4 +1,4 @@
-import type { User } from '@/src/types';
+﻿import { User } from './user';
 
 export enum StatutFormulaire {
     BROUILLON = 'BROUILLON',
@@ -150,10 +150,6 @@ export interface ReponseFormulaire {
 
 export interface ReponseFormulaireRequest {
     formulaireMedecinId: number;
-    // Nouveaux champs pour la saisie des initiales
-    patientNomInitial?: string;
-    patientPrenomInitial?: string;
-    // Champ legacy conserve pour compat
     patientIdentifier: string;
     reponses: Record<string, string>; // Map<idChamp, valeur>
 }
