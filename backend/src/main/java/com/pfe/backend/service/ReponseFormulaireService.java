@@ -33,6 +33,11 @@ public class ReponseFormulaireService {
     private final ChampRepository champRepository;
     private final ActiviteService activiteService;
 
+    // Constants for error messages and activity logging
+    private static final String FORMULAIRE_MEDECIN_NOT_FOUND = "Formulaire médecin non trouvé";
+    private static final String FORMULAIRE_ENTITY = "Formulaire";
+    private static final String FORMULAIRE_PREFIX = "Formulaire '";
+
     // Méthode utilitaire pour hacher l'identifiant du patient
     private String hashPatientIdentifier(String identifier) {
         if (identifier == null) {
@@ -67,21 +72,43 @@ public class ReponseFormulaireService {
     @Transactional
     public void sauvegarderReponses(ReponseFormulaireRequest request, String emailMedecin, boolean enBrouillon) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(request.getFormulaireMedecinId())
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
 
-        // Vérifier l'autorisation :
-        // - si un médecin est assigné, seul ce médecin peut remplir
-        // - si aucun médecin n'est assigné (envoi créé par le chercheur), seul le chercheur qui a créé l'envoi peut remplir
-        // Vérifier l'autorisation :
-        // - le médecin assigné peut remplir
-        // - le chercheur créateur du formulaire peut aussi modifier/remplir (pouvoir de correction)
+        verifierAutorisation(formulaireMedecin, emailMedecin);
+
+        String patientIdentifierHash = hashPatientIdentifier(request.getPatientIdentifier());
+        
+        // Supprimer les anciennes réponses avant de sauvegarder
+        reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
+                request.getFormulaireMedecinId(),
+                patientIdentifierHash
+        );
+
+        // Validation des réponses
+        if (!enBrouillon && (request.getReponses() == null || request.getReponses().isEmpty())) {
+            throw new IllegalArgumentException("Aucune réponse fournie");
+        }
+        
+        // Cas spécial : brouillon vide
+        if (request.getReponses() == null || request.getReponses().isEmpty()) {
+            sauvegarderBrouillonVide(formulaireMedecin, emailMedecin, request.getPatientIdentifier());
+            return;
+        }
+
+        // Sauvegarder les réponses
+        sauvegarderReponsesPourPatient(request, formulaireMedecin, patientIdentifierHash, enBrouillon);
+
+        // Mettre à jour le statut et enregistrer l'activité
+        mettreAJourStatutFormulaire(formulaireMedecin, enBrouillon, emailMedecin, request.getPatientIdentifier());
+    }
+
+    private void verifierAutorisation(FormulaireMedecin formulaireMedecin, String emailMedecin) {
         boolean estMedecinAssigne = formulaireMedecin.getMedecin() != null && 
                                     formulaireMedecin.getMedecin().getEmail().equals(emailMedecin);
         
         boolean estChercheurCreateur = formulaireMedecin.getFormulaire().getChercheur() != null && 
                                        formulaireMedecin.getFormulaire().getChercheur().getEmail().equals(emailMedecin);
 
-        // Cas spécial : si aucun médecin n'est assigné (envoi créé par le chercheur pour lui-même ou test)
         boolean estChercheurSansMedecin = formulaireMedecin.getMedecin() == null && 
                                           formulaireMedecin.getChercheur() != null && 
                                           formulaireMedecin.getChercheur().getEmail().equals(emailMedecin);
@@ -89,92 +116,63 @@ public class ReponseFormulaireService {
         if (!estMedecinAssigne && !estChercheurCreateur && !estChercheurSansMedecin) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à remplir ou modifier ce formulaire");
         }
+    }
 
-        String patientIdentifierHash = hashPatientIdentifier(request.getPatientIdentifier());
+    private void sauvegarderBrouillonVide(FormulaireMedecin formulaireMedecin, String emailMedecin, String patientIdentifier) {
+        formulaireMedecin.setStatut(StatutFormulaire.BROUILLON);
+        formulaireMedecin.setComplete(false);
+        formulaireMedecin.setDateCompletion(null);
+        formulaireMedecinRepository.save(formulaireMedecin);
         
-        // Vérifier l'unicité du patient seulement lors de la soumission finale
-        // NOTE: On autorise la mise à jour (overwrite), donc on ne bloque plus si le patient existe déjà.
-        // La méthode supprime les anciennes réponses juste après.
-        /*
-        if (!enBrouillon) {
-            List<ReponseFormulaire> reponsesFinalesExistantes = reponseFormulaireRepository
-                    .findByFormulaireMedecinIdAndPatientIdentifierHashAndDraft(
-                            request.getFormulaireMedecinId(),
-                            patientIdentifierHash,
-                            false
-                    );
-
-            if (!reponsesFinalesExistantes.isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Le patient '" + request.getPatientIdentifier() +
-                                "' a déjà été enregistré pour ce formulaire. Utilisez un identifiant différent."
-                );
-            }
-        }
-        */
-
-        // Supprimer les anciennes réponses (Brouillon ou anciennes) avant de sauvegarder
-        reponseFormulaireRepository.deleteByFormulaireMedecinIdAndPatientIdentifierHash(
-                request.getFormulaireMedecinId(),
-                patientIdentifierHash
+        activiteService.enregistrerActivite(
+                emailMedecin,
+                "Formulaire sauvegardé en brouillon",
+                FORMULAIRE_ENTITY,
+                formulaireMedecin.getFormulaire().getIdFormulaire(),
+                FORMULAIRE_PREFIX + formulaireMedecin.getFormulaire().getTitre() +
+                        "' sauvegardé en brouillon pour le patient: " + patientIdentifier
         );
+    }
 
-        // Sauvegarder les nouvelles réponses avec l'identifiant patient
-        // En mode brouillon, on permet de sauvegarder même sans réponses (juste pour marquer le formulaire comme commencé)
-        if (!enBrouillon && (request.getReponses() == null || request.getReponses().isEmpty())) {
-            throw new IllegalArgumentException("Aucune réponse fournie");
-        }
-        
-        // Si pas de réponses en mode brouillon, on met juste à jour le statut
-        if (request.getReponses() == null || request.getReponses().isEmpty()) {
-            // Mettre à jour le statut du formulaire
-            formulaireMedecin.setStatut(StatutFormulaire.BROUILLON);
-            formulaireMedecin.setComplete(false);
-            formulaireMedecin.setDateCompletion(null);
-            formulaireMedecinRepository.save(formulaireMedecin);
-            
-            activiteService.enregistrerActivite(
-                    emailMedecin,
-                    "Formulaire sauvegardé en brouillon",
-                    "Formulaire",
-                    formulaireMedecin.getFormulaire().getIdFormulaire(),
-                    "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() +
-                            "' sauvegardé en brouillon pour le patient: " + request.getPatientIdentifier()
-            );
-            return;
-        }
-
+    private void sauvegarderReponsesPourPatient(ReponseFormulaireRequest request, FormulaireMedecin formulaireMedecin,
+                                                 String patientIdentifierHash, boolean enBrouillon) {
         for (Map.Entry<?, ?> rawEntry : request.getReponses().entrySet()) {
-            Object rawKey = rawEntry.getKey();
-            Object rawVal = rawEntry.getValue();
-
-            // Convertir la clé en Long de façon robuste
-            Long champId;
-            try {
-                champId = Long.valueOf(rawKey.toString());
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Identifiant de champ invalide: " + rawKey);
-            }
-
-            String valeur = rawVal != null ? rawVal.toString() : null;
+            Long champId = convertirChampId(rawEntry.getKey());
+            String valeur = rawEntry.getValue() != null ? rawEntry.getValue().toString() : null;
 
             if (valeur != null && !valeur.trim().isEmpty()) {
-                Champ champ = champRepository.findById(champId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Champ non trouvé: " + champId));
-
-                ReponseFormulaire reponse = new ReponseFormulaire();
-                reponse.setFormulaireMedecin(formulaireMedecin);
-                reponse.setChamp(champ);
-                reponse.setValeur(valeur);
-                reponse.setPatientIdentifier(request.getPatientIdentifier());
-                reponse.setPatientIdentifierHash(patientIdentifierHash);
-                reponse.setDraft(enBrouillon);
-
-                reponseFormulaireRepository.save(reponse);
+                sauvegarderUneReponse(champId, valeur, formulaireMedecin, request.getPatientIdentifier(), 
+                                     patientIdentifierHash, enBrouillon);
             }
         }
+    }
 
-        // Mettre à jour le statut selon le mode
+    private Long convertirChampId(Object rawKey) {
+        try {
+            return Long.valueOf(rawKey.toString());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Identifiant de champ invalide: " + rawKey);
+        }
+    }
+
+    private void sauvegarderUneReponse(Long champId, String valeur, FormulaireMedecin formulaireMedecin,
+                                       String patientIdentifier, String patientIdentifierHash, boolean enBrouillon) {
+        Champ champ = champRepository.findById(champId)
+                .orElseThrow(() -> new ResourceNotFoundException("Champ non trouvé: " + champId));
+
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setFormulaireMedecin(formulaireMedecin);
+        reponse.setChamp(champ);
+        reponse.setValeur(valeur);
+        reponse.setPatientIdentifier(patientIdentifier);
+        reponse.setPatientIdentifierHash(patientIdentifierHash);
+        reponse.setDraft(enBrouillon);
+
+        reponseFormulaireRepository.save(reponse);
+    }
+
+    private void mettreAJourStatutFormulaire(FormulaireMedecin formulaireMedecin, boolean enBrouillon,
+                                             String emailMedecin, String patientIdentifier) {
         if (enBrouillon) {
             formulaireMedecin.setStatut(StatutFormulaire.BROUILLON);
             formulaireMedecin.setComplete(false);
@@ -185,7 +183,6 @@ public class ReponseFormulaireService {
             formulaireMedecin.setDateCompletion(LocalDateTime.now());
         }
 
-        // Démasquer pour le chercheur si c'était masqué (pour qu'il voie les nouvelles réponses)
         if (formulaireMedecin.getMasquePourChercheur()) {
             formulaireMedecin.setMasquePourChercheur(false);
         }
@@ -196,11 +193,11 @@ public class ReponseFormulaireService {
         activiteService.enregistrerActivite(
                 emailMedecin,
                 action,
-                "Formulaire",
+                FORMULAIRE_ENTITY,
                 formulaireMedecin.getFormulaire().getIdFormulaire(),
-                "Formulaire '" + formulaireMedecin.getFormulaire().getTitre() +
+                FORMULAIRE_PREFIX + formulaireMedecin.getFormulaire().getTitre() +
                         "' " + (enBrouillon ? "sauvegardé en brouillon" : "rempli") + 
-                        " pour le patient: " + request.getPatientIdentifier()
+                        " pour le patient: " + patientIdentifier
         );
     }
 
@@ -213,7 +210,7 @@ public class ReponseFormulaireService {
     @Transactional
     public void marquerCommeLu(Long formulaireMedecinId, String emailMedecin) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
 
         if (!formulaireMedecin.getMedecin().getEmail().equals(emailMedecin)) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à accéder à ce formulaire");
@@ -263,7 +260,7 @@ public class ReponseFormulaireService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllDraftsForFormulaire(Long formulaireMedecinId) {
         FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
         
         // Récupérer tous les patients distincts ayant des réponses (brouillons uniquement)
         List<String> patientHashes = reponseFormulaireRepository
@@ -357,7 +354,7 @@ public class ReponseFormulaireService {
     @Transactional
     public void supprimerReponsesPatient(Long formulaireMedecinId, String patientIdentifier, String emailUtilisateur) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
 
         // Vérifier que l'utilisateur est soit le médecin assigné, soit le chercheur propriétaire
         boolean estMedecin = formulaireMedecin.getMedecin().getEmail().equals(emailUtilisateur);
@@ -384,7 +381,7 @@ public class ReponseFormulaireService {
     @Transactional
     public void supprimerToutesReponsesFormulaire(Long formulaireMedecinId, String emailUtilisateur) {
         FormulaireMedecin formulaireMedecin = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
 
         // Vérifier l'autorisation : médecin assigné OU chercheur créateur
         boolean estMedecinAutorise = formulaireMedecin.getMedecin() != null && 
@@ -407,7 +404,7 @@ public class ReponseFormulaireService {
         activiteService.enregistrerActivite(
                 emailUtilisateur,
                 "Suppression de réponses",
-                "Formulaire",
+                FORMULAIRE_ENTITY,
                 formulaireMedecin.getFormulaire().getIdFormulaire(),
                 "Toutes les réponses du formulaire '" + formulaireMedecin.getFormulaire().getTitre() + "' ont été supprimées"
         );
@@ -422,7 +419,7 @@ public class ReponseFormulaireService {
     @Transactional(readOnly = true)
     public com.pfe.backend.dto.StatistiqueFormulaireDto getStatistiques(Long formulaireMedecinId) {
         FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire médecin non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
         
         // Compter le nombre total de patients distincts
         long nombreTotal = reponseFormulaireRepository.countDistinctPatients(formulaireMedecinId);
