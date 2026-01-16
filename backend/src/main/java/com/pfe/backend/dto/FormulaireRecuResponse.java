@@ -96,7 +96,7 @@ public class FormulaireRecuResponse {
                         champInfo.setObligatoire(champ.isObligatoire());
                         return champInfo;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
                 formulaire.setChamps(champs);
             }
 

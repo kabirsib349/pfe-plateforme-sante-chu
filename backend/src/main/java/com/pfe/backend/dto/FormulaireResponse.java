@@ -94,7 +94,7 @@ public class FormulaireResponse {
         if (formulaire.getChamps() != null) {
             response.setChamps(formulaire.getChamps().stream()
                 .map(FormulaireResponse::mapChamp)
-                .collect(Collectors.toList()));
+                .toList());
         }
 
         return response;
@@ -124,7 +124,7 @@ public class FormulaireResponse {
                         optDto.setLibelle(opt.getLibelle());
                         return optDto;
                     })
-                    .collect(Collectors.toList()));
+                    .toList());
             }
             dto.setListeValeur(lvDto);
         }
