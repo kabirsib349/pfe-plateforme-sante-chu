@@ -78,7 +78,7 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> getChercheurs(){
         List<UtilisateurDto> chercheurs = utilisateurService.getChercheurs();
         List<UserResponse> response = chercheurs.stream()
-                .map(c -> new UserResponse(c.id, c.nom, c.email, c.role))
+                .map(c -> new UserResponse(c.getId(), c.getNom(), c.getEmail(), c.getRole()))
                 .toList();
         return ResponseEntity.ok(response);
     }

@@ -2,11 +2,16 @@ package com.pfe.backend.dto;
 
 import com.pfe.backend.model.Utilisateur;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class UtilisateurDto {
-    public Long id;
-    public String nom;
-    public String email;
-    public String role;
+    private Long id;
+    private String nom;
+    private String email;
+    private String role;
 
     public UtilisateurDto(Long id, String nom, String email, String role) {
         this.id = id;
