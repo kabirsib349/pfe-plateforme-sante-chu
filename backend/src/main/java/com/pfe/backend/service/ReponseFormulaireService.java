@@ -56,7 +56,7 @@ public class ReponseFormulaireService {
             }
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Impossible de trouver l'algorithme de hachage SHA-256", e);
+            throw new IllegalStateException("Impossible de trouver l'algorithme de hachage SHA-256", e);
         }
     }
 
@@ -259,7 +259,7 @@ public class ReponseFormulaireService {
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllDraftsForFormulaire(Long formulaireMedecinId) {
-        FormulaireMedecin fm = formulaireMedecinRepository.findById(formulaireMedecinId)
+        formulaireMedecinRepository.findById(formulaireMedecinId)
                 .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_MEDECIN_NOT_FOUND));
         
         // Récupérer tous les patients distincts ayant des réponses (brouillons uniquement)
@@ -301,7 +301,7 @@ public class ReponseFormulaireService {
                 .findByFormulaireMedecinIdAndPatientIdentifierHashAndDraft(formulaireMedecinId, patientHash, true);
         
         if (reponses.isEmpty()) {
-            return null;
+            return java.util.Collections.emptyMap();
         }
         
         Map<String, Object> result = new java.util.HashMap<>();
