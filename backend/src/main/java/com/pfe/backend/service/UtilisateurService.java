@@ -31,7 +31,7 @@ public class UtilisateurService {
         return utilisateurRepository.findByRoleName("chercheur")
                 .stream()
                 .map(UtilisateurDto::from)
-                .collect(Collectors.toList());
+                .toList();
     }
     /**
      * Récupère tous les médecins enregistrés dans la base.
@@ -42,6 +42,6 @@ public class UtilisateurService {
         return utilisateurRepository.findByRoleName("medecin")
                 .stream()
                 .map(UtilisateurDto::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

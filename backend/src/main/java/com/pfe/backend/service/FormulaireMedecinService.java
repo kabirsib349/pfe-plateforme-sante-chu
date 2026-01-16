@@ -148,7 +148,7 @@ public class FormulaireMedecinService {
                 .map(Champ::getListeValeur)
                 .filter(lv -> lv != null)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         if (!listes.isEmpty()) {
             listeValeurRepository.findWithFetchedOptions(listes);

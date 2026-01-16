@@ -127,7 +127,7 @@ public class CsvExportService {
                 .values()
                 .stream()
                 .sorted(this::compareByCategory)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private int compareByCategory(ReponseFormulaire r1, ReponseFormulaire r2) {

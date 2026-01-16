@@ -75,7 +75,7 @@ public class FormulaireService {
         if (request.getChamps() != null) {
             formulaire.setChamps(request.getChamps().stream()
                 .map(champRequest -> convertChampRequestToChamp(champRequest, formulaire))
-                .collect(Collectors.toList()));
+                .toList());
         }
 
         Formulaire savedFormulaire = formulaireRepository.save(formulaire);
@@ -103,7 +103,7 @@ public class FormulaireService {
                 .map(Champ::getListeValeur)
                 .filter(lv -> lv != null)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
         if (!listes.isEmpty()) {
             listeValeurRepository.findWithFetchedOptions(listes);
         }
@@ -125,7 +125,7 @@ public class FormulaireService {
                 .map(Champ::getListeValeur)
                 .filter(lv -> lv != null)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
         if (!listes.isEmpty()) {
             listeValeurRepository.findWithFetchedOptions(listes);
         }
@@ -284,7 +284,7 @@ public class FormulaireService {
                 .findAll()
                 .stream()
                 .filter(fm -> fm.getFormulaire().getIdFormulaire().equals(id))
-                .collect(Collectors.toList());
+                .toList();
         
         for (FormulaireMedecin fm : formulairesMedecins) {
             reponseFormulaireRepository.deleteByFormulaireMedecinId(fm.getId());
