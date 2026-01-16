@@ -48,18 +48,18 @@ export const ChampChoixMultiple: React.FC<ChampChoixMultipleProps> = ({
         return (
             <div className="space-y-2">
                 {options?.map((option, optIndex) => {
-                    const isSelected = selectedValues.includes(option.libelle);
+                    const isSelected = selectedValues.includes(option.valeur || option.libelle);
                     return (
                         <div
                             key={optIndex}
                             className={`flex items-center gap-3 p-3 border-2 rounded-lg ${isSelected
-                                    ? 'bg-green-50 border-green-500'
-                                    : 'bg-white border-gray-200'
+                                ? 'bg-green-50 border-green-500'
+                                : 'bg-white border-gray-200'
                                 }`}
                         >
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
-                                    ? 'border-green-600 bg-green-600'
-                                    : 'border-gray-300'
+                                ? 'border-green-600 bg-green-600'
+                                : 'border-gray-300'
                                 }`}>
                                 {isSelected && (
                                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -83,17 +83,17 @@ export const ChampChoixMultiple: React.FC<ChampChoixMultipleProps> = ({
         );
     }
 
-    const handleChange = (optionLibelle: string, checked: boolean) => {
+    const handleChange = (optionValue: string, checked: boolean) => {
         const newValues = checked
-            ? [...selectedValues, optionLibelle]
-            : selectedValues.filter((v) => v !== optionLibelle);
+            ? [...selectedValues, optionValue]
+            : selectedValues.filter((v) => v !== optionValue);
         onChange?.(newValues);
     };
 
     return (
         <div className="space-y-1 mt-2">
             {options?.map((option, index) => {
-                const isChecked = selectedValues.includes(option.libelle);
+                const isChecked = selectedValues.includes(option.valeur || option.libelle);
                 return (
                     <label
                         key={`${champId}-${index}`}
@@ -103,9 +103,9 @@ export const ChampChoixMultiple: React.FC<ChampChoixMultipleProps> = ({
                             <input
                                 type="checkbox"
                                 name={`champ_${champId}`}
-                                value={option.libelle}
+                                value={option.valeur || option.libelle}
                                 checked={isChecked}
-                                onChange={(e) => handleChange(option.libelle, e.target.checked)}
+                                onChange={(e) => handleChange(option.valeur || option.libelle, e.target.checked)}
                                 className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                             />
                         </div>

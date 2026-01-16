@@ -30,18 +30,18 @@ export const ChampChoixUnique: React.FC<ChampChoixUniqueProps> = ({
         return (
             <div className="space-y-2">
                 {options?.map((option, optIndex) => {
-                    const isSelected = value === option.libelle;
+                    const isSelected = value === (option.valeur || option.libelle);
                     return (
                         <div
                             key={optIndex}
                             className={`flex items-center gap-3 p-3 border-2 rounded-lg ${isSelected
-                                    ? 'bg-green-50 border-green-500'
-                                    : 'bg-white border-gray-200'
+                                ? 'bg-green-50 border-green-500'
+                                : 'bg-white border-gray-200'
                                 }`}
                         >
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
-                                    ? 'border-green-600 bg-green-600'
-                                    : 'border-gray-300'
+                                ? 'border-green-600 bg-green-600'
+                                : 'border-gray-300'
                                 }`}>
                                 {isSelected && (
                                     <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -74,8 +74,8 @@ export const ChampChoixUnique: React.FC<ChampChoixUniqueProps> = ({
                         <input
                             type="radio"
                             name={`champ_${champId}`}
-                            value={option.libelle}
-                            checked={value === option.libelle}
+                            value={option.valeur || option.libelle}
+                            checked={value === (option.valeur || option.libelle)}
                             required={required}
                             onChange={(e) => onChange?.(e.target.value)}
                             className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
