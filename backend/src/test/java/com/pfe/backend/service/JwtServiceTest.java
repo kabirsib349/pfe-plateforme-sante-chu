@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,17 +70,25 @@ class JwtServiceTest {
     }
 
     @Test
-    void isTokenValid_ShouldReturnFalse_WhenTokenExpired() throws InterruptedException {
+    void isTokenValid_ShouldThrowException_WhenTokenExpired() {
+        // Generate an already expired token directly using JJWT
+        // Avoids Thread.sleep() which is flagged by SonarQube (java:S2925)
+        SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        
+        Date now = new Date();
+        Date expiredDate = new Date(now.getTime() - 1000); // 1 second in the past
+        
+        String expiredToken = Jwts.builder()
+                .subject("test@example.com")
+                .issuedAt(new Date(now.getTime() - 2000)) // issued 2 seconds ago
+                .expiration(expiredDate) // expired 1 second ago
+                .signWith(key)
+                .compact();
 
-        ReflectionTestUtils.setField(jwtService, "expiration", 1L); // 1ms
-        
         UserDetails userDetails = new User("test@example.com", "password", Collections.emptyList());
-        String token = jwtService.generateToken(userDetails);
-        
-        Thread.sleep(10);
 
         assertThrows(io.jsonwebtoken.ExpiredJwtException.class, () -> {
-            jwtService.isTokenValid(token, userDetails);
+            jwtService.isTokenValid(expiredToken, userDetails);
         });
     }
 
@@ -99,3 +108,4 @@ class JwtServiceTest {
         assertEquals("ADMIN", role);
     }
 }
+

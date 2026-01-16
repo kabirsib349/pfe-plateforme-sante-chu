@@ -9,6 +9,10 @@ import com.pfe.backend.repository.FormulaireRepository;
 import com.pfe.backend.repository.ReponseFormulaireRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -207,8 +211,23 @@ class ExportReponsesServiceTest {
         assertTrue(content.contains("2024-01-15"));
     }
 
-    @Test
-    void exporterReponsesCsv_ShouldEscapeSpecialCharacters() {
+    /**
+     * Provides test data for CSV special character escaping tests.
+     * Combines 4 similar tests into a single parameterized test per SonarQube recommendation.
+     */
+    static Stream<Arguments> provideCsvEscapeTestCases() {
+        return Stream.of(
+            // input value, expected pattern in output, test description
+            Arguments.of("Value;with;semicolons", "\"Value;with;semicolons\"", "semicolons should be escaped"),
+            Arguments.of("He said \"hello\"", "\"\"", "quotes should be doubled"),
+            Arguments.of("Line1\nLine2", "\"Line1\nLine2\"", "newlines should be quoted"),
+            Arguments.of(null, "patient1hash", "null value should produce empty field")
+        );
+    }
+
+    @ParameterizedTest(name = "{2}")
+    @MethodSource("provideCsvEscapeTestCases")
+    void exporterReponsesCsv_ShouldHandleSpecialCharacters(String inputValue, String expectedPattern, String testDescription) {
         // Arrange
         Long formulaireId = 1L;
         String emailChercheur = "chercheur@test.com";
@@ -224,7 +243,7 @@ class ExportReponsesServiceTest {
         formulaire.setChercheur(chercheur);
         formulaire.setChamps(List.of(champ));
 
-        ReponseFormulaire reponse = createReponse(champ, "Value;with;semicolons", "patient1hash");
+        ReponseFormulaire reponse = createReponse(champ, inputValue, "patient1hash");
 
         when(formulaireRepository.findById(formulaireId)).thenReturn(Optional.of(formulaire));
         when(reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId)).thenReturn(List.of(reponse));
@@ -235,7 +254,7 @@ class ExportReponsesServiceTest {
         // Assert
         assertNotNull(result);
         String content = new String(result.getByteArray());
-        assertTrue(content.contains("\"Value;with;semicolons\"")); // Should be escaped
+        assertTrue(content.contains(expectedPattern), "Expected pattern not found: " + expectedPattern);
     }
 
     @Test
@@ -463,69 +482,7 @@ class ExportReponsesServiceTest {
         assertTrue(content.contains("25"));
     }
 
-    @Test
-    void exporterReponsesCsv_ShouldEscapeQuotes() {
-        // Arrange - Test escapeCsv with quotes
-        Long formulaireId = 1L;
-        String emailChercheur = "chercheur@test.com";
 
-        Utilisateur chercheur = createUtilisateur(emailChercheur);
-
-        Champ champ = new Champ();
-        champ.setIdChamp(1L);
-        champ.setLabel("Comment");
-
-        Formulaire formulaire = new Formulaire();
-        formulaire.setIdFormulaire(formulaireId);
-        formulaire.setChercheur(chercheur);
-        formulaire.setChamps(List.of(champ));
-
-        ReponseFormulaire reponse = createReponse(champ, "He said \"hello\"", "patient1hash");
-
-        when(formulaireRepository.findById(formulaireId)).thenReturn(Optional.of(formulaire));
-        when(reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId)).thenReturn(List.of(reponse));
-
-        // Act
-        ByteArrayResource result = exportReponsesService.exporterReponsesCsv(formulaireId, emailChercheur);
-
-        // Assert
-        assertNotNull(result);
-        String content = new String(result.getByteArray());
-        // Quotes should be escaped by doubling them
-        assertTrue(content.contains("\"\""));
-    }
-
-    @Test
-    void exporterReponsesCsv_ShouldEscapeNewlines() {
-        // Arrange - Test escapeCsv with newlines
-        Long formulaireId = 1L;
-        String emailChercheur = "chercheur@test.com";
-
-        Utilisateur chercheur = createUtilisateur(emailChercheur);
-
-        Champ champ = new Champ();
-        champ.setIdChamp(1L);
-        champ.setLabel("Comment");
-
-        Formulaire formulaire = new Formulaire();
-        formulaire.setIdFormulaire(formulaireId);
-        formulaire.setChercheur(chercheur);
-        formulaire.setChamps(List.of(champ));
-
-        ReponseFormulaire reponse = createReponse(champ, "Line1\nLine2", "patient1hash");
-
-        when(formulaireRepository.findById(formulaireId)).thenReturn(Optional.of(formulaire));
-        when(reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId)).thenReturn(List.of(reponse));
-
-        // Act
-        ByteArrayResource result = exportReponsesService.exporterReponsesCsv(formulaireId, emailChercheur);
-
-        // Assert
-        assertNotNull(result);
-        String content = new String(result.getByteArray());
-        // Value with newline should be quoted
-        assertTrue(content.contains("\"Line1\nLine2\""));
-    }
 
     @Test
     void exporterReponsesCsv_ShouldHandleNoMatchingChamp() {
@@ -639,36 +596,7 @@ class ExportReponsesServiceTest {
         assertTrue(content.contains("25"));
     }
 
-    @Test
-    void exporterReponsesCsv_ShouldHandleNullValeur() {
-        // Arrange - Response with null value
-        Long formulaireId = 1L;
-        String emailChercheur = "chercheur@test.com";
 
-        Utilisateur chercheur = createUtilisateur(emailChercheur);
-
-        Champ champ = new Champ();
-        champ.setIdChamp(1L);
-        champ.setLabel("Age");
-
-        Formulaire formulaire = new Formulaire();
-        formulaire.setIdFormulaire(formulaireId);
-        formulaire.setChercheur(chercheur);
-        formulaire.setChamps(List.of(champ));
-
-        ReponseFormulaire reponse = createReponse(champ, null, "patient1hash");
-
-        when(formulaireRepository.findById(formulaireId)).thenReturn(Optional.of(formulaire));
-        when(reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId)).thenReturn(List.of(reponse));
-
-        // Act
-        ByteArrayResource result = exportReponsesService.exporterReponsesCsv(formulaireId, emailChercheur);
-
-        // Assert
-        assertNotNull(result);
-        String content = new String(result.getByteArray());
-        assertTrue(content.contains("patient1hash"));
-    }
 
     @Test
     void exporterReponsesCsv_ShouldHandleMixedNullAndNonNullDates() {
