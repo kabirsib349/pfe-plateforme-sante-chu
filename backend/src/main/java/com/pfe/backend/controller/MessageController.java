@@ -34,6 +34,10 @@ public class MessageController {
     private final MessageService messageService;
     private final UtilisateurService utilisateurService;
 
+    // Constants for error messages
+    private static final String ERROR_KEY = "error";
+    private static final String MESSAGE_KEY = "message";
+
     /**
      * Envoie un message entre chercheur et médecin.
      *
@@ -48,7 +52,7 @@ public class MessageController {
             String contenu = request.get("contenu");
 
             if (contenu == null || contenu.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Le contenu du message est obligatoire."));
+                return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "Le contenu du message est obligatoire."));
             }
 
             Utilisateur emetteur = utilisateurService.getUtilisateurById(emetteurId);
@@ -58,7 +62,7 @@ public class MessageController {
             return ResponseEntity.ok(message);
 
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Erreur lors de l’envoi du message : " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "Erreur lors de l’envoi du message : " + e.getMessage()));
         }
     }
 
@@ -195,13 +199,13 @@ public class MessageController {
     ) {
         try {
             messageService.supprimerMessage(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Message supprimé avec succès."));
+            return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Message supprimé avec succès."));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of(ERROR_KEY, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Erreur lors de la suppression : " + e.getMessage()));
+                    .body(Map.of(ERROR_KEY, "Erreur lors de la suppression : " + e.getMessage()));
         }
     }
 
