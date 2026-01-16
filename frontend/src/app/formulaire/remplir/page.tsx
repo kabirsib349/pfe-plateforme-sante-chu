@@ -533,8 +533,8 @@ function RemplirFormulaireContent() {
                                                         <input
                                                             type="radio"
                                                             name={`champ_${champ.idChamp}`}
-                                                            value={option.libelle}
-                                                            checked={reponses[champ.idChamp] === option.libelle}
+                                                            value={option.valeur || option.libelle}
+                                                            checked={reponses[champ.idChamp] === (option.valeur || option.libelle)}
                                                             required={champ.obligatoire}
                                                             onChange={(e) => handleReponseChange(champ.idChamp, e.target.value)}
                                                             className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
@@ -550,7 +550,7 @@ function RemplirFormulaireContent() {
                                         <div className="space-y-1 mt-2">
                                             {champ.listeValeur?.options?.map((option: any, index: number) => {
                                                 const currentValues = Array.isArray(reponses[champ.idChamp]) ? reponses[champ.idChamp] : [];
-                                                const isChecked = currentValues.includes(option.libelle);
+                                                const isChecked = currentValues.includes(option.valeur || option.libelle);
 
                                                 return (
                                                     <label key={`${champ.idChamp}-${index}`} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-gray-100 transition-colors cursor-pointer group">
@@ -558,7 +558,7 @@ function RemplirFormulaireContent() {
                                                             <input
                                                                 type="checkbox"
                                                                 name={`champ_${champ.idChamp}`}
-                                                                value={option.libelle}
+                                                                value={option.valeur || option.libelle}
                                                                 checked={isChecked}
                                                                 onChange={(e) => {
                                                                     const val = e.target.value;
