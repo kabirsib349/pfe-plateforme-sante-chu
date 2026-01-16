@@ -15,6 +15,13 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // Constants for error response keys
+    private static final String TIMESTAMP_KEY = "timestamp";
+    private static final String STATUS_KEY = "status";
+    private static final String ERROR_KEY = "error";
+    private static final String MESSAGE_KEY = "message";
+    private static final String PATH_KEY = "path";
+
     // Gère les erreurs de validation des DTOs
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
@@ -29,12 +36,12 @@ public class GlobalExceptionHandler {
         });
         
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Validation Failed");
-        body.put("message", "Les données fournies sont invalides");
+        body.put(TIMESTAMP_KEY, new Date());
+        body.put(STATUS_KEY, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR_KEY, "Validation Failed");
+        body.put(MESSAGE_KEY, "Les données fournies sont invalides");
         body.put("errors", errors);
-        body.put("path", request.getDescription(false).substring(4));
+        body.put(PATH_KEY, request.getDescription(false).substring(4));
         
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -43,11 +50,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        body.put("error", "Not Found");
-        body.put("message", ex.getMessage());
-        body.put("path", request.getDescription(false).substring(4));
+        body.put(TIMESTAMP_KEY, new Date());
+        body.put(STATUS_KEY, HttpStatus.NOT_FOUND.value());
+        body.put(ERROR_KEY, "Not Found");
+        body.put(MESSAGE_KEY, ex.getMessage());
+        body.put(PATH_KEY, request.getDescription(false).substring(4));
 
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
@@ -56,11 +63,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Bad Request");
-        body.put("message", ex.getMessage());
-        body.put("path", request.getDescription(false).substring(4));
+        body.put(TIMESTAMP_KEY, new Date());
+        body.put(STATUS_KEY, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR_KEY, "Bad Request");
+        body.put(MESSAGE_KEY, ex.getMessage());
+        body.put(PATH_KEY, request.getDescription(false).substring(4));
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -71,11 +78,11 @@ public class GlobalExceptionHandler {
             org.springframework.security.core.userdetails.UsernameNotFoundException ex, 
             WebRequest request) {
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        body.put("error", "Not Found");
-        body.put("message", ex.getMessage());
-        body.put("path", request.getDescription(false).substring(4));
+        body.put(TIMESTAMP_KEY, new Date());
+        body.put(STATUS_KEY, HttpStatus.NOT_FOUND.value());
+        body.put(ERROR_KEY, "Not Found");
+        body.put(MESSAGE_KEY, ex.getMessage());
+        body.put(PATH_KEY, request.getDescription(false).substring(4));
 
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
@@ -86,11 +93,11 @@ public class GlobalExceptionHandler {
             IllegalStateException ex, 
             WebRequest request) {
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Bad Request");
-        body.put("message", ex.getMessage());
-        body.put("path", request.getDescription(false).substring(4));
+        body.put(TIMESTAMP_KEY, new Date());
+        body.put(STATUS_KEY, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR_KEY, "Bad Request");
+        body.put(MESSAGE_KEY, ex.getMessage());
+        body.put(PATH_KEY, request.getDescription(false).substring(4));
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
@@ -101,11 +108,11 @@ public class GlobalExceptionHandler {
         // En production, il est crucial de logger cette erreur pour le débogage
         // logger.error("Erreur inattendue : ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("error", "Internal Server Error");
-        body.put("message", "Une erreur interne est survenue sur le serveur.");
-        body.put("path", request.getDescription(false).substring(4));
+        body.put(TIMESTAMP_KEY, new Date());
+        body.put(STATUS_KEY, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put(ERROR_KEY, "Internal Server Error");
+        body.put(MESSAGE_KEY, "Une erreur interne est survenue sur le serveur.");
+        body.put(PATH_KEY, request.getDescription(false).substring(4));
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }

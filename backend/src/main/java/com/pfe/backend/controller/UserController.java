@@ -91,7 +91,7 @@ public class UserController {
      * @return profil mis à jour
      */
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(Principal principal, @RequestBody UserUpdateRequest dto) {
+    public ResponseEntity<Object> updateProfile(Principal principal, @RequestBody UserUpdateRequest dto) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
         }
@@ -120,7 +120,7 @@ public class UserController {
      * @return message de succès
      */
     @PutMapping("/changer-mot-de-passe")
-    public ResponseEntity<?> changePassword(Principal principal, @RequestBody ChangePasswordRequest dto) {
+    public ResponseEntity<Object> changePassword(Principal principal, @RequestBody ChangePasswordRequest dto) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Utilisateur non authentifié"));
         }
