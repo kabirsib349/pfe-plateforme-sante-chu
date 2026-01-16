@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.pfe.backend.exception.ResourceNotFoundException;
+
 @Service
 @RequiredArgsConstructor
 public class QuestionPersonnaliseeService {
@@ -27,7 +29,7 @@ public class QuestionPersonnaliseeService {
     public QuestionPersonnalisee addQuestion(QuestionPersonnalisee question) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Utilisateur chercheur = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 
         question.setChercheur(chercheur);
         return questionRepository.save(question);
@@ -37,10 +39,10 @@ public class QuestionPersonnaliseeService {
     public void deleteQuestion(Long id) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         QuestionPersonnalisee question = questionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Question non trouvée"));
+                .orElseThrow(() -> new ResourceNotFoundException("Question non trouvée"));
         
         if (!question.getChercheur().getEmail().equals(email)) {
-            throw new RuntimeException("Accès refusé : Vous ne pouvez supprimer que vos propres questions");
+            throw new IllegalArgumentException("Accès refusé : Vous ne pouvez supprimer que vos propres questions");
         }
 
         questionRepository.delete(question);
