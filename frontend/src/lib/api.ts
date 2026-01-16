@@ -224,6 +224,15 @@ export async function deleteFormulaireRecu(token: string, id: number): Promise<v
     await handleResponse<void>(response);
 }
 
+export async function deleteFormulaireEnvoye(token: string, id: number): Promise<void> {
+    const response = await fetch(apiUrl(`/api/formulaires/envoyes/${id}`), {
+        method: 'DELETE',
+        headers: createHeaders(token),
+    });
+
+    await handleResponse<void>(response);
+}
+
 // ============= REPONSES API =============
 
 export async function getReponses(token: string, formulaireMedecinId: number): Promise<any[]> {

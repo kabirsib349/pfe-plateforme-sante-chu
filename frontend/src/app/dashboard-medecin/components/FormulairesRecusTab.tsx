@@ -141,7 +141,7 @@ export const FormulairesRecusTab: FC<FormulairesRecusTabProps> = ({
                                         <span>Remplir le formulaire</span>
                                     </button>
                                     <button
-                                        onClick={() => router.push(`/formulaire/apercu?id=${formulaireRecu.formulaire.idFormulaire}`)}
+                                        onClick={() => router.push(`/formulaire/apercu?id=${formulaireRecu.formulaire.idFormulaire}&formulaireMedecinId=${formulaireRecu.id}`)}
                                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
                                     >
                                         <EyeIcon className="w-5 h-5" />
