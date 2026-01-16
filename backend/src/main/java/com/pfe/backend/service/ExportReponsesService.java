@@ -38,83 +38,106 @@ public class ExportReponsesService {
      * @return fichier CSV prêt à être téléchargé
      */
     public ByteArrayResource exporterReponsesCsv(Long formulaireId, String emailChercheur) {
-        // 1. Récupérer le formulaire
         Formulaire formulaire = formulaireRepository.findById(formulaireId)
                 .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé"));
 
-        // Vérifier que le chercheur courant est bien celui associé au formulaire
+        verifierAutorisation(formulaire, emailChercheur);
+
+        List<Champ> champs = formulaire.getChamps();
+        List<ReponseFormulaire> reponses = reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId);
+        Map<String, List<ReponseFormulaire>> reponsesParPatient = grouperReponsesParPatient(reponses);
+
+        StringBuilder csv = new StringBuilder();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        construireEnteteCsv(csv, champs);
+        construireLignesPatients(csv, reponsesParPatient, champs, dateFormatter);
+
+        byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+        return new ByteArrayResource(bytes);
+    }
+
+    private void verifierAutorisation(Formulaire formulaire, String emailChercheur) {
         if (formulaire.getChercheur() == null ||
                 !formulaire.getChercheur().getEmail().equals(emailChercheur)) {
             throw new IllegalArgumentException("Vous n'êtes pas autorisé à exporter ce formulaire");
         }
+    }
 
-        // 2. Récupérer tous les champs du formulaire (dans l'ordre)
-        List<Champ> champs = formulaire.getChamps();
-
-        // 3. Récupérer toutes les réponses pour ce formulaire
-        List<ReponseFormulaire> reponses = reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId);
-
-        // 4. Grouper les réponses par patient (patientIdentifierHash)
-        Map<String, List<ReponseFormulaire>> reponsesParPatient = reponses.stream()
+    private Map<String, List<ReponseFormulaire>> grouperReponsesParPatient(List<ReponseFormulaire> reponses) {
+        return reponses.stream()
                 .filter(r -> r.getPatientIdentifierHash() != null)
                 .collect(Collectors.groupingBy(ReponseFormulaire::getPatientIdentifierHash));
+    }
 
-        // 5. Construction du CSV
-        StringBuilder sb = new StringBuilder();
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        // En-tête : Patient_ID + tous les champs + Date_Saisie
-        sb.append("Patient_ID");
+    private void construireEnteteCsv(StringBuilder csv, List<Champ> champs) {
+        csv.append("Patient_ID");
         for (Champ champ : champs) {
             String nomVariable = champ.getLabel() != null 
                 ? champ.getLabel().toUpperCase().replaceAll("\\s+", "_") 
                 : "CHAMP_" + champ.getIdChamp();
-            sb.append(";").append(escapeCsv(nomVariable));
+            csv.append(";").append(escapeCsv(nomVariable));
         }
-        sb.append(";Date_Saisie\n");
+        csv.append(";Date_Saisie\n");
+    }
 
-        // 6. Pour chaque patient, créer une ligne
+    private void construireLignesPatients(StringBuilder csv, Map<String, List<ReponseFormulaire>> reponsesParPatient,
+                                          List<Champ> champs, DateTimeFormatter dateFormatter) {
         for (Map.Entry<String, List<ReponseFormulaire>> entry : reponsesParPatient.entrySet()) {
-            String patientHash = entry.getKey();
-            List<ReponseFormulaire> reponsesPatient = entry.getValue();
-
-            // Créer une map champId -> ReponseFormulaire pour ce patient
-            Map<Long, ReponseFormulaire> reponsesParChamp = reponsesPatient.stream()
-                    .filter(r -> r.getChamp() != null)
-                    .collect(Collectors.toMap(
-                            r -> r.getChamp().getIdChamp(),
-                            r -> r,
-                            (r1, r2) -> r1 // En cas de doublon, garder le premier
-                    ));
-
-            // Colonne Patient_ID
-            sb.append(escapeCsv(patientHash));
-
-            // Colonnes pour chaque champ
-            LocalDateTime dateSaisie = null;
-            for (Champ champ : champs) {
-                sb.append(";");
-                ReponseFormulaire reponse = reponsesParChamp.get(champ.getIdChamp());
-                if (reponse != null) {
-                    sb.append(escapeCsv(reponse.getValeur()));
-                    // Garder la date de saisie la plus récente
-                    if (dateSaisie == null || (reponse.getDateSaisie() != null && reponse.getDateSaisie().isAfter(dateSaisie))) {
-                        dateSaisie = reponse.getDateSaisie();
-                    }
-                }
-                // Sinon, laisser vide
-            }
-
-            // Colonne Date_Saisie
-            sb.append(";");
-            if (dateSaisie != null) {
-                sb.append(dateFormatter.format(dateSaisie));
-            }
-            sb.append("\n");
+            construireLignePatient(csv, entry.getKey(), entry.getValue(), champs, dateFormatter);
         }
+    }
 
-        byte[] bytes = sb.toString().getBytes(StandardCharsets.UTF_8);
-        return new ByteArrayResource(bytes);
+    private void construireLignePatient(StringBuilder csv, String patientHash, List<ReponseFormulaire> reponsesPatient,
+                                        List<Champ> champs, DateTimeFormatter dateFormatter) {
+        Map<Long, ReponseFormulaire> reponsesParChamp = creerMapReponsesParChamp(reponsesPatient);
+        
+        csv.append(escapeCsv(patientHash));
+
+        LocalDateTime dateSaisie = ajouterValeursChamps(csv, champs, reponsesParChamp);
+
+        csv.append(";");
+        if (dateSaisie != null) {
+            csv.append(dateFormatter.format(dateSaisie));
+        }
+        csv.append("\n");
+    }
+
+    private Map<Long, ReponseFormulaire> creerMapReponsesParChamp(List<ReponseFormulaire> reponsesPatient) {
+        return reponsesPatient.stream()
+                .filter(r -> r.getChamp() != null)
+                .collect(Collectors.toMap(
+                        r -> r.getChamp().getIdChamp(),
+                        r -> r,
+                        (r1, r2) -> r1
+                ));
+    }
+
+    private LocalDateTime ajouterValeursChamps(StringBuilder csv, List<Champ> champs,
+                                                Map<Long, ReponseFormulaire> reponsesParChamp) {
+        LocalDateTime dateSaisiePlusRecente = null;
+        
+        for (Champ champ : champs) {
+            csv.append(";");
+            ReponseFormulaire reponse = reponsesParChamp.get(champ.getIdChamp());
+            
+            if (reponse != null) {
+                csv.append(escapeCsv(reponse.getValeur()));
+                dateSaisiePlusRecente = trouverDatePlusRecente(dateSaisiePlusRecente, reponse.getDateSaisie());
+            }
+        }
+        
+        return dateSaisiePlusRecente;
+    }
+
+    private LocalDateTime trouverDatePlusRecente(LocalDateTime dateActuelle, LocalDateTime nouvelleDate) {
+        if (dateActuelle == null) {
+            return nouvelleDate;
+        }
+        if (nouvelleDate != null && nouvelleDate.isAfter(dateActuelle)) {
+            return nouvelleDate;
+        }
+        return dateActuelle;
     }
 
     private String escapeCsv(String valeur) {
