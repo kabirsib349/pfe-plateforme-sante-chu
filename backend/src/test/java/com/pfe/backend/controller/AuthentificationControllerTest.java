@@ -1,10 +1,10 @@
 package com.pfe.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pfe.backend.dto.LoginRequest;
-import com.pfe.backend.dto.LoginResponse;
-import com.pfe.backend.dto.RegisterRequest;
+import com.pfe.backend.dto.*;
+import com.pfe.backend.exception.*;
 import com.pfe.backend.service.AuthentificationService;
+import com.pfe.backend.service.PasswordResetService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,6 +29,9 @@ class AuthentificationControllerTest {
 
     @Mock
     private AuthentificationService authentificationService;
+
+    @Mock
+    private PasswordResetService passwordResetService;
 
     @InjectMocks
     private AuthentificationController authentificationController;
@@ -79,7 +83,7 @@ class AuthentificationControllerTest {
         request.setEmail("test@test.com");
         request.setPassword("password");
 
-        LoginResponse response = new LoginResponse("token");
+        LoginResponse response = new LoginResponse("token", false);
         when(authentificationService.login(any(LoginRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/login")
@@ -104,5 +108,117 @@ class AuthentificationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void login_ShouldReturnTooManyRequests_WhenServiceThrowsOtpCooldownException() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@test.com");
+        request.setPassword("password");
+
+        when(authentificationService.login(any(LoginRequest.class)))
+                .thenThrow(new OtpCooldownException("Trop de tentatives"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.GenericResponse("Trop de tentatives"))));
+    }
+
+    @Test
+    void verifyOtp_ShouldReturnOk_WhenServiceSucceeds() throws Exception {
+        VerifyOtpRequest request = new VerifyOtpRequest("test@test.com", "123456");
+
+        LoginResponse response = new LoginResponse("token", false);
+        when(authentificationService.verifyOtp(any(VerifyOtpRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(response)));
+    }
+
+    @Test
+    void verifyOtp_ShouldReturnBadRequest_WhenServiceThrowsException() throws Exception {
+        VerifyOtpRequest request = new VerifyOtpRequest("test@test.com", "123456");
+
+        when(authentificationService.verifyOtp(any(VerifyOtpRequest.class)))
+                .thenThrow(new OtpInvalidException("Code invalide"));
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.GenericResponse("Code invalide"))));
+    }
+
+    @Test
+    void forgotPassword_ShouldReturnOk_WhenServiceSucceeds() throws Exception {
+        PasswordResetDTO.ForgotPasswordRequest request = new PasswordResetDTO.ForgotPasswordRequest("test@test.com");
+
+        doNothing().when(passwordResetService).forgotPassword(anyString());
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.GenericResponse(
+                        "Si un compte existe avec cette adresse, un code de vérification a été envoyé."))));
+    }
+
+    @Test
+    void verifyResetCode_ShouldReturnOk_WhenServiceSucceeds() throws Exception {
+        PasswordResetDTO.VerifyResetCodeRequest request = new PasswordResetDTO.VerifyResetCodeRequest("test@test.com", "123456");
+
+        when(passwordResetService.verifyResetCode(anyString(), anyString())).thenReturn("reset-token");
+
+        mockMvc.perform(post("/api/auth/verify-reset-code")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.VerifyResetCodeResponse("reset-token"))));
+    }
+
+    @Test
+    void verifyResetCode_ShouldReturnBadRequest_WhenServiceThrowsException() throws Exception {
+        PasswordResetDTO.VerifyResetCodeRequest request = new PasswordResetDTO.VerifyResetCodeRequest("test@test.com", "123456");
+
+        when(passwordResetService.verifyResetCode(anyString(), anyString()))
+                .thenThrow(new IllegalArgumentException("Code invalide"));
+
+        mockMvc.perform(post("/api/auth/verify-reset-code")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.GenericResponse("Code invalide"))));
+    }
+
+    @Test
+    void resetPassword_ShouldReturnOk_WhenServiceSucceeds() throws Exception {
+        PasswordResetDTO.ResetPasswordRequest request = new PasswordResetDTO.ResetPasswordRequest("reset-token", "NewPass123!");
+
+        doNothing().when(passwordResetService).resetPassword(anyString(), anyString());
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.GenericResponse(
+                        "Votre mot de passe a été réinitialisé avec succès."))));
+    }
+
+    @Test
+    void resetPassword_ShouldReturnBadRequest_WhenServiceThrowsException() throws Exception {
+        PasswordResetDTO.ResetPasswordRequest request = new PasswordResetDTO.ResetPasswordRequest("reset-token", "NewPass123!");
+
+        doThrow(new IllegalArgumentException("Token invalide")).when(passwordResetService).resetPassword(anyString(), anyString());
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().json(objectMapper.writeValueAsString(new PasswordResetDTO.GenericResponse("Token invalide"))));
     }
 }
