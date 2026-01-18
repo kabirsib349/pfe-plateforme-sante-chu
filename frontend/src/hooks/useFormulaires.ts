@@ -3,10 +3,11 @@ import { useAuth } from './useAuth';
 import { getFormulaires } from '@/src/lib/api';
 import { handleError } from '@/src/lib/errorHandler';
 import { config } from '@/src/lib/config';
+import type { Formulaire } from '@/src/types';
 
 export const useFormulaires = () => {
   const { token } = useAuth();
-  const [formulaires, setFormulaires] = useState<any[]>([]);
+  const [formulaires, setFormulaires] = useState<Formulaire[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -24,18 +24,21 @@ export interface UseFormDataOptions {
     onSuccess?: () => void;
 }
 
+/** Type for form field values - can be string, number, boolean, date, or array for multi-select */
+export type FormFieldValue = string | number | boolean | string[] | null;
+
 /**
  * Return type for the useFormData hook.
  */
 export interface UseFormDataReturn {
     /** Current responses map (champId -> value) */
-    reponses: Record<string, any>;
+    reponses: Record<string, FormFieldValue>;
     /** Patient identifier */
     patientIdentifier: string;
     /** Set patient identifier */
     setPatientIdentifier: (id: string) => void;
     /** Handle response change for a field */
-    handleReponseChange: (champId: string, valeur: any) => void;
+    handleReponseChange: (champId: string, valeur: FormFieldValue) => void;
     /** Whether current data is a draft */
     isDraft: boolean;
     /** Whether draft is being saved */
@@ -83,7 +86,7 @@ export function useFormData({
     showToast,
     onSuccess
 }: UseFormDataOptions): UseFormDataReturn {
-    const [reponses, setReponses] = useState<Record<string, any>>({});
+    const [reponses, setReponses] = useState<Record<string, FormFieldValue>>({});
     const [patientIdentifier, setPatientIdentifier] = useState(initialPatientId);
     const [isDraft, setIsDraft] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -194,9 +197,11 @@ export function useFormData({
                             );
                         });
                         formuleEvaluable = formuleEvaluable.replace(/\^/g, '**');
-                        const resultat = eval(formuleEvaluable);
+                        // Use Function constructor instead of eval for better security
+                        // eslint-disable-next-line no-new-func
+                        const resultat = new Function(`return ${formuleEvaluable}`)();
 
-                        if (!isNaN(resultat)) {
+                        if (typeof resultat === 'number' && !isNaN(resultat) && isFinite(resultat)) {
                             const valeurCalculee = Math.round(resultat * 100) / 100;
                             reponsesMap[champ.idChamp.toString()] = valeurCalculee.toString();
                         }
