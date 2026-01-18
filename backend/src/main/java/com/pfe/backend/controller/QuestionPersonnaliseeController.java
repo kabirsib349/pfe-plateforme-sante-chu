@@ -11,7 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/questions-perso")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // A ajuster selon la conf de sécurité
+
 public class QuestionPersonnaliseeController {
 
     private final QuestionPersonnaliseeService questionService;
