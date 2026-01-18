@@ -45,6 +45,7 @@ public class FormulaireService {
 
     // Constants for error messages and activity logging
     private static final String USER_NOT_FOUND_PREFIX = "Utilisateur non trouvé avec l'email: ";
+    private static final String FORMULAIRE_NOT_FOUND_PREFIX = "Formulaire non trouvé avec l'ID: ";
     private static final String FORMULAIRE_ENTITY = "Formulaire";
     private static final String FORMULAIRE_PREFIX = "Formulaire '";
 
@@ -120,7 +121,7 @@ public class FormulaireService {
     @Transactional(readOnly = true)
     public Formulaire getFormulaireById(Long id) {
         Formulaire formulaire = formulaireRepository.findByIdWithChamps(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_NOT_FOUND_PREFIX + id));
         List<ListeValeur> listes = formulaire.getChamps().stream()
                 .map(Champ::getListeValeur)
                 .filter(java.util.Objects::nonNull)
@@ -144,7 +145,7 @@ public class FormulaireService {
     @Transactional
     public Formulaire updateFormulaire(Long id, FormulaireRequest request, String userEmail) {
         Formulaire formulaire = formulaireRepository.findByIdWithChamps(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_NOT_FOUND_PREFIX + id));
 
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_PREFIX + userEmail));
@@ -271,7 +272,7 @@ public class FormulaireService {
     @Transactional
     public void deleteFormulaire(Long id, String userEmail) {
         Formulaire formulaire = formulaireRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Formulaire non trouvé avec l'ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(FORMULAIRE_NOT_FOUND_PREFIX + id));
         
         Utilisateur chercheur = utilisateurRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND_PREFIX + userEmail));

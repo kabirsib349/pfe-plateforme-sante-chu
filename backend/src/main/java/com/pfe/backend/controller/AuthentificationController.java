@@ -53,7 +53,7 @@ public class AuthentificationController {
      * @return réponse avec otpRequired=true si succès
      */
     @PostMapping("login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request){
+    public ResponseEntity<Object> login(@RequestBody LoginRequest request){
         try{
             LoginResponse response = authentificationService.login(request);
             return ResponseEntity.ok(response);
@@ -72,7 +72,7 @@ public class AuthentificationController {
      * @return token JWT si le code est valide
      */
     @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+    public ResponseEntity<Object> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         try {
             LoginResponse response = authentificationService.verifyOtp(request);
             return ResponseEntity.ok(response);
@@ -104,7 +104,7 @@ public class AuthentificationController {
      * @return token de réinitialisation pour l'étape finale
      */
     @PostMapping("/verify-reset-code")
-    public ResponseEntity<?> verifyResetCode(
+    public ResponseEntity<Object> verifyResetCode(
             @RequestBody PasswordResetDTO.VerifyResetCodeRequest request) {
         try {
             String resetToken = passwordResetService.verifyResetCode(request.email(), request.code());
