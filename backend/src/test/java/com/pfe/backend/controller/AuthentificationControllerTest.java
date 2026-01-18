@@ -35,7 +35,7 @@ class AuthentificationControllerTest {
     @InjectMocks
     private AuthentificationController authentificationController;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
