@@ -123,8 +123,6 @@ class AuthentificationServiceTest {
         user.setRole(role);
 
         when(utilisateurRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        
-        // when(jwtService.generateToken(any(UserDetails.class))).thenReturn("jwt-token");
 
         LoginResponse response = authService.login(request);
 

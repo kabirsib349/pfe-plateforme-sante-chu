@@ -9,6 +9,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import com.pfe.backend.exception.EmailSendingException;
+
 /**
  * Service d'envoi d'emails HTML pour la réinitialisation de mot de passe.
  */
@@ -47,10 +49,10 @@ public class MailService {
 
         } catch (MessagingException e) {
             log.error("Erreur lors de la création du message email pour {}", to, e);
-            throw new RuntimeException("Impossible de créer l'email de réinitialisation", e);
+            throw new EmailSendingException("Impossible de créer l'email de réinitialisation", e);
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi du mail de réinitialisation vers {}", to, e);
-            throw new RuntimeException("Impossible d'envoyer l'email de réinitialisation", e);
+            throw new EmailSendingException("Impossible d'envoyer l'email de réinitialisation", e);
         }
     }
 
@@ -198,10 +200,10 @@ public class MailService {
 
         } catch (MessagingException e) {
             log.error("Erreur lors de la création du message OTP pour {}", to, e);
-            throw new RuntimeException("Impossible de créer l'email OTP", e);
+            throw new EmailSendingException("Impossible de créer l'email OTP", e);
         } catch (Exception e) {
             log.error("Erreur lors de l'envoi de l'email OTP vers {}", to, e);
-            throw new RuntimeException("Impossible d'envoyer l'email OTP", e);
+            throw new EmailSendingException("Impossible d'envoyer l'email OTP", e);
         }
     }
 
