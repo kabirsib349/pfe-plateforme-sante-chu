@@ -85,7 +85,7 @@ class OtpServiceTest {
 
         verify(otpRepository).deleteByUtilisateur(utilisateur);
         verify(otpRepository).save(any(OtpVerification.class));
-        verify(mailService).sendOtpEmail(eq("test@test.com"), eq(otp), eq(5));
+        verify(mailService).sendOtpEmail("test@test.com", otp, 5);
     }
 
     @Test
