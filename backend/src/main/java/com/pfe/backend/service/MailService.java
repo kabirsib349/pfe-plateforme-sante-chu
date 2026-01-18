@@ -172,4 +172,143 @@ public class MailService {
                         """,
                 verificationCode, expiryMinutes);
     }
+
+    /**
+     * Envoie un email avec le code OTP pour l'authentification à deux facteurs.
+     *
+     * @param to           adresse email du destinataire
+     * @param otpCode      code OTP à 6 chiffres
+     * @param expiryMinutes durée de validité du code en minutes
+     */
+    public void sendOtpEmail(String to, String otpCode, int expiryMinutes) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject("Code de connexion - MedDataCollect");
+
+            String htmlContent = buildOtpEmailHtml(otpCode, expiryMinutes);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(mimeMessage);
+
+            log.info("Email OTP envoyé avec succès à : {}", to);
+
+        } catch (MessagingException e) {
+            log.error("Erreur lors de la création du message OTP pour {}", to, e);
+            throw new RuntimeException("Impossible de créer l'email OTP", e);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de l'email OTP vers {}", to, e);
+            throw new RuntimeException("Impossible d'envoyer l'email OTP", e);
+        }
+    }
+
+    /**
+     * Génère le template HTML de l'email OTP pour la connexion.
+     */
+    private String buildOtpEmailHtml(String otpCode, int expiryMinutes) {
+        return String.format(
+                """
+                        <!DOCTYPE html>
+                        <html lang="fr">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Code de connexion</title>
+                        </head>
+                        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; line-height: 1.6;">
+                            <table role="presentation" style="width: 100%%; border-collapse: collapse; background-color: #f3f4f6;">
+                                <tr>
+                                    <td align="center" style="padding: 40px 20px;">
+                                        <table role="presentation" style="max-width: 600px; width: 100%%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+                                            <!-- Header -->
+                                            <tr>
+                                                <td style="background: linear-gradient(135deg, #10b981 0%%, #3b82f6 50%%, #6366f1 100%%); padding: 40px 30px; text-align: center; border-radius: 16px 16px 0 0;">
+                                                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                                                        MedDataCollect
+                                                    </h1>
+                                                    <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px;">
+                                                        Authentification sécurisée
+                                                    </p>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Body -->
+                                            <tr>
+                                                <td style="padding: 40px 30px;">
+                                                    <h2 style="margin: 0 0 20px 0; color: #111827; font-size: 24px; font-weight: 600;">
+                                                        Code de connexion
+                                                    </h2>
+
+                                                    <p style="margin: 0 0 30px 0; color: #4b5563; font-size: 16px;">
+                                                        Vous tentez de vous connecter à votre compte. Utilisez le code ci-dessous pour confirmer votre identité :
+                                                    </p>
+
+                                                    <!-- Code -->
+                                                    <table role="presentation" style="width: 100%%; border-collapse: collapse; margin: 0 0 30px 0;">
+                                                        <tr>
+                                                            <td align="center" style="padding: 30px; background: linear-gradient(135deg, #ecfdf5 0%%, #dbeafe 100%%); border-radius: 12px; border: 2px solid #10b981;">
+                                                                <div style="font-size: 14px; color: #059669; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+                                                                    Votre code de connexion
+                                                                </div>
+                                                                <div style="font-size: 42px; font-weight: 700; color: #047857; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+                                                                    %s
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+
+                                                    <!-- Warning -->
+                                                    <table role="presentation" style="width: 100%%; border-collapse: collapse; margin: 0 0 20px 0; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+                                                        <tr>
+                                                            <td style="padding: 16px 20px;">
+                                                                <p style="margin: 0; color: #92400e; font-size: 14px;">
+                                                                    <strong>Ce code est valable pendant %d minutes.</strong>
+                                                                </p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Security -->
+                                            <tr>
+                                                <td style="padding: 0 30px 40px 30px;">
+                                                    <table role="presentation" style="width: 100%%; border-collapse: collapse; background-color: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
+                                                        <tr>
+                                                            <td style="padding: 20px;">
+                                                                <p style="margin: 0 0 10px 0; color: #991b1b; font-size: 14px; font-weight: 600;">
+                                                                    Mesures de sécurité
+                                                                </p>
+                                                                <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.6;">
+                                                                    Si vous n'êtes pas à l'origine de cette tentative de connexion, changez immédiatement votre mot de passe.
+                                                                </p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Footer -->
+                                            <tr>
+                                                <td style="padding: 30px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb;">
+                                                    <p style="margin: 0; color: #6b7280; font-size: 13px; text-align: center;">
+                                                        Cet email a été envoyé par <strong>MedDataCollect</strong>
+                                                    </p>
+                                                </td>
+                                            </tr>
+
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>
+                        """,
+                otpCode, expiryMinutes);
+    }
 }
+

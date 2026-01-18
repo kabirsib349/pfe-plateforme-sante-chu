@@ -4,6 +4,8 @@ import com.pfe.backend.dto.LoginRequest;
 import com.pfe.backend.dto.LoginResponse;
 import com.pfe.backend.dto.PasswordResetDTO;
 import com.pfe.backend.dto.RegisterRequest;
+import com.pfe.backend.dto.VerifyOtpRequest;
+import com.pfe.backend.exception.*;
 import com.pfe.backend.service.AuthentificationService;
 import com.pfe.backend.service.PasswordResetService;
 import jakarta.validation.Valid;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Contrôleur REST pour l'authentification et l'enregistrement des utilisateurs.
- * Gère l'inscription, la connexion avec génération de token JWT,
+ * Gère l'inscription, la connexion avec authentification à deux facteurs (MFA),
  * et la réinitialisation de mot de passe.
  */
 @RestController
@@ -45,18 +47,37 @@ public class AuthentificationController {
     }
 
     /**
-     * Authentifie un utilisateur et génère un token JWT.
+     * Étape 1 : Authentifie les identifiants et envoie un code OTP par email.
      *
      * @param request identifiants de connexion (email, mot de passe)
-     * @return token JWT
+     * @return réponse avec otpRequired=true si succès
      */
     @PostMapping("login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request){
+    public ResponseEntity<?> login(@RequestBody LoginRequest request){
         try{
             LoginResponse response = authentificationService.login(request);
             return ResponseEntity.ok(response);
-        }catch (Exception e){
+        } catch (OtpCooldownException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new PasswordResetDTO.GenericResponse(e.getMessage()));
+        } catch (Exception e){
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * Étape 2 : Vérifie le code OTP et retourne le token JWT final.
+     *
+     * @param request email et code OTP
+     * @return token JWT si le code est valide
+     */
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        try {
+            LoginResponse response = authentificationService.verifyOtp(request);
+            return ResponseEntity.ok(response);
+        } catch (OtpExpiredException | OtpInvalidException | OtpNotFoundException | OtpTooManyAttemptsException e) {
+            return ResponseEntity.badRequest().body(new PasswordResetDTO.GenericResponse(e.getMessage()));
         }
     }
 
@@ -112,4 +133,5 @@ public class AuthentificationController {
         }
     }
 }
+
 
