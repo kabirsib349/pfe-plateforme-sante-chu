@@ -1,7 +1,6 @@
 package com.pfe.backend.controller;
 
 import com.pfe.backend.dto.ReponseFormulaireRequest;
-import com.pfe.backend.model.OptionValeur;
 import com.pfe.backend.model.ReponseFormulaire;
 import com.pfe.backend.service.ReponseFormulaireService;
 import com.pfe.backend.service.CsvExportService;
@@ -18,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Contrôleur REST pour la gestion des réponses aux formulaires.
