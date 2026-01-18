@@ -25,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/reponses")
 @RequiredArgsConstructor
+@SuppressWarnings("unused")
 public class ReponseFormulaireController {
 
     private final ReponseFormulaireService reponseFormulaireService;
