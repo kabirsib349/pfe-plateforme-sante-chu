@@ -63,7 +63,7 @@ public class FormulaireMedecinService {
         formulaireMedecinRepository.findByFormulaireIdFormulaireAndMedecinEmail(formulaireId, emailMedecin)
                 .ifPresent(fm -> {
                     // Permettre le renvoi si le formulaire a été supprimé (masqué) par le médecin ou le chercheur
-                    if (!fm.getMasquePourMedecin() && !fm.getMasquePourChercheur()) {
+                    if (!Boolean.TRUE.equals(fm.getMasquePourMedecin()) && !Boolean.TRUE.equals(fm.getMasquePourChercheur())) {
                         throw new IllegalArgumentException("Ce formulaire a déjà été envoyé au Dr. " + medecin.getNom() + ". Le médecin peut le remplir plusieurs fois pour différents patients.");
                     }
                 });
