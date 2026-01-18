@@ -9,7 +9,7 @@ La plateforme vise à remplacer les processus manuels ou non sécurisés par une
 
 ## Objectifs Principaux
 *   **Simplicité & Rapidité** : Interface intuitive permettant de créer des formulaires complexes sans compétences techniques.
-*   **Sécurité des Données** : Chiffrement des communications et gestion stricte des accès (Authentification JWT, Rôles).
+*   **Sécurité des Données** : Chiffrement des communications, authentification à deux facteurs (MFA/OTP), gestion stricte des accès (JWT, Rôles).
 *   **Conformité RGPD** : Gestion de l'anonymisation et du consentement.
 *   **Interopérabilité** : Export des données structurées (CSV) pour l'analyse statistique externe.
 
@@ -24,12 +24,19 @@ La plateforme vise à remplacer les processus manuels ou non sécurisés par une
     *   Gestion de thèmes médicaux prédéfinis et questions personnalisées
 *   Envoi de formulaires aux médecins collaborateurs.
 *   Tableau de bord de suivi de la collecte (taux de réponse, progression).
+*   **Messagerie intégrée** : Communication directe avec les médecins collaborateurs.
 *   Exportation des données collectées (format CSV sécurisé).
 
 ### Pour les Médecins
 *   Réception des formulaires à remplir pour leurs patients.
 *   Interface de saisie ergonomique adaptée à la pratique clinique.
+*   **Messagerie intégrée** : Communication directe avec les chercheurs.
 *   Historique des soumissions et suivi des patients inclus.
+
+### Sécurité & Authentification
+*   **Authentification MFA (OTP par email)** : Vérification en deux étapes lors de la connexion.
+*   **Réinitialisation de mot de passe** : Processus sécurisé par code OTP envoyé par email.
+*   **Politique de mot de passe fort** : Minimum 12 caractères, majuscule, minuscule, chiffre, caractère spécial.
 
 ## Stack Technologique
 
@@ -66,7 +73,7 @@ Le backend est situé dans le répertoire `backend`.
     cd backend
     ```
 
-    2.  Configurez les variables d'environnement :
+2.  Configurez les variables d'environnement :
     *   Créez un fichier `.env` dans le dossier `backend` (ou à la racine du projet).
     *   Ajoutez les variables requises (voir le fichier `.env.example`) :
     ```properties
@@ -81,8 +88,18 @@ Le backend est situé dans le répertoire `backend`.
     
     # CORS
     CORS_ALLOWED_ORIGINS=http://localhost:3000
+    
+    # Configuration SMTP (Obligatoire pour MFA et réinitialisation mot de passe)
+    # Exemple avec Brevo (ex-Sendinblue)
+    MAIL_HOST=smtp-relay.brevo.com
+    MAIL_PORT=587
+    MAIL_USERNAME=votre_email@domaine.com
+    MAIL_PASSWORD=votre_clé_smtp_brevo
+    MAIL_FROM=noreply@votre-domaine.com
     ```
     *Note : L'application charge automatiquement ce fichier `.env` au démarrage.*
+    
+    > **Important** : Sans configuration SMTP, l'authentification MFA et la réinitialisation de mot de passe ne fonctionneront pas.
 
 3.  Compilez et lancez l'application :
     ```bash
