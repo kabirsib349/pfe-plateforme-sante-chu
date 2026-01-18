@@ -2,40 +2,102 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login as apiLogin, getUserInfo } from "../../lib/api";
+import { login as apiLogin, verifyOtp as apiVerifyOtp, getUserInfo } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { handleError } from "../../lib/errorHandler";
 import { Role } from "@/src/types";
-import { BeakerIcon } from "@heroicons/react/24/outline";
+import { BeakerIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import OtpInput from "../../components/ui/OtpInput";
 
 export default function Login() {
     const router = useRouter();
     const { login } = useAuth();
+
+    // Étape du flow: 'credentials' ou 'otp'
+    const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
+
+    // Formulaire credentials
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
+    // Formulaire OTP
+    const [otpCode, setOtpCode] = useState("");
+
+    // États communs
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    // Étape 1: Envoi des identifiants
+    const handleCredentialsSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setIsLoading(true);
 
         try {
             const response = await apiLogin({ email, password });
-            await login(response.token);
 
-            // Récupérer les infos utilisateur après le login
-            const userInfo = await getUserInfo(response.token);
-
-            // Redirection basée sur le rôle
-            if (userInfo.role === Role.MEDECIN) {
-                router.push("/dashboard-medecin");
-            } else {
-                router.push("/dashboard-chercheur");
+            if (response.otpRequired) {
+                // Passer à l'étape OTP
+                setStep('otp');
+            } else if (response.token) {
+                // Connexion directe (si MFA désactivé)
+                await login(response.token);
+                const userInfo = await getUserInfo(response.token);
+                router.push(userInfo.role === Role.MEDECIN ? "/dashboard-medecin" : "/dashboard-chercheur");
             }
         } catch (err) {
             const formattedError = handleError(err, 'Login');
+            setError(formattedError.userMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Étape 2: Vérification du code OTP
+    const handleOtpSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        setError("");
+
+        if (otpCode.length !== 6) {
+            setError("Veuillez saisir le code à 6 chiffres.");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const response = await apiVerifyOtp({ email, otpCode });
+
+            if (response.token) {
+                await login(response.token);
+                const userInfo = await getUserInfo(response.token);
+                router.push(userInfo.role === Role.MEDECIN ? "/dashboard-medecin" : "/dashboard-chercheur");
+            }
+        } catch (err) {
+            const formattedError = handleError(err, 'OTP');
+            setError(formattedError.userMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Retour à l'étape credentials
+    const handleBackToCredentials = () => {
+        setStep('credentials');
+        setOtpCode("");
+        setError("");
+    };
+
+    // Renvoyer le code OTP
+    const handleResendOtp = async () => {
+        setError("");
+        setIsLoading(true);
+
+        try {
+            await apiLogin({ email, password });
+            setOtpCode("");
+        } catch (err) {
+            const formattedError = handleError(err, 'Resend OTP');
             setError(formattedError.userMessage);
         } finally {
             setIsLoading(false);
@@ -51,77 +113,138 @@ export default function Login() {
 
             <div className="flex flex-col items-center justify-center min-h-screen relative z-10">
                 <div className="glass rounded-3xl p-8 w-full max-w-md shadow-eco-lg border border-white/20 animate-fade-in-up">
-                    <div className="text-center mb-8">
-                        {/* Logo eco-friendly */}
-                        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-eco">
-                            <BeakerIcon className="w-8 h-8 text-white" />
-                        </div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                            Connexion
-                        </h1>
-                        <p className="text-gray-600">Accédez à votre espace MedDataCollect</p>
-                    </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Champ email */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="email">Adresse email</label>
-                            <input
-                                id="email"
-                                type="email"
-                                placeholder="votre.email@chu.fr"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 bg-white/80 backdrop-blur-sm focus-eco transition-all duration-300 hover:border-emerald-300"
-                            />
-                        </div>
-
-                        {/* Mot de passe */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="password">Mot de passe</label>
-                            <input
-                                id="password"
-                                type="password"
-                                placeholder="Entrez votre mot de passe"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 bg-white/80 backdrop-blur-sm focus-eco transition-all duration-300 hover:border-emerald-300"
-                            />
-                        </div>
-
-                        {/* Message d'erreur */}
-                        {error && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                <p className="text-red-700 text-sm font-medium">{error}</p>
+                    {/* ÉTAPE 1: CREDENTIALS */}
+                    {step === 'credentials' && (
+                        <>
+                            <div className="text-center mb-8">
+                                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-eco">
+                                    <BeakerIcon className="w-8 h-8 text-white" />
+                                </div>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                                    Connexion
+                                </h1>
+                                <p className="text-gray-600">Accédez à votre espace MedDataCollect</p>
                             </div>
-                        )}
 
-                        {/* Bouton amélioré */}
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            aria-label="Se connecter"
-                            className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <span className="flex items-center justify-center gap-2">
-                                {isLoading ? 'Connexion en cours...' : 'Se connecter'}
-                            </span>
-                        </button>
+                            <form onSubmit={handleCredentialsSubmit} className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="email">Adresse email</label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        placeholder="votre.email@chu.fr"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 bg-white/80 backdrop-blur-sm focus-eco transition-all duration-300 hover:border-emerald-300"
+                                    />
+                                </div>
 
-                        <div className="text-center mt-6 pt-4 border-t border-gray-200">
-                            <p className="text-sm text-gray-600 mb-3">
-                                Pas encore de compte ?{' '}
-                                <a href="/register" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                                    S'inscrire
-                                </a>
-                            </p>
-                            <a href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                                Mot de passe oublié ?
-                            </a>
-                        </div>
-                    </form>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="password">Mot de passe</label>
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        placeholder="Entrez votre mot de passe"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 bg-white/80 backdrop-blur-sm focus-eco transition-all duration-300 hover:border-emerald-300"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p className="text-red-700 text-sm font-medium">{error}</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isLoading ? 'Connexion...' : 'Se connecter'}
+                                </button>
+
+                                <div className="text-center mt-6 pt-4 border-t border-gray-200">
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        Pas encore de compte ?{' '}
+                                        <a href="/register" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                                            S&apos;inscrire
+                                        </a>
+                                    </p>
+                                    <a href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                        Mot de passe oublié ?
+                                    </a>
+                                </div>
+                            </form>
+                        </>
+                    )}
+
+                    {/* ÉTAPE 2: VÉRIFICATION OTP */}
+                    {step === 'otp' && (
+                        <>
+                            <div className="text-center mb-8">
+                                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-eco">
+                                    <ShieldCheckIcon className="w-8 h-8 text-white" />
+                                </div>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                                    Vérification
+                                </h1>
+                                <p className="text-gray-600">
+                                    Un code a été envoyé à<br />
+                                    <span className="font-medium text-emerald-700">{email}</span>
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleOtpSubmit} className="space-y-6">
+                                <div className="flex justify-center">
+                                    <OtpInput
+                                        length={6}
+                                        value={otpCode}
+                                        onChange={setOtpCode}
+                                        error={undefined}
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p className="text-red-700 text-sm font-medium text-center">{error}</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading || otpCode.length !== 6}
+                                    className="btn-eco w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 hover:from-emerald-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-2xl transition-all duration-300 shadow-eco-lg hover:shadow-xl focus-eco disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isLoading ? 'Vérification...' : 'Valider le code'}
+                                </button>
+
+                                <div className="text-center space-y-3 pt-4 border-t border-gray-200">
+                                    <button
+                                        type="button"
+                                        onClick={handleResendOtp}
+                                        disabled={isLoading}
+                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors disabled:opacity-50"
+                                    >
+                                        Renvoyer le code
+                                    </button>
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={handleBackToCredentials}
+                                            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                                        >
+                                            Modifier l&apos;email
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </>
+                    )}
                 </div>
             </div>
         </main>

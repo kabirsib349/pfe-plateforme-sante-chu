@@ -18,8 +18,8 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-    token: string;
-    user: User;
+    token: string | null;
+    otpRequired: boolean;
 }
 
 export interface RegisterRequest {

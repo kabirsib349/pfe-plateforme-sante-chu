@@ -99,6 +99,16 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
     return handleResponse<LoginResponse>(response);
 }
 
+export async function verifyOtp(data: { email: string; otpCode: string }): Promise<LoginResponse> {
+    const response = await fetch(apiUrl('/api/auth/verify-otp'), {
+        method: 'POST',
+        headers: createHeaders(),
+        body: JSON.stringify(data),
+    });
+
+    return handleResponse<LoginResponse>(response);
+}
+
 export async function getUserInfo(token: string): Promise<User> {
     if (!token) {
         throw new ApiException('Token manquant', 401);
