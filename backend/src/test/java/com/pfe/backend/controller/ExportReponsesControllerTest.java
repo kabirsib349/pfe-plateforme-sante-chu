@@ -45,7 +45,7 @@ class ExportReponsesControllerTest {
         String csvContent = "patient_id,question1,question2\n1,valeur1,valeur2\n2,valeur3,valeur4";
         ByteArrayResource resource = new ByteArrayResource(csvContent.getBytes(StandardCharsets.UTF_8));
 
-        when(exportReponsesService.exporterReponsesCsv(eq(1L), eq("chercheur@test.com")))
+        when(exportReponsesService.exporterReponsesCsv(1L, "chercheur@test.com"))
                 .thenReturn(resource);
 
         mockMvc.perform(get("/api/export/formulaires/1/csv").principal(mockPrincipal))
@@ -61,7 +61,7 @@ class ExportReponsesControllerTest {
         String csvContent = "patient_id\n";
         ByteArrayResource resource = new ByteArrayResource(csvContent.getBytes(StandardCharsets.UTF_8));
 
-        when(exportReponsesService.exporterReponsesCsv(eq(2L), eq("chercheur@test.com")))
+        when(exportReponsesService.exporterReponsesCsv(2L, "chercheur@test.com"))
                 .thenReturn(resource);
 
         mockMvc.perform(get("/api/export/formulaires/2/csv").principal(mockPrincipal))

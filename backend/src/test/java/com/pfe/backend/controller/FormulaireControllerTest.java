@@ -122,7 +122,7 @@ class FormulaireControllerTest {
         EnvoiFormulaireRequest request = new EnvoiFormulaireRequest();
         request.setEmailMedecin("medecin@test.com");
 
-        when(formulaireMedecinService.envoyerFormulaire(eq(1L), eq("medecin@test.com"), eq("chercheur@test.com")))
+        when(formulaireMedecinService.envoyerFormulaire(1L, "medecin@test.com", "chercheur@test.com"))
                 .thenReturn(testFormulaireMedecin);
 
         mockMvc.perform(post("/api/formulaires/1/envoyer")
@@ -136,7 +136,7 @@ class FormulaireControllerTest {
 
     @Test
     void createEnvoiParChercheur_ShouldReturnCreated() throws Exception {
-        when(formulaireMedecinService.createEnvoiParChercheur(eq(1L), eq("chercheur@test.com")))
+        when(formulaireMedecinService.createEnvoiParChercheur(1L, "chercheur@test.com"))
                 .thenReturn(testFormulaireMedecin);
 
         mockMvc.perform(post("/api/formulaires/1/create-envoi")
@@ -152,7 +152,7 @@ class FormulaireControllerTest {
         fmWithNullFormulaire.setFormulaire(null);
         fmWithNullFormulaire.setDateEnvoi(null);
 
-        when(formulaireMedecinService.createEnvoiParChercheur(eq(2L), eq("chercheur@test.com")))
+        when(formulaireMedecinService.createEnvoiParChercheur(2L, "chercheur@test.com"))
                 .thenReturn(fmWithNullFormulaire);
 
         mockMvc.perform(post("/api/formulaires/2/create-envoi")
