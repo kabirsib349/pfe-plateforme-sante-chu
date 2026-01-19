@@ -127,5 +127,4 @@ public class UserController {
         userService.changePassword(principal.getName(), dto);
         return ResponseEntity.ok("Mot de passe mis à jour avec succès !");
     }
-
 }
