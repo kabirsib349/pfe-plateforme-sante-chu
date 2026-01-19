@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 /**
  * Contrôleur REST pour la gestion des utilisateurs.
@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@SuppressWarnings("unused")
 public class UserController {
 
     private final UtilisateurRepository utilisateurRepository;
