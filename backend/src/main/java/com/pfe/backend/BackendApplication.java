@@ -20,6 +20,8 @@ public class BackendApplication {
         if (!file.exists()) {
             return; // Early return to avoid nesting
         }
+
+
         
         try (java.util.Scanner scanner = new java.util.Scanner(file)) {
             while (scanner.hasNextLine()) {
@@ -27,7 +29,6 @@ public class BackendApplication {
                 processEnvLine(line);
             }
         } catch (java.io.FileNotFoundException e) {
-            // Should not happen as we checked exists(), but ignore
         }
     }
     

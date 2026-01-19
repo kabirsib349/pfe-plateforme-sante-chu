@@ -32,11 +32,7 @@ function RemplirFormulaireContent() {
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [reponses, setReponses] = useState<Record<string, any>>({});
-    // Identifiant complet (K-E-etude-0001) utilise pour brouillons/edition
     const [patientIdentifier, setPatientIdentifier] = useState<string>(searchParams.get('patient') || '');
-    // Initiales saisies par l utilisateur
-    const [patientNomInitial, setPatientNomInitial] = useState<string>('');
-    const [patientPrenomInitial, setPatientPrenomInitial] = useState<string>('');
     const [champsMap, setChampsMap] = useState<Map<string, string>>(new Map());
     const [isDraft, setIsDraft] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -173,31 +169,10 @@ function RemplirFormulaireContent() {
         return reponsesMap;
     };
 
-    // Determiner l identifiant patient a utiliser pour charger/sauver les brouillons
-    const getEffectivePatientIdentifierForDraft = () => {
-        if (patientIdentifier) {
-            return patientIdentifier;
-        }
-        if (patientNomInitial && patientPrenomInitial && formulaireRecu?.formulaire?.etude?.titre) {
-            const slug = formulaireRecu.formulaire.etude.titre
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-+/, '')
-                .replace(/-+$/, '') || 'etude';
-            return `${patientNomInitial.toUpperCase()}-${patientPrenomInitial.toUpperCase()}-${slug}`;
-        }
-        return '';
-    };
-
     // Sauvegarde manuelle du brouillon
     const handleSaveDraft = async () => {
-        if (!token || !formulaireRecuId) {
-            showToast('Erreur: Authentification ou ID manquant', 'error');
-            return;
-        }
-
-        if (!patientNomInitial.trim() || !patientPrenomInitial.trim()) {
-            showToast('Veuillez renseigner les initiales du patient', 'info');
+        if (!token || !formulaireRecuId || !patientIdentifier.trim()) {
+            showToast('Veuillez renseigner l\'identifiant patient', 'info');
             return;
         }
 
@@ -206,20 +181,15 @@ function RemplirFormulaireContent() {
             return;
         }
 
-        const effectiveId = getEffectivePatientIdentifierForDraft();
-
         setIsSaving(true);
         try {
             await submitReponses(token, {
                 formulaireMedecinId: parseInt(formulaireRecuId),
-                patientIdentifier: effectiveId,
-                patientNomInitial: patientNomInitial.trim(),
-                patientPrenomInitial: patientPrenomInitial.trim(),
+                patientIdentifier: patientIdentifier.trim(),
                 reponses: formatReponsesForApi(reponses)
-            } as any, true);  // true = brouillon
+            }, true);  // true = brouillon
 
             setIsDraft(true);
-            setPatientIdentifier(effectiveId);
             showToast('Brouillon sauvegardé avec succès', 'success');
         } catch (error) {
             const formattedError = handleError(error, 'SaveDraft');
@@ -229,35 +199,31 @@ function RemplirFormulaireContent() {
         }
     };
 
-    // Charger le brouillon quand l'identifiant patient (complet) change (uniquement pour les médecins)
+    // Charger le brouillon quand l'identifiant patient change (uniquement pour les médecins)
     useEffect(() => {
         const loadDraft = async () => {
-            if (!formulaireRecuId || !token || user?.role !== 'medecin') return;
-
-            const effectiveId = getEffectivePatientIdentifierForDraft();
-            if (!effectiveId) return;
+            // Le mode brouillon n'est disponible que pour les médecins
+            if (!patientIdentifier || !formulaireRecuId || !token || user?.role !== 'medecin') return;
 
             try {
                 const draft = await getDraftForPatient(
                     token,
                     parseInt(formulaireRecuId),
-                    effectiveId
+                    patientIdentifier
                 );
 
-                if (draft && (draft as any).reponses && (draft as any).reponses.length > 0) {
+                if (draft && draft.reponses && draft.reponses.length > 0) {
                     const reponsesMap: Record<string, any> = {};
-                    (draft as any).reponses.forEach((reponse: any) => {
+                    draft.reponses.forEach((reponse: any) => {
                         if (reponse.champ && reponse.champ.idChamp) {
                             reponsesMap[reponse.champ.idChamp.toString()] = reponse.valeur;
                         }
                     });
                     setReponses(reponsesMap);
                     setIsDraft(true);
-                    if (!patientIdentifier) {
-                        setPatientIdentifier(effectiveId);
-                    }
                 }
             } catch (error) {
+                // Nouveau patient, formulaire vierge
                 if (config.features.enableDebug) {
                     console.log('[FormRemplir] Nouveau patient, pas de brouillon');
                 }
@@ -265,8 +231,7 @@ function RemplirFormulaireContent() {
         };
 
         loadDraft();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formulaireRecuId, token, user, patientNomInitial, patientPrenomInitial]);
+    }, [patientIdentifier, formulaireRecuId, token, user]);
 
     const handleInitialSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -279,24 +244,20 @@ function RemplirFormulaireContent() {
             return;
         }
 
-        if (!patientNomInitial.trim() || !patientPrenomInitial.trim()) {
-            showToast('Veuillez saisir les initiales du patient', 'error');
+        if (!patientIdentifier.trim()) {
+            showToast('Veuillez saisir un identifiant patient', 'error');
             return;
         }
-
-        const effectiveId = getEffectivePatientIdentifierForDraft();
 
         setIsSending(true);
         try {
             await submitReponses(token, {
                 formulaireMedecinId: parseInt(formulaireRecuId),
-                patientIdentifier: effectiveId,
-                patientNomInitial: patientNomInitial.trim(),
-                patientPrenomInitial: patientPrenomInitial.trim(),
+                patientIdentifier: patientIdentifier.trim(),
                 reponses: formatReponsesForApi(reponses)
-            } as any, false);  // false = soumission finale
+            }, false);  // false = soumission finale
 
-            showToast('Formulaire enregistré avec succès pour le patient ' + effectiveId, 'success');
+            showToast('Formulaire enregistré avec succès pour le patient ' + patientIdentifier, 'success');
             setTimeout(() => {
                 if (user?.role === 'chercheur') {
                     router.push('/dashboard-chercheur?tab=data');
@@ -342,17 +303,6 @@ function RemplirFormulaireContent() {
         );
     }
 
-    // Previsualisation simple de l ID complet si possible
-    const previewId = (() => {
-        if (!patientNomInitial || !patientPrenomInitial || !formulaireRecu?.formulaire?.etude?.titre) return '';
-        const slug = formulaireRecu.formulaire.etude.titre
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+/, '')
-            .replace(/-+$/, '') || 'etude';
-        return `${patientNomInitial.toUpperCase()}-${patientPrenomInitial.toUpperCase()}-${slug}-000X`;
-    })();
-
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header et Contenu centré */}
@@ -394,50 +344,25 @@ function RemplirFormulaireContent() {
                         </div>
                     </div>
 
-                    {/* Carte Identifiant Patient via initiales */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-                        <label className="block text-base font-semibold text-gray-900 mb-1">
+                    {/* Carte Identifiant Patient */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <label className="block text-base font-semibold text-gray-900 mb-3">
                             Identifiant Patient <span className="text-red-600">*</span>
                         </label>
-                        <p className="text-sm text-gray-500 mb-2">
-                            Saisir uniquement les initiales du nom et du prénom. L'identifiant complet sera généré automatiquement.
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="relative">
-                                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input
-                                    type="text"
-                                    maxLength={1}
-                                    value={patientNomInitial}
-                                    onChange={(e) => setPatientNomInitial(e.target.value.toUpperCase())}
-                                    placeholder="Initiale du nom (ex: K)"
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    required
-                                />
-                            </div>
-                            <div className="relative">
-                                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input
-                                    type="text"
-                                    maxLength={1}
-                                    value={patientPrenomInitial}
-                                    onChange={(e) => setPatientPrenomInitial(e.target.value.toUpperCase())}
-                                    placeholder="Initiale du prénom (ex: E)"
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    required
-                                />
-                            </div>
+                        <div className="relative">
+                            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                value={patientIdentifier}
+                                onChange={(e) => setPatientIdentifier(e.target.value)}
+                                placeholder="Ex: P-2024-001"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                required
+                            />
                         </div>
-                        {previewId && (
-                            <p className="mt-2 text-sm text-gray-500">
-                                Exemple d'identifiant généré pour cette étude : <span className="font-mono text-gray-800">{previewId}</span>
-                            </p>
-                        )}
-                        {patientIdentifier && (
-                            <p className="mt-1 text-xs text-gray-400">
-                                Identifiant complet actuel pour ce brouillon : <span className="font-mono">{patientIdentifier}</span>
-                            </p>
-                        )}
+                        <p className="mt-2 text-sm text-gray-500">
+                            Identifiant unique du patient pour cette étude.
+                        </p>
                     </div>
 
                     <div className="space-y-6 mt-6">
@@ -466,7 +391,7 @@ function RemplirFormulaireContent() {
                                                         />
                                                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                                                             <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-1 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                                             </svg>
                                                         </div>
                                                     </div>
@@ -574,7 +499,7 @@ function RemplirFormulaireContent() {
                                         return (
                                             <div className="bg-blue-50 border-2 border-blue-400 rounded-lg px-4 py-3">
                                                 <p className="text-sm text-blue-800 mb-2 font-semibold">
-                                                   Champ calculé automatiquement
+                                                    Champ calculé automatiquement
                                                 </p>
                                                 {valeurCalculee !== null ? (
                                                     <div className="bg-white border border-blue-300 rounded px-3 py-2">

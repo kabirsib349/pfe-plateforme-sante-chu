@@ -1,4 +1,4 @@
-import type { User } from '@/src/types';
+﻿import type { User } from '@/src/types';
 
 export enum StatutFormulaire {
     BROUILLON = 'BROUILLON',

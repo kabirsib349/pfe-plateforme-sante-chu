@@ -1,4 +1,4 @@
-package com.pfe.backend.dto;
+﻿package com.pfe.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,11 +13,6 @@ public class ReponseFormulaireRequest {
     @NotNull(message = "L'ID du formulaire médecin est obligatoire")
     private Long formulaireMedecinId;
     
-    // Nouveaux champs pour la saisie par initiales
-    private String patientNomInitial;
-    private String patientPrenomInitial;
-
-    // Champ legacy conserve pour compatibilite (sera rempli par le backend si les initiales sont fournies)
     @NotBlank(message = "L'identifiant du patient est obligatoire")
     private String patientIdentifier;
     
