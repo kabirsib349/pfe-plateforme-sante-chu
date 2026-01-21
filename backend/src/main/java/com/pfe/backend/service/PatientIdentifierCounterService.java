@@ -61,6 +61,7 @@ public class PatientIdentifierCounterService {
                     int val = Integer.parseInt(m.group(1));
                     if (val > max) max = val;
                 } catch (NumberFormatException ignored) {
+                    // Format invalide, on ignore cette réponse et continue avec les autres
                 }
             }
         }
