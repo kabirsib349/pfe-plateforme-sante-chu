@@ -423,12 +423,17 @@ function ReponsesFormulaireContent() {
                     >
                         Retour
                     </button>
-                    {(formulaireMedecinId || formulaireIdParam) && (
+                    {formulaireMedecinId ? (
                         <ExportCsvButton
-                            formulaireMedecinId={Number(formulaireMedecinId || formulaireIdParam)}
+                            formulaireMedecinId={Number(formulaireMedecinId)}
                             variant="button"
                         />
-                    )}
+                    ) : formulaireIdParam ? (
+                        <ExportCsvButton
+                            formulaireId={Number(formulaireIdParam)}
+                            variant="button"
+                        />
+                    ) : null}
                 </div>
             </div>
             <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
