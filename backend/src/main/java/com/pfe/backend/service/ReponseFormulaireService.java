@@ -76,7 +76,7 @@ public class ReponseFormulaireService {
             if (Character.isLetterOrDigit(c)) {
                 slug.append(c);
                 lastWasDash = false;
-            } else if (!lastWasDash && slug.length() > 0) {
+            } else if (!lastWasDash && !slug.isEmpty()) {
                 slug.append('-');
                 lastWasDash = true;
             }
