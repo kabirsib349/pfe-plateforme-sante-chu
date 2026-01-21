@@ -6,6 +6,8 @@ import com.pfe.backend.model.OptionValeur;
 import com.pfe.backend.model.ReponseFormulaire;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -400,94 +402,29 @@ class CsvExportServiceTest {
         assertTrue(result.contains("Age"));
     }
 
-    @Test
-    void generateCsvContent_ShouldHandleNullPatientIdentifier() {
-        // Arrange - Response with null patientIdentifier
+    @ParameterizedTest
+    @CsvSource(value = {
+        "patient1hash, , Age",
+        "patient1hash, PATIENTWITHNODASH, Age",
+        "patient1hash, TEST-PATIENT-ABC, Age",
+        "'', TEST-0002, 25",
+        "'', '', 25"
+    }, nullValues = {"null"})
+    void generateCsvContent_ShouldHandlePatientIdentifierEdgeCases(String hash, String patientId, String expectedContent) {
+        // Arrange
         Champ champ = createChamp(1L, "Age");
         ReponseFormulaire reponse = new ReponseFormulaire();
         reponse.setChamp(champ);
         reponse.setValeur("25");
-        reponse.setPatientIdentifierHash("patient1hash");
-        reponse.setPatientIdentifier(null);
-
-        // Act
-        String result = csvExportService.generateCsvContent(List.of(reponse));
-
-        // Assert - Should handle null patientIdentifier gracefully
-        assertNotNull(result);
-        assertTrue(result.contains("Age"));
-    }
-
-    @Test
-    void generateCsvContent_ShouldHandlePatientIdentifierWithoutDash() {
-        // Arrange - Patient identifier without dash
-        Champ champ = createChamp(1L, "Age");
-        ReponseFormulaire reponse = new ReponseFormulaire();
-        reponse.setChamp(champ);
-        reponse.setValeur("25");
-        reponse.setPatientIdentifierHash("patient1hash");
-        reponse.setPatientIdentifier("PATIENTWITHNODASH");
+        reponse.setPatientIdentifierHash(hash != null && hash.isEmpty() ? "" : hash);
+        reponse.setPatientIdentifier(patientId);
 
         // Act
         String result = csvExportService.generateCsvContent(List.of(reponse));
 
         // Assert
         assertNotNull(result);
-        assertTrue(result.contains("Age"));
-    }
-
-    @Test
-    void generateCsvContent_ShouldHandlePatientIdentifierWithNonNumericSuffix() {
-        // Arrange - Patient identifier with non-numeric suffix after dash
-        Champ champ = createChamp(1L, "Age");
-        ReponseFormulaire reponse = new ReponseFormulaire();
-        reponse.setChamp(champ);
-        reponse.setValeur("25");
-        reponse.setPatientIdentifierHash("patient1hash");
-        reponse.setPatientIdentifier("TEST-PATIENT-ABC");
-
-        // Act
-        String result = csvExportService.generateCsvContent(List.of(reponse));
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.contains("Age"));
-    }
-
-    @Test
-    void generateCsvContent_ShouldUseFallbackPatientIdentifier_WhenHashIsEmpty() {
-        // Arrange - Empty patientIdentifierHash but valid patientIdentifier
-        Champ champ = createChamp(1L, "Age");
-        ReponseFormulaire reponse = new ReponseFormulaire();
-        reponse.setChamp(champ);
-        reponse.setValeur("25");
-        reponse.setPatientIdentifierHash("");
-        reponse.setPatientIdentifier("TEST-0002");
-
-        // Act
-        String result = csvExportService.generateCsvContent(List.of(reponse));
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.contains("25"));
-    }
-
-    @Test
-    void generateCsvContent_ShouldGenerateUnknownId_WhenBothHashAndIdEmpty() {
-        // Arrange - Both patientIdentifierHash and patientIdentifier are empty
-        Champ champ = createChamp(1L, "Age");
-        ReponseFormulaire reponse = new ReponseFormulaire();
-        reponse.setChamp(champ);
-        reponse.setValeur("25");
-        reponse.setPatientIdentifierHash("");
-        reponse.setPatientIdentifier("");
-
-        // Act
-        String result = csvExportService.generateCsvContent(List.of(reponse));
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.contains("25"));
+        assertTrue(result.contains(expectedContent), "Result should contain: " + expectedContent);
     }
 
     @Test
