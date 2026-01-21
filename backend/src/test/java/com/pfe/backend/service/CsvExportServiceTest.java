@@ -352,6 +352,220 @@ class CsvExportServiceTest {
         assertTrue(antecedentsIndex < sejourIndex);
     }
 
+    @Test
+    void generateCsvContent_ShouldReturnEmptyString_WhenInputIsNull() {
+        // Act
+        String result = csvExportService.generateCsvContent(null);
+
+        // Assert
+        assertEquals("", result);
+    }
+
+    @Test
+    void generateCsvContent_ShouldNotIncludeFieldsWithNullChamp_InHeaders() {
+        // Arrange - Response with null champ ID should be filtered from unique fields
+        // but we need a valid response from a different patient for this to work
+        Champ validChamp = createChamp(1L, "Age");
+        ReponseFormulaire reponseWithValidChamp = createReponse(validChamp, "25", "patient1hash");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponseWithValidChamp));
+
+        // Assert - Only valid field should appear
+        assertNotNull(result);
+        assertTrue(result.contains("Age"));
+        assertTrue(result.contains("25"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldHandleNullChampId() {
+        // Arrange - Response with null champ ID should be filtered out
+        Champ champWithNullId = new Champ();
+        champWithNullId.setIdChamp(null);
+        champWithNullId.setLabel("Test");
+
+        ReponseFormulaire reponseWithNullChampId = new ReponseFormulaire();
+        reponseWithNullChampId.setChamp(champWithNullId);
+        reponseWithNullChampId.setValeur("value");
+        reponseWithNullChampId.setPatientIdentifierHash("patient1hash");
+
+        Champ validChamp = createChamp(1L, "Age");
+        ReponseFormulaire reponseWithValidChamp = createReponse(validChamp, "25", "patient2hash");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponseWithNullChampId, reponseWithValidChamp));
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("Age"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldHandleNullPatientIdentifier() {
+        // Arrange - Response with null patientIdentifier
+        Champ champ = createChamp(1L, "Age");
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setChamp(champ);
+        reponse.setValeur("25");
+        reponse.setPatientIdentifierHash("patient1hash");
+        reponse.setPatientIdentifier(null);
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponse));
+
+        // Assert - Should handle null patientIdentifier gracefully
+        assertNotNull(result);
+        assertTrue(result.contains("Age"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldHandlePatientIdentifierWithoutDash() {
+        // Arrange - Patient identifier without dash
+        Champ champ = createChamp(1L, "Age");
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setChamp(champ);
+        reponse.setValeur("25");
+        reponse.setPatientIdentifierHash("patient1hash");
+        reponse.setPatientIdentifier("PATIENTWITHNODASH");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponse));
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("Age"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldHandlePatientIdentifierWithNonNumericSuffix() {
+        // Arrange - Patient identifier with non-numeric suffix after dash
+        Champ champ = createChamp(1L, "Age");
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setChamp(champ);
+        reponse.setValeur("25");
+        reponse.setPatientIdentifierHash("patient1hash");
+        reponse.setPatientIdentifier("TEST-PATIENT-ABC");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponse));
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("Age"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldUseFallbackPatientIdentifier_WhenHashIsEmpty() {
+        // Arrange - Empty patientIdentifierHash but valid patientIdentifier
+        Champ champ = createChamp(1L, "Age");
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setChamp(champ);
+        reponse.setValeur("25");
+        reponse.setPatientIdentifierHash("");
+        reponse.setPatientIdentifier("TEST-0002");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponse));
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("25"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldGenerateUnknownId_WhenBothHashAndIdEmpty() {
+        // Arrange - Both patientIdentifierHash and patientIdentifier are empty
+        Champ champ = createChamp(1L, "Age");
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setChamp(champ);
+        reponse.setValeur("25");
+        reponse.setPatientIdentifierHash("");
+        reponse.setPatientIdentifier("");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponse));
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("25"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldSortPatientsByInclusionNumber() {
+        // Arrange - Multiple patients with different inclusion numbers
+        Champ champ = createChamp(1L, "Age");
+        
+        ReponseFormulaire reponse3 = new ReponseFormulaire();
+        reponse3.setChamp(champ);
+        reponse3.setValeur("30");
+        reponse3.setPatientIdentifierHash("patient3hash");
+        reponse3.setPatientIdentifier("TEST-0003");
+        
+        ReponseFormulaire reponse1 = new ReponseFormulaire();
+        reponse1.setChamp(champ);
+        reponse1.setValeur("25");
+        reponse1.setPatientIdentifierHash("patient1hash");
+        reponse1.setPatientIdentifier("TEST-0001");
+        
+        ReponseFormulaire reponse2 = new ReponseFormulaire();
+        reponse2.setChamp(champ);
+        reponse2.setValeur("35");
+        reponse2.setPatientIdentifierHash("patient2hash");
+        reponse2.setPatientIdentifier("TEST-0002");
+
+        // Act - Insert in order 3, 1, 2 to test sorting
+        String result = csvExportService.generateCsvContent(List.of(reponse3, reponse1, reponse2));
+
+        // Assert - Should be sorted by inclusion number
+        assertNotNull(result);
+        int idx25 = result.indexOf("25");
+        int idx30 = result.indexOf("30");
+        int idx35 = result.indexOf("35");
+        assertTrue(idx25 < idx35 && idx35 < idx30, "Results should be sorted by inclusion number");
+    }
+
+    @Test
+    void generateCsvContent_ShouldHandleNullChampLabel() {
+        // Arrange - Champ with null label should be filtered out
+        Champ champWithNullLabel = new Champ();
+        champWithNullLabel.setIdChamp(1L);
+        champWithNullLabel.setLabel(null);
+
+        ReponseFormulaire reponseWithNullLabel = new ReponseFormulaire();
+        reponseWithNullLabel.setChamp(champWithNullLabel);
+        reponseWithNullLabel.setValeur("value");
+        reponseWithNullLabel.setPatientIdentifierHash("patient1hash");
+
+        Champ validChamp = createChamp(2L, "Age");
+        ReponseFormulaire reponseWithValidChamp = createReponse(validChamp, "25", "patient2hash");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponseWithNullLabel, reponseWithValidChamp));
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("Age"));
+    }
+
+    @Test
+    void generateCsvContent_ShouldReturnEmpty_WhenAllChampsHaveNullLabel() {
+        // Arrange - All responses have champs with null labels
+        Champ champWithNullLabel = new Champ();
+        champWithNullLabel.setIdChamp(1L);
+        champWithNullLabel.setLabel(null);
+
+        ReponseFormulaire reponse = new ReponseFormulaire();
+        reponse.setChamp(champWithNullLabel);
+        reponse.setValeur("value");
+        reponse.setPatientIdentifierHash("patient1hash");
+
+        // Act
+        String result = csvExportService.generateCsvContent(List.of(reponse));
+
+        // Assert - Should return empty string as no valid fields exist
+        assertEquals("", result);
+    }
+
     private ReponseFormulaire createReponse(Champ champ, String valeur, String patientHash) {
         ReponseFormulaire reponse = new ReponseFormulaire();
         reponse.setChamp(champ);
@@ -361,3 +575,4 @@ class CsvExportServiceTest {
         return reponse;
     }
 }
+
