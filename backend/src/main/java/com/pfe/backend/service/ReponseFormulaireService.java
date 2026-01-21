@@ -280,6 +280,18 @@ public class ReponseFormulaireService {
     }
 
     /**
+     * Récupère toutes les réponses pour un formulaire (agrège tous les FormulaireMedecin).
+     *
+     * @param formulaireId ID du formulaire de base
+     * @return Liste complète des réponses de tous les médecins
+     */
+    @Transactional(readOnly = true)
+    public List<ReponseFormulaire> getReponsesByFormulaireId(Long formulaireId) {
+        return reponseFormulaireRepository.findAllWithOptionsByFormulaireId(formulaireId);
+    }
+
+
+    /**
      * Récupère les réponses d'un patient spécifique pour un formulaire.
      *
      * @param formulaireMedecinId ID de l'assignation

@@ -142,7 +142,7 @@ public class ReponseFormulaireController {
 
 
     /**
-     * Exporte les données d'un formulaire au format CSV.
+     * Exporte les données d'un formulaire au format CSV (par FormulaireMedecin ID).
      * Les données sont anonymisées et structurées par catégories.
      *
      * @param formulaireMedecinId identifiant de l'envoi
@@ -151,13 +151,29 @@ public class ReponseFormulaireController {
     @GetMapping("/export/{formulaireMedecinId}")
     public ResponseEntity<InputStreamResource> exportCSV(@PathVariable Long formulaireMedecinId) {
         List<ReponseFormulaire> reponses = reponseFormulaireService.getReponses(formulaireMedecinId);
-        
+        return buildCsvResponse(reponses, "formulaire_" + formulaireMedecinId + ".csv");
+    }
+
+    /**
+     * Exporte les données d'un formulaire au format CSV (par Formulaire ID).
+     * Agrège les réponses de tous les FormulaireMedecin liés à ce formulaire.
+     *
+     * @param formulaireId identifiant du formulaire de base
+     * @return fichier CSV à télécharger
+     */
+    @GetMapping("/export/formulaire/{formulaireId}")
+    public ResponseEntity<InputStreamResource> exportCSVByFormulaireId(@PathVariable Long formulaireId) {
+        List<ReponseFormulaire> reponses = reponseFormulaireService.getReponsesByFormulaireId(formulaireId);
+        return buildCsvResponse(reponses, "formulaire_" + formulaireId + "_all.csv");
+    }
+
+    private ResponseEntity<InputStreamResource> buildCsvResponse(List<ReponseFormulaire> reponses, String filename) {
         String csvContent = csvExportService.generateCsvContent(reponses);
         byte[] csvBytes = addUtf8Bom(csvContent);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(csvBytes);
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=formulaire_" + formulaireMedecinId + ".csv")
+                .header("Content-Disposition", "attachment; filename=" + filename)
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(new InputStreamResource(inputStream));
     }
@@ -174,3 +190,4 @@ public class ReponseFormulaireController {
     }
 
 }
+

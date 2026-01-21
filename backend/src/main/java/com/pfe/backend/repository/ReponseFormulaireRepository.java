@@ -74,4 +74,17 @@ public interface ReponseFormulaireRepository extends JpaRepository<ReponseFormul
     // Nouveauté: récupérer les ids distincts de formulaire (utilisé pour init compteur)
     @Query("SELECT DISTINCT r.formulaireMedecin.formulaire.id FROM ReponseFormulaire r")
     List<Long> findDistinctFormulaireIds();
+
+    // Nouveau: récupérer toutes les réponses par formulaireId (pour export agrégé)
+    @Query("""
+       SELECT DISTINCT r
+       FROM ReponseFormulaire r
+       LEFT JOIN FETCH r.champ c
+       LEFT JOIN FETCH c.listeValeur lv
+       LEFT JOIN FETCH lv.options o
+       WHERE r.formulaireMedecin.formulaire.id = :formulaireId
+       AND (r.draft = false OR r.draft IS NULL)
+       """)
+    List<ReponseFormulaire> findAllWithOptionsByFormulaireId(@Param("formulaireId") Long formulaireId);
 }
+
