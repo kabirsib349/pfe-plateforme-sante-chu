@@ -107,6 +107,8 @@ Le backend est situé dans le répertoire `backend`.
     ```
     L'API Backend sera accessible sur `http://localhost:8080`.
 
+4.  Inserer manuellement les roles "chercheur" et "medecin" dans la table role. 
+
 ### 2. Configuration du Frontend
 
 Le frontend est situé dans le répertoire `frontend`.

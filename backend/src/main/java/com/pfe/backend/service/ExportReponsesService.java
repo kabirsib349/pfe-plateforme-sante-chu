@@ -43,7 +43,23 @@ public class ExportReponsesService {
 
         List<Champ> champs = formulaire.getChamps();
         List<ReponseFormulaire> reponses = reponseFormulaireRepository.findByFormulaireIdWithChamp(formulaireId);
+        
+        // Logs de diagnostic
+        System.out.println("=== EXPORT CSV DEBUG ===");
+        System.out.println("Formulaire ID: " + formulaireId);
+        System.out.println("Nombre de champs: " + (champs != null ? champs.size() : 0));
+        System.out.println("Nombre de réponses trouvées: " + (reponses != null ? reponses.size() : 0));
+        
+        if (reponses != null && !reponses.isEmpty()) {
+            long avecHash = reponses.stream().filter(r -> r.getPatientIdentifierHash() != null).count();
+            long sansHash = reponses.stream().filter(r -> r.getPatientIdentifierHash() == null).count();
+            System.out.println("Réponses avec patientIdentifierHash: " + avecHash);
+            System.out.println("Réponses sans patientIdentifierHash: " + sansHash);
+        }
+        
         Map<String, List<ReponseFormulaire>> reponsesParPatient = grouperReponsesParPatient(reponses);
+        System.out.println("Nombre de patients distincts: " + reponsesParPatient.size());
+        System.out.println("========================");
 
         StringBuilder csv = new StringBuilder();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
