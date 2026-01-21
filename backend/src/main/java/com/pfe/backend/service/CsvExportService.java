@@ -100,8 +100,16 @@ public class CsvExportService {
      * Génère le contenu CSV à partir des réponses.
      */
     public String generateCsvContent(List<ReponseFormulaire> reponses) {
+        if (reponses == null || reponses.isEmpty()) {
+            return "";
+        }
+        
         Map<String, List<ReponseFormulaire>> reponsesParPatient = groupByPatient(reponses);
         List<ReponseFormulaire> tousLesChamps = getSortedUniqueFields(reponses);
+        
+        if (tousLesChamps.isEmpty()) {
+            return "";
+        }
         
         StringBuilder csv = new StringBuilder();
         appendCategoryHeader(csv, tousLesChamps);
@@ -111,14 +119,36 @@ public class CsvExportService {
         return csv.toString();
     }
 
+    /**
+     * Groups responses by patient identifier.
+     * Uses patientIdentifierHash if available, otherwise falls back to patientIdentifier,
+     * or generates a unique identifier based on response ID.
+     */
     private Map<String, List<ReponseFormulaire>> groupByPatient(List<ReponseFormulaire> reponses) {
+        java.util.concurrent.atomic.AtomicInteger unknownCounter = new java.util.concurrent.atomic.AtomicInteger(0);
+        
         return reponses.stream()
-                .filter(r -> r.getPatientIdentifierHash() != null)
-                .collect(Collectors.groupingBy(ReponseFormulaire::getPatientIdentifierHash));
+                .collect(Collectors.groupingBy(r -> getPatientKey(r, unknownCounter)));
+    }
+    
+    /**
+     * Gets the patient key for grouping.
+     * Priority: patientIdentifierHash > patientIdentifier > generated ID
+     */
+    private String getPatientKey(ReponseFormulaire reponse, java.util.concurrent.atomic.AtomicInteger unknownCounter) {
+        if (reponse.getPatientIdentifierHash() != null && !reponse.getPatientIdentifierHash().isEmpty()) {
+            return reponse.getPatientIdentifierHash();
+        }
+        if (reponse.getPatientIdentifier() != null && !reponse.getPatientIdentifier().isEmpty()) {
+            return "ID_" + reponse.getPatientIdentifier();
+        }
+        // Fallback: group by response ID to ensure data is not lost
+        return "UNKNOWN_" + unknownCounter.incrementAndGet();
     }
 
     private List<ReponseFormulaire> getSortedUniqueFields(List<ReponseFormulaire> reponses) {
         return reponses.stream()
+                .filter(r -> r.getChamp() != null && r.getChamp().getIdChamp() != null)
                 .collect(Collectors.toMap(
                         r -> r.getChamp().getIdChamp(),
                         r -> r,
@@ -126,6 +156,7 @@ public class CsvExportService {
                 ))
                 .values()
                 .stream()
+                .filter(r -> r.getChamp().getLabel() != null)
                 .sorted(this::compareByCategory)
                 .toList();
     }
@@ -164,6 +195,7 @@ public class CsvExportService {
     }
 
     private void appendFieldLabelsHeader(StringBuilder csv, List<ReponseFormulaire> tousLesChamps) {
+        csv.append("NUMERO_INCLUSION;");
         for (ReponseFormulaire r : tousLesChamps) {
             csv.append(r.getChamp().getLabel()).append(";");
         }
@@ -172,13 +204,48 @@ public class CsvExportService {
 
     private void appendDataRows(StringBuilder csv, Map<String, List<ReponseFormulaire>> reponsesParPatient,
                                  List<ReponseFormulaire> tousLesChamps) {
-        for (Map.Entry<String, List<ReponseFormulaire>> entry : reponsesParPatient.entrySet()) {
+        // Trier les patients par numéro d'inclusion croissant
+        List<Map.Entry<String, List<ReponseFormulaire>>> sortedEntries = reponsesParPatient.entrySet().stream()
+                .sorted((e1, e2) -> {
+                    int num1 = parseNumeroInclusion(e1.getValue());
+                    int num2 = parseNumeroInclusion(e2.getValue());
+                    return Integer.compare(num1, num2);
+                })
+                .toList();
+        
+        for (Map.Entry<String, List<ReponseFormulaire>> entry : sortedEntries) {
             appendPatientRow(csv, entry.getValue(), tousLesChamps);
         }
     }
 
+    /**
+     * Parse le numéro d'inclusion pour le tri.
+     */
+    private int parseNumeroInclusion(List<ReponseFormulaire> reponsesPatient) {
+        if (reponsesPatient == null || reponsesPatient.isEmpty()) {
+            return Integer.MAX_VALUE;
+        }
+        String patientId = reponsesPatient.get(0).getPatientIdentifier();
+        if (patientId == null) return Integer.MAX_VALUE;
+        
+        int lastDash = patientId.lastIndexOf('-');
+        if (lastDash >= 0 && lastDash < patientId.length() - 1) {
+            try {
+                return Integer.parseInt(patientId.substring(lastDash + 1));
+            } catch (NumberFormatException e) {
+                return Integer.MAX_VALUE;
+            }
+        }
+        return Integer.MAX_VALUE;
+    }
+
+
     private void appendPatientRow(StringBuilder csv, List<ReponseFormulaire> reponsesPatient,
                                    List<ReponseFormulaire> tousLesChamps) {
+        // Ajouter le numéro d'inclusion en première colonne
+        String numeroInclusion = extractNumeroInclusion(reponsesPatient);
+        csv.append(numeroInclusion).append(";");
+        
         Map<Long, ReponseFormulaire> reponsesParChamp = reponsesPatient.stream()
                 .collect(Collectors.toMap(
                         r -> r.getChamp().getIdChamp(),
@@ -192,6 +259,35 @@ public class CsvExportService {
             csv.append(cellValue).append(";");
         }
         csv.append("\n");
+    }
+
+    /**
+     * Extrait le numéro d'inclusion (partie numérique) du patientIdentifier.
+     * Format attendu: NOM-PRENOM-ETUDE-XXXX -> retourne le numéro sans zéros devant
+     */
+    private String extractNumeroInclusion(List<ReponseFormulaire> reponsesPatient) {
+        if (reponsesPatient == null || reponsesPatient.isEmpty()) {
+            return "";
+        }
+        
+        String patientId = reponsesPatient.get(0).getPatientIdentifier();
+        if (patientId == null || patientId.isEmpty()) {
+            return "";
+        }
+        
+        // Extraire la dernière partie après le dernier tiret (le numéro)
+        int lastDash = patientId.lastIndexOf('-');
+        if (lastDash >= 0 && lastDash < patientId.length() - 1) {
+            String numPart = patientId.substring(lastDash + 1);
+            try {
+                // Convertir en entier pour enlever les zéros devant
+                return String.valueOf(Integer.parseInt(numPart));
+            } catch (NumberFormatException e) {
+                return numPart;
+            }
+        }
+        
+        return patientId;
     }
 
     private String getFormattedCellValue(ReponseFormulaire reponse) {
