@@ -29,6 +29,7 @@ public class BackendApplication {
                 processEnvLine(line);
             }
         } catch (java.io.FileNotFoundException e) {
+            // Fichier .env non trouvé, ignoré intentionnellement car c'est optionnel
         }
     }
     
