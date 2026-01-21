@@ -31,6 +31,8 @@ class ReponseFormulaireServiceTest {
     private ChampRepository champRepository;
     @Mock
     private ActiviteService activiteService;
+    @Mock
+    private PatientIdentifierCounterService patientIdentifierCounterService;
 
     @InjectMocks
     private ReponseFormulaireService reponseFormulaireService;
@@ -1158,4 +1160,270 @@ class ReponseFormulaireServiceTest {
         assertThrows(ResourceNotFoundException.class, 
             () -> reponseFormulaireService.supprimerToutesReponsesFormulaire(999L, "medecin@test.com"));
     }
+
+    @Test
+    void getReponsesByFormulaireId_ShouldReturnAllResponses() {
+        // Arrange
+        Long formulaireId = 1L;
+        ReponseFormulaire reponse1 = new ReponseFormulaire();
+        ReponseFormulaire reponse2 = new ReponseFormulaire();
+
+        when(reponseFormulaireRepository.findAllWithOptionsByFormulaireId(formulaireId))
+                .thenReturn(List.of(reponse1, reponse2));
+
+        // Act
+        List<ReponseFormulaire> result = reponseFormulaireService.getReponsesByFormulaireId(formulaireId);
+
+        // Assert
+        assertEquals(2, result.size());
+        verify(reponseFormulaireRepository).findAllWithOptionsByFormulaireId(formulaireId);
+    }
+
+    @Test
+    void marquerCommeLu_ShouldMarkAsRead_WhenLuIsNull() {
+        // Arrange - Test the branch where lu is null
+        Long fmId = 1L;
+        String emailMedecin = "medecin@test.com";
+
+        Utilisateur medecin = createUtilisateur(1L, emailMedecin);
+
+        FormulaireMedecin fm = new FormulaireMedecin();
+        fm.setId(fmId);
+        fm.setMedecin(medecin);
+        fm.setLu(null); // Null lu
+
+        when(formulaireMedecinRepository.findById(fmId)).thenReturn(Optional.of(fm));
+        when(formulaireMedecinRepository.save(any(FormulaireMedecin.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        reponseFormulaireService.marquerCommeLu(fmId, emailMedecin);
+
+        // Assert
+        assertTrue(fm.getLu());
+        assertNotNull(fm.getDateLecture());
+    }
+
+    @Test
+    void sauvegarderReponses_ShouldGeneratePatientIdentifier_WhenOnlyInitialsProvided() {
+        // Arrange - Test resolveOrGeneratePatientIdentifier with initials
+        Long fmId = 1L;
+        String emailMedecin = "medecin@test.com";
+
+        Utilisateur medecin = createUtilisateur(1L, emailMedecin);
+        Utilisateur chercheur = createUtilisateur(2L, "chercheur@test.com");
+
+        Formulaire formulaire = new Formulaire();
+        formulaire.setIdFormulaire(1L);
+        formulaire.setTitre("Étude Test Cardiologie");
+        formulaire.setChercheur(chercheur);
+
+        FormulaireMedecin fm = new FormulaireMedecin();
+        fm.setId(fmId);
+        fm.setMedecin(medecin);
+        fm.setFormulaire(formulaire);
+        fm.setMasquePourChercheur(false);
+
+        Champ champ = new Champ();
+        champ.setIdChamp(100L);
+
+        Map<Long, String> reponses = new HashMap<>();
+        reponses.put(100L, "Valeur");
+
+        ReponseFormulaireRequest request = new ReponseFormulaireRequest();
+        request.setFormulaireMedecinId(fmId);
+        request.setPatientNomInitial("D");
+        request.setPatientPrenomInitial("J");
+        request.setReponses(reponses);
+
+        when(formulaireMedecinRepository.findById(fmId)).thenReturn(Optional.of(fm));
+        when(champRepository.findById(100L)).thenReturn(Optional.of(champ));
+        when(formulaireMedecinRepository.save(any(FormulaireMedecin.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(patientIdentifierCounterService.getNextCounterForFormulaire(1L)).thenReturn(5);
+
+        // Act
+        reponseFormulaireService.sauvegarderReponses(request, emailMedecin, false);
+
+        // Assert
+        verify(reponseFormulaireRepository).save(argThat(reponse -> 
+            reponse.getPatientIdentifier() != null && 
+            reponse.getPatientIdentifier().startsWith("D-J-")
+        ));
+    }
+
+    @Test
+    void sauvegarderReponses_ShouldThrowException_WhenMissingInitials() {
+        // Arrange - Test resolveOrGeneratePatientIdentifier with missing initials
+        Long fmId = 1L;
+        String emailMedecin = "medecin@test.com";
+
+        Utilisateur medecin = createUtilisateur(1L, emailMedecin);
+        Utilisateur chercheur = createUtilisateur(2L, "chercheur@test.com");
+
+        Formulaire formulaire = new Formulaire();
+        formulaire.setIdFormulaire(1L);
+        formulaire.setTitre("Test");
+        formulaire.setChercheur(chercheur);
+
+        FormulaireMedecin fm = new FormulaireMedecin();
+        fm.setId(fmId);
+        fm.setMedecin(medecin);
+        fm.setFormulaire(formulaire);
+
+        Map<Long, String> reponses = new HashMap<>();
+        reponses.put(100L, "Valeur");
+
+        ReponseFormulaireRequest request = new ReponseFormulaireRequest();
+        request.setFormulaireMedecinId(fmId);
+        request.setPatientNomInitial("D");
+        request.setPatientPrenomInitial(""); // Empty prenom
+        request.setReponses(reponses);
+
+        when(formulaireMedecinRepository.findById(fmId)).thenReturn(Optional.of(fm));
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class,
+            () -> reponseFormulaireService.sauvegarderReponses(request, emailMedecin, false));
+    }
+
+    @Test
+    void sauvegarderReponses_ShouldUseExistingPatientIdentifier_WhenProvided() {
+        // Arrange - Test resolveOrGeneratePatientIdentifier with existing identifier
+        Long fmId = 1L;
+        String emailMedecin = "medecin@test.com";
+        String existingPatientId = "EXISTING-PATIENT-0001";
+
+        Utilisateur medecin = createUtilisateur(1L, emailMedecin);
+        Utilisateur chercheur = createUtilisateur(2L, "chercheur@test.com");
+
+        Formulaire formulaire = new Formulaire();
+        formulaire.setIdFormulaire(1L);
+        formulaire.setTitre("Test");
+        formulaire.setChercheur(chercheur);
+
+        FormulaireMedecin fm = new FormulaireMedecin();
+        fm.setId(fmId);
+        fm.setMedecin(medecin);
+        fm.setFormulaire(formulaire);
+        fm.setMasquePourChercheur(false);
+
+        Champ champ = new Champ();
+        champ.setIdChamp(100L);
+
+        Map<Long, String> reponses = new HashMap<>();
+        reponses.put(100L, "Valeur");
+
+        ReponseFormulaireRequest request = new ReponseFormulaireRequest();
+        request.setFormulaireMedecinId(fmId);
+        request.setPatientIdentifier(existingPatientId);
+        request.setPatientNomInitial(null); // No initials - should use existing identifier
+        request.setPatientPrenomInitial(null);
+        request.setReponses(reponses);
+
+        when(formulaireMedecinRepository.findById(fmId)).thenReturn(Optional.of(fm));
+        when(champRepository.findById(100L)).thenReturn(Optional.of(champ));
+        when(formulaireMedecinRepository.save(any(FormulaireMedecin.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        reponseFormulaireService.sauvegarderReponses(request, emailMedecin, false);
+
+        // Assert - Should use the existing patient identifier
+        verify(reponseFormulaireRepository).save(argThat(reponse -> 
+            existingPatientId.equals(reponse.getPatientIdentifier())
+        ));
+    }
+
+    @Test
+    void sauvegarderReponses_ShouldHandleNullTitre_InSlugify() {
+        // Arrange - Test slugifyTitreEtude with null titre
+        Long fmId = 1L;
+        String emailMedecin = "medecin@test.com";
+
+        Utilisateur medecin = createUtilisateur(1L, emailMedecin);
+        Utilisateur chercheur = createUtilisateur(2L, "chercheur@test.com");
+
+        Formulaire formulaire = new Formulaire();
+        formulaire.setIdFormulaire(1L);
+        formulaire.setTitre(null); // Null titre
+        formulaire.setChercheur(chercheur);
+
+        FormulaireMedecin fm = new FormulaireMedecin();
+        fm.setId(fmId);
+        fm.setMedecin(medecin);
+        fm.setFormulaire(formulaire);
+        fm.setMasquePourChercheur(false);
+
+        Champ champ = new Champ();
+        champ.setIdChamp(100L);
+
+        Map<Long, String> reponses = new HashMap<>();
+        reponses.put(100L, "Valeur");
+
+        ReponseFormulaireRequest request = new ReponseFormulaireRequest();
+        request.setFormulaireMedecinId(fmId);
+        request.setPatientNomInitial("D");
+        request.setPatientPrenomInitial("J");
+        request.setReponses(reponses);
+
+        when(formulaireMedecinRepository.findById(fmId)).thenReturn(Optional.of(fm));
+        when(champRepository.findById(100L)).thenReturn(Optional.of(champ));
+        when(formulaireMedecinRepository.save(any(FormulaireMedecin.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(patientIdentifierCounterService.getNextCounterForFormulaire(1L)).thenReturn(1);
+
+        // Act
+        reponseFormulaireService.sauvegarderReponses(request, emailMedecin, false);
+
+        // Assert - Should use "etude" as default slug
+        verify(reponseFormulaireRepository).save(argThat(reponse -> 
+            reponse.getPatientIdentifier() != null && 
+            reponse.getPatientIdentifier().contains("-etude-")
+        ));
+    }
+
+    @Test
+    void sauvegarderReponses_ShouldHandleSpecialCharacters_InSlugify() {
+        // Arrange - Test slugifyTitreEtude with special characters
+        Long fmId = 1L;
+        String emailMedecin = "medecin@test.com";
+
+        Utilisateur medecin = createUtilisateur(1L, emailMedecin);
+        Utilisateur chercheur = createUtilisateur(2L, "chercheur@test.com");
+
+        Formulaire formulaire = new Formulaire();
+        formulaire.setIdFormulaire(1L);
+        formulaire.setTitre("Étude Test!!! @#$ Cardiologie (2024)");
+        formulaire.setChercheur(chercheur);
+
+        FormulaireMedecin fm = new FormulaireMedecin();
+        fm.setId(fmId);
+        fm.setMedecin(medecin);
+        fm.setFormulaire(formulaire);
+        fm.setMasquePourChercheur(false);
+
+        Champ champ = new Champ();
+        champ.setIdChamp(100L);
+
+        Map<Long, String> reponses = new HashMap<>();
+        reponses.put(100L, "Valeur");
+
+        ReponseFormulaireRequest request = new ReponseFormulaireRequest();
+        request.setFormulaireMedecinId(fmId);
+        request.setPatientNomInitial("D");
+        request.setPatientPrenomInitial("J");
+        request.setReponses(reponses);
+
+        when(formulaireMedecinRepository.findById(fmId)).thenReturn(Optional.of(fm));
+        when(champRepository.findById(100L)).thenReturn(Optional.of(champ));
+        when(formulaireMedecinRepository.save(any(FormulaireMedecin.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(patientIdentifierCounterService.getNextCounterForFormulaire(1L)).thenReturn(1);
+
+        // Act
+        reponseFormulaireService.sauvegarderReponses(request, emailMedecin, false);
+
+        // Assert - Should slugify properly
+        verify(reponseFormulaireRepository).save(argThat(reponse -> 
+            reponse.getPatientIdentifier() != null && 
+            !reponse.getPatientIdentifier().contains("!")
+        ));
+    }
 }
+
