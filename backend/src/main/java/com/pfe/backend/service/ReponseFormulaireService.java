@@ -64,14 +64,31 @@ public class ReponseFormulaireService {
 
     // Slugify simple du titre d'etude (formulaire.titre)
     private String slugifyTitreEtude(String titre) {
-        if (titre == null) {
+        if (titre == null || titre.isBlank()) {
             return "etude";
         }
-        String slug = titre.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+", "")
-                .replaceAll("-+$", "");
-        return slug.isEmpty() ? "etude" : slug;
+        
+        // Construction du slug sans regex vulnérable au ReDoS
+        StringBuilder slug = new StringBuilder();
+        boolean lastWasDash = false;
+        
+        for (char c : titre.toLowerCase().toCharArray()) {
+            if (Character.isLetterOrDigit(c)) {
+                slug.append(c);
+                lastWasDash = false;
+            } else if (!lastWasDash && slug.length() > 0) {
+                slug.append('-');
+                lastWasDash = true;
+            }
+        }
+        
+        // Supprimer le tiret final si présent
+        String result = slug.toString();
+        if (result.endsWith("-")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        
+        return result.isEmpty() ? "etude" : result;
     }
 
     // Genere ou retourne l identifiant patient complet a partir des donnees de la requete
