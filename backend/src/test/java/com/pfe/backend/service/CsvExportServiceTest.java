@@ -28,7 +28,7 @@ class CsvExportServiceTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals("\n\n", result); // Just headers
+        assertEquals("", result); // Empty string when no responses
     }
 
     @Test
@@ -357,6 +357,7 @@ class CsvExportServiceTest {
         reponse.setChamp(champ);
         reponse.setValeur(valeur);
         reponse.setPatientIdentifierHash(patientHash);
+        reponse.setPatientIdentifier("TEST-" + patientHash.substring(0, 4) + "-0001"); // For inclusion number extraction
         return reponse;
     }
 }
